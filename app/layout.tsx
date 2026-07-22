@@ -3,7 +3,7 @@ import "./globals.css";
 
 
 export const metadata: Metadata = {
-  title: "GeoHealth Atlas | U.S. County Health Analytics",
+  title: "BioMap | Biomedical & Demographic Risk Mapping Tool",
   description:
     "Explore environmental hazards, public health risk metrics, pollution data, and demographic analytics across all U.S. counties.",
 };

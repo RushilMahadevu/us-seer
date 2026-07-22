@@ -61,10 +61,10 @@ export default function Header({
           </div>
           <div>
             <h1 className="text-sm font-bold tracking-tight text-foreground leading-none">
-              GeoHealth Atlas
+              BioMap
             </h1>
             <p className="text-[11px] text-muted-foreground mt-0.5 hidden sm:block leading-none">
-              U.S. County Environmental &amp; Health Analytics
+              Biomedical &amp; Demographic Risk Mapping Tool
             </p>
           </div>
         </div>
