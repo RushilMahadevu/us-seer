@@ -23,6 +23,7 @@ export default function Home() {
   const [activeView, setActiveView] = useState<"map" | "analysis" | "sources">("map");
   const [mapTarget, setMapTarget] = useState<{ coordinates: [number, number]; zoom: number; label?: string } | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [autoOpenAnalytics, setAutoOpenAnalytics] = useState(true);
 
   useEffect(() => {
     // Check initial dark mode state
@@ -49,10 +50,10 @@ export default function Home() {
     loadData();
   }, []);
 
-  // Open mobile drawer when a county is selected on smaller screens
+  // Open mobile drawer when a county is selected on smaller screens if autoOpenAnalytics is enabled
   const handleSelectCounty = (fips: string) => {
     setSelectedFips(fips);
-    if (window.innerWidth < 768) {
+    if (autoOpenAnalytics && window.innerWidth < 768) {
       setIsMobileDrawerOpen(true);
     }
   };
@@ -136,6 +137,8 @@ export default function Home() {
                 metric={mapMetric}
                 mapTarget={mapTarget}
                 onClearTarget={() => setMapTarget(null)}
+                autoOpenAnalytics={autoOpenAnalytics}
+                onToggleAutoOpenAnalytics={setAutoOpenAnalytics}
               />
             </section>
 

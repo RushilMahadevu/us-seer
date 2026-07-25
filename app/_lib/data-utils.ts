@@ -1,7 +1,8 @@
 import { CountyDataMap } from './types';
 
-// We'll use a widely available TopoJSON file for US counties via CDN for the mock
+// TopoJSON URLs for US counties & states
 export const GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json";
+export const STATES_GEO_URL = "https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json";
 
 export async function fetchCountyData(): Promise<CountyDataMap> {
   const res = await fetch('/data/county_data.json');
