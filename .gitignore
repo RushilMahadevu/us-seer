@@ -40,4 +40,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-data_pipeline/**/*.csv
+# data pipeline
+data_pipeline/

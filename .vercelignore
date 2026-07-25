@@ -1,0 +1,5 @@
+# Vercel Deployment Exclusions
+data_pipeline/
+.next/
+node_modules/
+*.tsbuildinfo
