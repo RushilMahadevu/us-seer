@@ -138,22 +138,22 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
     );
   }
 
-  const pm25Display  = countyData.pm25Avg      ? +countyData.pm25Avg.toFixed(2)             : "—";
+  const pm25Display = countyData.pm25Avg ? +countyData.pm25Avg.toFixed(2) : "—";
   const toxicDisplay = countyData.toxicReleases ? Math.round(countyData.toxicReleases).toLocaleString() : "0";
   const toxicLbs = countyData.toxicReleases ?? 0;
 
   const riskLevel =
     countyData.overallRisk != null
       ? countyData.overallRisk > 60
-        ? { label: "High Risk",     variant: "destructive" as const, emoji: "🔴", plain: "High Risk" }
+        ? { label: "High Risk", variant: "destructive" as const, emoji: "🔴", plain: "High Risk" }
         : countyData.overallRisk > 40
-          ? { label: "Moderate",    variant: "secondary"  as const, emoji: "🟡", plain: "Medium Risk" }
-          : { label: "Low Risk",    variant: "outline"    as const, emoji: "🟢", plain: "Low Risk" }
+          ? { label: "Moderate", variant: "secondary" as const, emoji: "🟡", plain: "Medium Risk" }
+          : { label: "Low Risk", variant: "outline" as const, emoji: "🟢", plain: "Low Risk" }
       : null;
 
   const chartData = [
-    { name: "Asthma",  value: countyData.asthmaPrev  || 0, color: "#c026d3" },
-    { name: "COPD",    value: countyData.copdPrev    || 0, color: "#0d9488" },
+    { name: "Asthma", value: countyData.asthmaPrev || 0, color: "#c026d3" },
+    { name: "COPD", value: countyData.copdPrev || 0, color: "#0d9488" },
     { name: "Smoking", value: countyData.smokingPrev || 0, color: "#ea580c" },
   ];
 
@@ -206,16 +206,16 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
           {/* ── Tabs bar ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 pt-2.5 pb-2 shrink-0">
             <TabsList className="flex items-center w-full h-8.5 bg-muted/60 p-0.5 rounded-lg overflow-x-auto scrollbar-none gap-0.5">
-              <TabsTrigger value="overview"      className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="overview" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
                 {isSimpleMode ? "Summary" : "Overview"}
               </TabsTrigger>
-              <TabsTrigger value="demographics"  className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="demographics" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
                 {isSimpleMode ? "People" : "Census"}
               </TabsTrigger>
-              <TabsTrigger value="health"        className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="health" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
                 Health
               </TabsTrigger>
-              <TabsTrigger value="care"          className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="care" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
                 {isSimpleMode ? "Doctors" : "Infra"}
               </TabsTrigger>
             </TabsList>
@@ -436,9 +436,9 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
                   {isSimpleMode ? "Who Lives Here" : "Racial & Ethnic Distribution"}
                 </SectionLabel>
                 <div className="grid grid-cols-2 gap-2">
-                  <StatCard label="Non-Hisp. Black" icon={<Users className="w-3 h-3" />} value={countyData.pctBlack    != null ? `${countyData.pctBlack}%`    : "—"} color="text-sky-500"
+                  <StatCard label="Non-Hisp. Black" icon={<Users className="w-3 h-3" />} value={countyData.pctBlack != null ? `${countyData.pctBlack}%` : "—"} color="text-sky-500"
                     isSimple={isSimpleMode} simpleLabel="Black residents" simpleValue={countyData.pctBlack != null ? `${countyData.pctBlack}%` : "—"} />
-                  <StatCard label="Hispanic"         icon={<Users className="w-3 h-3" />} value={countyData.pctHispanic != null ? `${countyData.pctHispanic}%` : "—"} color="text-emerald-500"
+                  <StatCard label="Hispanic" icon={<Users className="w-3 h-3" />} value={countyData.pctHispanic != null ? `${countyData.pctHispanic}%` : "—"} color="text-emerald-500"
                     isSimple={isSimpleMode} simpleLabel="Hispanic residents" simpleValue={countyData.pctHispanic != null ? `${countyData.pctHispanic}%` : "—"} />
                 </div>
               </div>
@@ -468,11 +468,11 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
                 </p>
               )}
               <div className="grid grid-cols-2 gap-2">
-                <StatCard label="Asthma"        icon={<Droplets className="w-3 h-3" />}    value={countyData.asthmaPrev  ? `${countyData.asthmaPrev}%`  : "—"} color="text-fuchsia-500"
+                <StatCard label="Asthma" icon={<Droplets className="w-3 h-3" />} value={countyData.asthmaPrev ? `${countyData.asthmaPrev}%` : "—"} color="text-fuchsia-500"
                   isSimple={isSimpleMode} simpleValue={countyData.asthmaPrev ? `${countyData.asthmaPrev}% of adults` : "—"} />
-                <StatCard label="COPD"          icon={<Stethoscope className="w-3 h-3" />} value={countyData.copdPrev    ? `${countyData.copdPrev}%`    : "—"} color="text-teal-500"
+                <StatCard label="COPD" icon={<Stethoscope className="w-3 h-3" />} value={countyData.copdPrev ? `${countyData.copdPrev}%` : "—"} color="text-teal-500"
                   isSimple={isSimpleMode} simpleValue={countyData.copdPrev ? `${countyData.copdPrev}% of adults` : "—"} />
-                <StatCard label="Smoking Rate"  icon={<Cigarette className="w-3 h-3" />}   value={countyData.smokingPrev ? `${countyData.smokingPrev}%` : "—"} color="text-orange-500"
+                <StatCard label="Smoking Rate" icon={<Cigarette className="w-3 h-3" />} value={countyData.smokingPrev ? `${countyData.smokingPrev}%` : "—"} color="text-orange-500"
                   isSimple={isSimpleMode} simpleValue={countyData.smokingPrev ? `${countyData.smokingPrev}% smoke` : "—"} />
                 <StatCard
                   label="Toxic Releases"
@@ -564,9 +564,8 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
                     {Array.from({ length: 9 }, (_, i) => (
                       <div
                         key={i}
-                        className={`h-1.5 flex-1 rounded-sm transition-colors ${
-                          i + 1 <= countyData.rucc! ? "bg-indigo-500" : "bg-muted"
-                        }`}
+                        className={`h-1.5 flex-1 rounded-sm transition-colors ${i + 1 <= countyData.rucc! ? "bg-indigo-500" : "bg-muted"
+                          }`}
                       />
                     ))}
                   </div>
@@ -653,13 +652,13 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { label: isSimpleMode ? "Poverty" : "Poverty Rate",    value: countyData.pctPoverty   != null ? `${countyData.pctPoverty}%`   : "—", color: "text-rose-500" },
-                { label: isSimpleMode ? "No Insurance" : "Uninsured",   value: countyData.pctUninsured != null ? `${countyData.pctUninsured}%` : "—", color: "text-amber-500" },
-                { label: isSimpleMode ? "Typical Age" : "Median Age",   value: countyData.medianAge    != null ? `${countyData.medianAge} yrs` : "—", color: "text-indigo-500" },
+                { label: isSimpleMode ? "Poverty" : "Poverty Rate", value: countyData.pctPoverty != null ? `${countyData.pctPoverty}%` : "—", color: "text-rose-500" },
+                { label: isSimpleMode ? "No Insurance" : "Uninsured", value: countyData.pctUninsured != null ? `${countyData.pctUninsured}%` : "—", color: "text-amber-500" },
+                { label: isSimpleMode ? "Typical Age" : "Median Age", value: countyData.medianAge != null ? `${countyData.medianAge} yrs` : "—", color: "text-indigo-500" },
                 { label: isSimpleMode ? "Didn't Finish HS" : "No HS Diploma", value: countyData.pctNoHS != null ? `${countyData.pctNoHS}%` : "—", color: "text-purple-500" },
-                { label: isSimpleMode ? "Black Residents" : "Black Pop. %",    value: countyData.pctBlack     != null ? `${countyData.pctBlack}%`     : "—", color: "text-sky-500" },
-                { label: isSimpleMode ? "Hispanic Residents" : "Hispanic Pop. %", value: countyData.pctHispanic != null ? `${countyData.pctHispanic}%`  : "—", color: "text-emerald-500" },
-                { label: isSimpleMode ? "Typical Household Income" : "Median Income",  value: countyData.medianIncome ? `$${countyData.medianIncome.toLocaleString()}` : "—", color: "text-primary" },
+                { label: isSimpleMode ? "Black Residents" : "Black Pop. %", value: countyData.pctBlack != null ? `${countyData.pctBlack}%` : "—", color: "text-sky-500" },
+                { label: isSimpleMode ? "Hispanic Residents" : "Hispanic Pop. %", value: countyData.pctHispanic != null ? `${countyData.pctHispanic}%` : "—", color: "text-emerald-500" },
+                { label: isSimpleMode ? "Typical Household Income" : "Median Income", value: countyData.medianIncome ? `$${countyData.medianIncome.toLocaleString()}` : "—", color: "text-primary" },
                 { label: isSimpleMode ? "Old Housing Units" : "Pre-1940 Units", value: countyData.housingPre1940 != null ? countyData.housingPre1940.toLocaleString() : "—", color: "text-muted-foreground" },
               ].map((item) => (
                 <div key={item.label} className="p-3.5 rounded-xl border border-border bg-card">
@@ -679,8 +678,8 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
               </h4>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { label: "Asthma",  value: countyData.asthmaPrev,  color: "text-fuchsia-500" },
-                  { label: "COPD",    value: countyData.copdPrev,    color: "text-teal-500" },
+                  { label: "Asthma", value: countyData.asthmaPrev, color: "text-fuchsia-500" },
+                  { label: "COPD", value: countyData.copdPrev, color: "text-teal-500" },
                   { label: "Smoking", value: countyData.smokingPrev, color: "text-orange-500" },
                 ].map((item) => (
                   <div key={item.label} className="p-2.5 rounded-lg bg-muted/40 text-center">

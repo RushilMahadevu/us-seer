@@ -90,7 +90,7 @@ const METRIC_CONFIG = {
 
 // High-contrast, dynamic colors tailored to stand out against each metric's specific color palette
 const SELECTED_REGION_COLORS: Record<MapMetric, string> = {
-  overallRisk: "#3b82f6",     // Vivid Cobalt / Royal Blue (pops sharply against Green-Yellow-Orange-Red scale)
+  overallRisk: "#8400ff",     // Vivid Cobalt / Royal Blue (pops sharply against Green-Yellow-Orange-Red scale)
   pm25Avg: "#0284c7",         // Deep Sky Blue (pops on Yellow-Orange-Red scale)
   mortalityRate: "#f59e0b",   // Vibrant Amber Gold (pops on Blue scale)
   asthmaPrev: "#10b981",      // Vivid Emerald (pops on Pink-Purple scale)
@@ -277,11 +277,10 @@ const MapContainer = ({
                 <button
                   onClick={fn}
                   aria-label={label}
-                  className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
-                    highlight
-                      ? "text-primary bg-primary/15 hover:bg-primary/25 font-bold"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                  }`}
+                  className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer ${highlight
+                    ? "text-primary bg-primary/15 hover:bg-primary/25 font-bold"
+                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                    }`}
                 >
                   <Icon className={`h-4 w-4 sm:h-3.5 sm:w-3.5 ${highlight ? "animate-pulse" : ""}`} />
                 </button>
@@ -302,11 +301,10 @@ const MapContainer = ({
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                 aria-label="Map Settings"
-                className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer ${
-                  isSettingsOpen
-                    ? "text-primary bg-primary/15 hover:bg-primary/25 font-bold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-accent"
-                }`}
+                className={`h-8 w-8 rounded-xl flex items-center justify-center transition-all active:scale-95 cursor-pointer ${isSettingsOpen
+                  ? "text-primary bg-primary/15 hover:bg-primary/25 font-bold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                  }`}
               >
                 <Settings className={`h-4 w-4 sm:h-3.5 sm:w-3.5 ${isSettingsOpen ? "rotate-45 text-primary" : ""} transition-transform duration-200`} />
               </button>
@@ -346,11 +344,10 @@ const MapContainer = ({
               <button
                 key={id}
                 onClick={() => setActiveSettingsTab(id as any)}
-                className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg transition-all cursor-pointer ${
-                  activeSettingsTab === id
-                    ? "bg-background text-foreground shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`flex-1 flex items-center justify-center gap-1 py-1 sm:py-1.5 rounded-lg transition-all cursor-pointer ${activeSettingsTab === id
+                  ? "bg-background text-foreground shadow-xs font-bold"
+                  : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 <TabIcon className="h-3 w-3 shrink-0" />
                 <span>{label}</span>
@@ -370,14 +367,12 @@ const MapContainer = ({
                   </div>
                   <button
                     onClick={() => setShowStateBorders(!showStateBorders)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      showStateBorders ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showStateBorders ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        showStateBorders ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showStateBorders ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -392,11 +387,10 @@ const MapContainer = ({
                           <button
                             key={w}
                             onClick={() => setStateBorderWeight(w)}
-                            className={`px-2 py-0.5 capitalize rounded-md transition-all cursor-pointer ${
-                              stateBorderWeight === w
-                                ? "bg-background text-foreground shadow-xs font-bold"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`}
+                            className={`px-2 py-0.5 capitalize rounded-md transition-all cursor-pointer ${stateBorderWeight === w
+                              ? "bg-background text-foreground shadow-xs font-bold"
+                              : "text-muted-foreground hover:text-foreground"
+                              }`}
                           >
                             {w}
                           </button>
@@ -412,11 +406,10 @@ const MapContainer = ({
                           <button
                             key={t}
                             onClick={() => setStateBorderTone(t)}
-                            className={`px-1.5 py-0.5 capitalize rounded-md transition-all cursor-pointer ${
-                              stateBorderTone === t
-                                ? "bg-background text-foreground shadow-xs font-bold"
-                                : "text-muted-foreground hover:text-foreground"
-                            }`}
+                            className={`px-1.5 py-0.5 capitalize rounded-md transition-all cursor-pointer ${stateBorderTone === t
+                              ? "bg-background text-foreground shadow-xs font-bold"
+                              : "text-muted-foreground hover:text-foreground"
+                              }`}
                           >
                             {t}
                           </button>
@@ -434,14 +427,12 @@ const MapContainer = ({
                   </div>
                   <button
                     onClick={() => setShowCountyBorders(!showCountyBorders)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      showCountyBorders ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showCountyBorders ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        showCountyBorders ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showCountyBorders ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -454,11 +445,10 @@ const MapContainer = ({
                         <button
                           key={w}
                           onClick={() => setCountyBorderWeight(w)}
-                          className={`px-2 py-0.5 capitalize rounded-md transition-all cursor-pointer ${
-                            countyBorderWeight === w
-                              ? "bg-background text-foreground shadow-xs font-bold"
-                              : "text-muted-foreground hover:text-foreground"
-                          }`}
+                          className={`px-2 py-0.5 capitalize rounded-md transition-all cursor-pointer ${countyBorderWeight === w
+                            ? "bg-background text-foreground shadow-xs font-bold"
+                            : "text-muted-foreground hover:text-foreground"
+                            }`}
                         >
                           {w}
                         </button>
@@ -480,14 +470,12 @@ const MapContainer = ({
                   </div>
                   <button
                     onClick={() => setAutoZoomOnClick(!autoZoomOnClick)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      autoZoomOnClick ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${autoZoomOnClick ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        autoZoomOnClick ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${autoZoomOnClick ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -504,14 +492,12 @@ const MapContainer = ({
                         ? onToggleAutoOpenAnalytics(!effectiveAutoOpenAnalytics)
                         : setAutoOpenAnalyticsState(!effectiveAutoOpenAnalytics)
                     }
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      effectiveAutoOpenAnalytics ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${effectiveAutoOpenAnalytics ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        effectiveAutoOpenAnalytics ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${effectiveAutoOpenAnalytics ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -524,14 +510,12 @@ const MapContainer = ({
                   </div>
                   <button
                     onClick={() => setSelectedGlow(!selectedGlow)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      selectedGlow ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${selectedGlow ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        selectedGlow ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${selectedGlow ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -549,14 +533,12 @@ const MapContainer = ({
                   </div>
                   <button
                     onClick={() => setShowLegend(!showLegend)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      showLegend ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showLegend ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        showLegend ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showLegend ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -569,14 +551,12 @@ const MapContainer = ({
                   </div>
                   <button
                     onClick={() => setShowTooltip(!showTooltip)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                      showTooltip ? "bg-primary" : "bg-muted-foreground/30"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showTooltip ? "bg-primary" : "bg-muted-foreground/30"
+                      }`}
                   >
                     <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${
-                        showTooltip ? "translate-x-4" : "translate-x-0"
-                      }`}
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showTooltip ? "translate-x-4" : "translate-x-0"
+                        }`}
                     />
                   </button>
                 </div>
@@ -643,16 +623,16 @@ const MapContainer = ({
                     const countyStrokeWidth = isSelected
                       ? 0.6
                       : showCountyBorders
-                      ? countyBorderWeight === "normal"
-                        ? 0.4
-                        : 0.2
-                      : 0;
+                        ? countyBorderWeight === "normal"
+                          ? 0.4
+                          : 0.2
+                        : 0;
 
                     const countyStrokeColor = isSelected
                       ? "#000000"
                       : showCountyBorders
-                      ? "rgba(255, 255, 255, 0.35)"
-                      : "transparent";
+                        ? "rgba(255, 255, 255, 0.35)"
+                        : "transparent";
 
                     return (
                       <Geography
