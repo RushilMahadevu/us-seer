@@ -24,17 +24,17 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 md:p-10 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2.5 sm:p-6 md:p-10 animate-in fade-in duration-200">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={() => onOpenChange(false)}
       />
       {/* Container */}
-      <div className="relative z-50 w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl border border-border bg-background p-6 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="relative z-50 w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] flex flex-col rounded-xl border border-border bg-background p-3.5 sm:p-6 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-1 z-10"
+          className="absolute right-3 top-3 sm:right-4 sm:top-4 rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none p-1.5 z-10 hover:bg-accent text-muted-foreground hover:text-foreground cursor-pointer"
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>

@@ -73,10 +73,10 @@ export default function SearchModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <div className="flex flex-col -m-6 max-h-[80vh] overflow-hidden rounded-xl bg-card border border-border shadow-2xl">
+      <div className="flex flex-col -m-3.5 sm:-m-6 max-h-[85vh] sm:max-h-[80vh] overflow-hidden rounded-xl bg-card border border-border shadow-2xl">
 
         {/* Input bar */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-2.5 sm:gap-3 px-3.5 sm:px-4 py-2.5 sm:py-3 border-b border-border">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           <input
             ref={inputRef}
@@ -85,12 +85,12 @@ export default function SearchModal({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search county, state, city, or region…"
-            className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none"
+            className="flex-1 bg-transparent text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none pr-6 sm:pr-0"
           />
           {query && (
             <button
               onClick={() => setQuery("")}
-              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
               aria-label="Clear search"
             >
               <X className="h-3.5 w-3.5" />
@@ -101,30 +101,30 @@ export default function SearchModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto min-h-0">
           {query.trim() === "" ? (
-            <div className="p-4 space-y-3">
+            <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3">
               <div className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1">
                 Quick searches
               </div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {QUICK_SEARCHES.map((qs) => (
                   <button
                     key={qs.query}
                     onClick={() => setQuery(qs.query)}
-                    className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/60 hover:border-border hover:bg-accent/60 text-left transition-all group"
+                    className="flex items-center gap-2.5 p-2 sm:p-2.5 rounded-lg border border-border/60 hover:border-border hover:bg-accent/60 text-left transition-all group cursor-pointer"
                   >
-                    <div className="p-1.5 rounded-md bg-muted/60">{qs.icon}</div>
-                    <div>
-                      <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+                    <div className="p-1.5 rounded-md bg-muted/60 shrink-0">{qs.icon}</div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                         {qs.label}
                       </div>
-                      <div className="text-[10px] text-muted-foreground">{qs.sub}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{qs.sub}</div>
                     </div>
                   </button>
                 ))}
               </div>
             </div>
           ) : results.length === 0 ? (
-            <div className="flex flex-col items-center justify-center p-10 text-center text-muted-foreground gap-3">
+            <div className="flex flex-col items-center justify-center p-8 sm:p-10 text-center text-muted-foreground gap-2.5">
               <div className="p-3 rounded-full bg-muted/60">
                 <Search className="h-5 w-5 opacity-50" />
               </div>
@@ -136,14 +136,14 @@ export default function SearchModal({
               </div>
             </div>
           ) : (
-            <div className="p-2 space-y-px">
+            <div className="p-1.5 sm:p-2 space-y-px">
               {results.map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleSelect(item)}
-                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-accent transition-colors text-left group"
+                  className="w-full flex items-center justify-between px-2.5 sm:px-3 py-2 sm:py-2.5 rounded-lg hover:bg-accent transition-colors text-left group cursor-pointer"
                 >
-                  <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                     <div className="p-1.5 rounded-md bg-muted/60 border border-border/40 shrink-0">
                       {typeIcon(item.type)}
                     </div>
@@ -154,7 +154,7 @@ export default function SearchModal({
                       <div className="text-[10px] text-muted-foreground truncate">{item.subtitle}</div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 ml-3">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 ml-2">
                     {item.extraInfo && (
                       <span className="hidden sm:inline text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded border border-border/60">
                         {item.extraInfo}
@@ -172,12 +172,12 @@ export default function SearchModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-4 py-2 border-t border-border bg-muted/30 text-[10px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <Hash className="h-3 w-3" />
-            40,000+ cities · 3,100+ counties · 50 states
+        <div className="flex items-center justify-between px-3 sm:px-4 py-2 border-t border-border bg-muted/30 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 truncate">
+            <Hash className="h-3 w-3 shrink-0" />
+            <span className="truncate">40,000+ cities · 3,100+ counties</span>
           </span>
-          <kbd className="font-mono bg-background border border-border px-1.5 py-0.5 rounded text-[10px]">
+          <kbd className="hidden sm:inline-block font-mono bg-background border border-border px-1.5 py-0.5 rounded text-[10px]">
             ESC
           </kbd>
         </div>

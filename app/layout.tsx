@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-
+import { SimpleModeProvider } from "@/app/_lib/simple-mode-context";
 
 export const metadata: Metadata = {
   title: "BioMap | Biomedical & Demographic Risk Mapping Tool",
@@ -23,7 +23,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased min-h-full flex flex-col">
-        {children}
+        <SimpleModeProvider>
+          {children}
+        </SimpleModeProvider>
       </body>
     </html>
   );
