@@ -30,11 +30,13 @@ import {
   Home as HomeIcon,
   PieChart,
   Building2,
+  Scale,
 } from "lucide-react";
 
 interface SidePanelProps {
   fips: string | null;
   countyData: CountyData | null;
+  onOpenCompare?: (fipsA?: string) => void;
 }
 
 /* ── Tiny helpers ─────────────────────────────────────────────── */
@@ -117,7 +119,7 @@ function uninsuredFraction(pct: number): string {
 
 /* ── Main Component ───────────────────────────────────────────── */
 
-export default function SidePanel({ fips, countyData }: SidePanelProps) {
+export default function SidePanel({ fips, countyData, onOpenCompare }: SidePanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { isSimpleMode } = useSimpleMode();
 
@@ -129,11 +131,22 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
           <MapPin className="h-6 w-6 text-primary" />
         </div>
         <CardTitle className="text-base font-bold mb-1.5">Select a County</CardTitle>
-        <CardDescription className="max-w-[240px] text-[11px] leading-relaxed">
+        <CardDescription className="max-w-[240px] text-[11px] leading-relaxed mb-4">
           {isSimpleMode
             ? "Tap any county on the map to see what's going on there — air quality, health, and more."
             : "Click any county on the map to view health metrics, pollution levels, demographics, and infrastructure data."}
         </CardDescription>
+        {onOpenCompare && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onOpenCompare()}
+            className="text-xs font-semibold gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+          >
+            <Scale className="w-3.5 h-3.5" />
+            Compare Any 2 Counties
+          </Button>
+        )}
       </Card>
     );
   }
@@ -185,16 +198,30 @@ export default function SidePanel({ fips, countyData }: SidePanelProps) {
                   {countyData.County_Name || `County ${fips}`}
                 </CardTitle>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 rounded-lg shrink-0 text-muted-foreground hover:text-foreground hover:bg-accent"
-                onClick={() => setIsFullscreen(true)}
-                title="Expand full analytics"
-                aria-label="Open fullscreen analytics"
-              >
-                <Maximize2 className="h-3.5 w-3.5" />
-              </Button>
+              <div className="flex items-center gap-1 shrink-0">
+                {onOpenCompare && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 rounded-lg text-xs font-medium text-primary border-primary/30 hover:bg-primary/10 gap-1 cursor-pointer"
+                    onClick={() => onOpenCompare(fips)}
+                    title="Compare this county side-by-side with another"
+                  >
+                    <Scale className="h-3.5 w-3.5" />
+                    <span>Compare</span>
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent cursor-pointer"
+                  onClick={() => setIsFullscreen(true)}
+                  title="Expand full analytics"
+                  aria-label="Open fullscreen analytics"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
             <CardDescription className="text-[11px] text-muted-foreground mt-0.5">
               {isSimpleMode

@@ -1,13 +1,44 @@
 "use client";
 
-import React, { memo, useState } from "react";
+import React, { memo, useState, useRef, useEffect } from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { scaleQuantize } from "d3-scale";
 import { geoCentroid } from "d3-geo";
 import { CountyDataMap } from "@/app/_lib/types";
-import { GEO_URL, STATES_GEO_URL } from "@/app/_lib/data-utils";
+import { GEO_URL, STATES_GEO_URL, CityEntry } from "@/app/_lib/data-utils";
+import { SearchResultItem, performSearch, coordsFromFips } from "@/app/_lib/search-utils";
 import { Card } from "@/app/_components/ui/card";
-import { ZoomIn, ZoomOut, RotateCcw, MapPin, Layers, Focus, Settings, SlidersHorizontal, Eye, Zap, Sparkles, Navigation, Palette } from "lucide-react";
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Home,
+  MapPin,
+  Layers,
+  Focus,
+  Settings,
+  SlidersHorizontal,
+  Eye,
+  Zap,
+  Sparkles,
+  Navigation,
+  Palette,
+  Search,
+  X,
+  ChevronDown,
+  Check,
+  ShieldAlert,
+  Wind,
+  Activity,
+  Droplets,
+  Stethoscope,
+  Factory,
+  HeartPulse,
+  Map,
+  Building2,
+  Landmark,
+  Compass,
+} from "lucide-react";
 
 export type MapMetric =
   | "overallRisk"
@@ -22,14 +53,28 @@ export type MapMetric =
 
 interface MapContainerProps {
   data: CountyDataMap;
+  allCities?: CityEntry[];
   selectedFips: string | null;
   onSelectCounty: (fips: string) => void;
   metric: MapMetric;
+  onMetricChange?: (metric: MapMetric) => void;
   mapTarget?: { coordinates: [number, number]; zoom: number; label?: string } | null;
   onClearTarget?: () => void;
   autoOpenAnalytics?: boolean;
   onToggleAutoOpenAnalytics?: (val: boolean) => void;
 }
+
+export const METRIC_OPTIONS: { value: MapMetric; label: string; icon: React.ReactNode }[] = [
+  { value: "overallRisk", label: "Overall Vulnerability", icon: <ShieldAlert className="w-3.5 h-3.5 text-rose-400" /> },
+  { value: "pm25Avg", label: "PM2.5 Pollution", icon: <Wind className="w-3.5 h-3.5 text-amber-400" /> },
+  { value: "mortalityRate", label: "Respiratory Mortality", icon: <Activity className="w-3.5 h-3.5 text-blue-400" /> },
+  { value: "asthmaPrev", label: "Asthma Prevalence", icon: <Droplets className="w-3.5 h-3.5 text-fuchsia-400" /> },
+  { value: "copdPrev", label: "COPD Prevalence", icon: <Stethoscope className="w-3.5 h-3.5 text-teal-400" /> },
+  { value: "smokingPrev", label: "Smoking Prevalence", icon: <Activity className="w-3.5 h-3.5 text-orange-400" /> },
+  { value: "toxicReleases", label: "Toxic Releases", icon: <Factory className="w-3.5 h-3.5 text-slate-400" /> },
+  { value: "mdRate", label: "Primary Care Density", icon: <HeartPulse className="w-3.5 h-3.5 text-emerald-400" /> },
+  { value: "rucc", label: "Rural-Urban Class.", icon: <Map className="w-3.5 h-3.5 text-indigo-400" /> },
+];
 
 const METRIC_CONFIG = {
   overallRisk: {
@@ -101,7 +146,18 @@ const SELECTED_REGION_COLORS: Record<MapMetric, string> = {
   toxicReleases: "#38bdf8",   // Electric Sky Blue (pops on Slate-Navy scale)
 };
 
+function formatMetricValue(val: number | undefined, metric: MapMetric): string {
+  if (val == null) return "No Data";
+  const numStr = typeof val === "number" && val % 1 !== 0 ? val.toFixed(1) : val.toLocaleString();
+  const cfg = METRIC_CONFIG[metric];
+  if (!cfg) return numStr;
+  if (cfg.unit.includes("Index")) return numStr;
+  return `${numStr} ${cfg.unit}`;
+}
+
 const DEFAULT_CENTER: [number, number] = [-96, 38];
+const INITIAL_CENTER: [number, number] = [DEFAULT_CENTER[0] - 3, DEFAULT_CENTER[1] - 1];
+const INITIAL_ZOOM = 0.9;
 
 function isSafeUsCenter(coords: any): coords is [number, number] {
   if (!Array.isArray(coords) || coords.length !== 2) return false;
@@ -120,19 +176,29 @@ function isSafeUsCenter(coords: any): coords is [number, number] {
 
 const MapContainer = ({
   data,
+  allCities,
   selectedFips,
   onSelectCounty,
   metric,
+  onMetricChange,
   mapTarget,
   onClearTarget,
   autoOpenAnalytics,
   onToggleAutoOpenAnalytics,
 }: MapContainerProps) => {
-  const [tooltipData, setTooltipData] = useState<{ name: string; valStr: string; fips: string } | null>(null);
+  const [tooltipData, setTooltipData] = useState<{ name: string; valStr: string; color: string; fips: string } | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  const updateTooltipPos = (x: number, y: number) => {
+    if (tooltipRef.current) {
+      tooltipRef.current.style.left = `${x + 14}px`;
+      tooltipRef.current.style.top = `${y + 14}px`;
+    }
+  };
   const [lastClickedCoords, setLastClickedCoords] = useState<{ coordinates: [number, number]; label: string } | null>(null);
   const [position, setPosition] = useState<{ coordinates: [number, number]; zoom: number }>({
-    coordinates: DEFAULT_CENTER,
-    zoom: 1,
+    coordinates: INITIAL_CENTER,
+    zoom: INITIAL_ZOOM,
   });
   const [isLegendExpanded, setIsLegendExpanded] = useState(false);
   const [showStateBorders, setShowStateBorders] = useState(true);
@@ -147,6 +213,59 @@ const MapContainer = ({
   const [selectedGlow, setSelectedGlow] = useState(true);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"layers" | "interaction" | "display">("layers");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Floating On-Map Search & Metric Dropdown state
+  const [mapSearchQuery, setMapSearchQuery] = useState("");
+  const [mapSearchResults, setMapSearchResults] = useState<SearchResultItem[]>([]);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const mapSearchRef = useRef<HTMLDivElement>(null);
+
+  const [isMetricOpen, setIsMetricOpen] = useState(false);
+  const metricDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mapSearchQuery.trim()) {
+      setMapSearchResults([]);
+      return;
+    }
+    setMapSearchResults(performSearch(mapSearchQuery, data, allCities));
+  }, [mapSearchQuery, data, allCities]);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (mapSearchRef.current && !mapSearchRef.current.contains(e.target as Node)) {
+        setIsSearchOpen(false);
+      }
+      if (metricDropdownRef.current && !metricDropdownRef.current.contains(e.target as Node)) {
+        setIsMetricOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelectMapSearchResult = (result: SearchResultItem) => {
+    if (result.fips) {
+      onSelectCounty(result.fips);
+      const coords = result.coordinates ?? coordsFromFips(result.fips) ?? DEFAULT_CENTER;
+      setPosition({
+        coordinates: coords,
+        zoom: result.zoom ?? (result.type === "city" ? 4.5 : 3.8),
+      });
+      setLastClickedCoords({
+        coordinates: coords,
+        label: result.title,
+      });
+    } else if (result.coordinates) {
+      setPosition({
+        coordinates: result.coordinates,
+        zoom: result.zoom ?? 2.5,
+      });
+    }
+    setMapSearchQuery("");
+    setMapSearchResults([]);
+    setIsSearchOpen(false);
+  };
 
   const effectiveAutoOpenAnalytics = autoOpenAnalytics ?? autoOpenAnalyticsState;
 
@@ -199,20 +318,33 @@ const MapContainer = ({
     }
   };
 
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
   const handleResetZoom = () => {
-    setPosition({ coordinates: DEFAULT_CENTER, zoom: 1 });
+    setPosition({ coordinates: INITIAL_CENTER, zoom: INITIAL_ZOOM });
     if (onClearTarget) onClearTarget();
   };
 
-  const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
-    setPosition((pos) => {
-      const currentZoom = pos?.zoom || 1;
-      const newZoom = Math.min(6, Math.max(0.7, currentZoom * zoomFactor));
-      return { ...pos, zoom: newZoom };
-    });
-  };
+  useEffect(() => {
+    const el = mapContainerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
+      // Prevent browser pinch/page-level zooming
+      e.preventDefault();
+      const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+      setPosition((pos) => {
+        const currentZoom = pos?.zoom || 1;
+        const newZoom = Math.min(6, Math.max(0.7, currentZoom * zoomFactor));
+        return { ...pos, zoom: newZoom };
+      });
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => {
+      el.removeEventListener("wheel", onWheel);
+    };
+  }, []);
 
   const getStateStrokeColor = () => {
     switch (stateBorderTone) {
@@ -231,8 +363,142 @@ const MapContainer = ({
     }
   };
 
+  const isMovedFromDefault =
+    Math.abs(position.coordinates[0] - INITIAL_CENTER[0]) > 0.1 ||
+    Math.abs(position.coordinates[1] - INITIAL_CENTER[1]) > 0.1 ||
+    Math.abs(position.zoom - INITIAL_ZOOM) > 0.05;
+
   return (
     <Card className="relative w-full h-full min-h-[350px] sm:min-h-[450px] overflow-hidden border-border bg-card shadow-sm flex flex-col">
+      {/* Top Floating Map Controls Bar (Search + Metric Selector in Top-Right) */}
+      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
+        {/* On-Map County Search Bar */}
+        <div ref={mapSearchRef} className="relative pointer-events-auto w-48 sm:w-60 md:w-64">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-md transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+            <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
+            <input
+              type="text"
+              value={mapSearchQuery}
+              onChange={(e) => {
+                setMapSearchQuery(e.target.value);
+                setIsSearchOpen(true);
+              }}
+              onFocus={() => setIsSearchOpen(true)}
+              placeholder="Find county, state, city…"
+              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-w-0"
+            />
+            {mapSearchQuery ? (
+              <button
+                onClick={() => {
+                  setMapSearchQuery("");
+                  setMapSearchResults([]);
+                }}
+                className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border bg-muted/60 font-mono text-[9px] text-muted-foreground pointer-events-none select-none">
+                ⌘K
+              </kbd>
+            )}
+          </div>
+
+          {/* Search Autocomplete Results Overlay */}
+          {isSearchOpen && mapSearchQuery.trim() !== "" && (
+            <div className="absolute right-0 left-auto w-64 sm:w-72 top-full mt-1.5 bg-card/98 backdrop-blur-md border border-border rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto z-50 animate-in fade-in-50 slide-in-from-top-1 duration-150">
+              {mapSearchResults.length === 0 ? (
+                <div className="px-4 py-3 text-center text-xs text-muted-foreground">
+                  No results for &quot;{mapSearchQuery}&quot;
+                </div>
+              ) : (
+                <div className="p-1 space-y-0.5">
+                  {mapSearchResults.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => handleSelectMapSearchResult(item)}
+                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-1 rounded-md bg-muted/60 shrink-0">
+                          {item.type === "county" && <MapPin className="h-3.5 w-3.5 text-emerald-400" />}
+                          {item.type === "state" && <Landmark className="h-3.5 w-3.5 text-blue-400" />}
+                          {item.type === "city" && <Building2 className="h-3.5 w-3.5 text-amber-400" />}
+                          {item.type === "region" && <Compass className="h-3.5 w-3.5 text-purple-400" />}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                            {item.title}
+                          </div>
+                          <div className="text-[10px] text-muted-foreground truncate">{item.subtitle}</div>
+                        </div>
+                      </div>
+                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border border-border bg-muted/40 text-muted-foreground shrink-0 ml-2">
+                        {item.badge}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* On-Map Metric Selector Custom Popover */}
+        {onMetricChange && (
+          <div ref={metricDropdownRef} className="pointer-events-auto relative shrink-0">
+            <button
+              onClick={() => setIsMetricOpen((prev) => !prev)}
+              aria-label="Select Map Metric"
+              className="flex items-center justify-between gap-2 px-3 py-1.5 sm:py-2 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-md hover:bg-accent transition-all cursor-pointer w-44 sm:w-52"
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="shrink-0">
+                  {METRIC_OPTIONS.find((m) => m.value === metric)?.icon || <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
+                </div>
+                <span className="text-xs font-semibold text-foreground truncate">
+                  {METRIC_OPTIONS.find((m) => m.value === metric)?.label || "Select Layer"}
+                </span>
+              </div>
+              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-200 ${isMetricOpen ? "rotate-180" : ""}`} />
+            </button>
+
+            {/* Custom Glassmorphism Dropdown Menu */}
+            {isMetricOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-56 sm:w-64 bg-card/98 backdrop-blur-md border border-border rounded-2xl shadow-2xl overflow-hidden p-1 z-50 animate-in fade-in-50 zoom-in-95 duration-150 space-y-0.5">
+                <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 mb-1">
+                  Map Metric Layer
+                </div>
+                {METRIC_OPTIONS.map((opt) => {
+                  const isSelected = opt.value === metric;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        onMetricChange(opt.value);
+                        setIsMetricOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-primary/10 text-primary font-bold"
+                          : "hover:bg-accent text-foreground font-medium"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-1 rounded-lg bg-muted/60 shrink-0">
+                          {opt.icon}
+                        </div>
+                        <span className="text-xs truncate">{opt.label}</span>
+                      </div>
+                      {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-2" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       {/* Controls Overlay */}
       <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 flex flex-col gap-2">
         <div className="p-1 flex flex-col gap-0.5 bg-background/90 backdrop-blur-md rounded-2xl border border-border shadow-md">
@@ -264,7 +530,13 @@ const MapContainer = ({
           {/* Navigation & Focus Group */}
           <div className="flex flex-col gap-0.5">
             {[
-              { icon: RotateCcw, fn: handleResetZoom, label: "Reset View", badge: "Recenter" },
+              {
+                icon: Home,
+                fn: handleResetZoom,
+                label: "Reset View",
+                badge: isMovedFromDefault ? "Home" : "Default",
+                highlight: isMovedFromDefault,
+              },
               {
                 icon: Focus,
                 fn: handleZoomToClicked,
@@ -588,8 +860,8 @@ const MapContainer = ({
 
       {/* Map Graphic */}
       <div
+        ref={mapContainerRef}
         className="w-full h-full flex-1 relative bg-muted/20 select-none touch-pan-y"
-        onWheel={handleWheel}
       >
         <ComposableMap projection="geoAlbersUsa" className="w-full h-full">
           <ZoomableGroup
@@ -641,13 +913,17 @@ const MapContainer = ({
                         fill={isSelected ? selectedColor : fill}
                         stroke={countyStrokeColor}
                         strokeWidth={countyStrokeWidth}
-                        onMouseEnter={() => {
+                        onMouseEnter={(e) => {
                           if (showTooltip) {
-                            const displayVal =
-                              val != null
-                                ? `${typeof val === 'number' && val % 1 !== 0 ? val.toFixed(1) : val.toLocaleString()} ${config.unit}`
-                                : "No Data";
-                            setTooltipData({ name: geo.properties.name, valStr: displayVal, fips });
+                            const displayVal = formatMetricValue(val, metric);
+                            const countyColor = fill && fill !== "var(--color-muted)" ? fill : "#94a3b8";
+                            setTooltipData((prev) => (prev?.fips === fips ? prev : { name: geo.properties.name, valStr: displayVal, color: countyColor, fips }));
+                            updateTooltipPos(e.clientX, e.clientY);
+                          }
+                        }}
+                        onMouseMove={(e) => {
+                          if (showTooltip) {
+                            updateTooltipPos(e.clientX, e.clientY);
                           }
                         }}
                         onMouseLeave={() => {
@@ -657,11 +933,9 @@ const MapContainer = ({
                           if (fips) {
                             onSelectCounty(fips);
                             if (showTooltip) {
-                              const displayVal =
-                                val != null
-                                  ? `${typeof val === 'number' && val % 1 !== 0 ? val.toFixed(1) : val.toLocaleString()} ${config.unit}`
-                                  : "No Data";
-                              setTooltipData({ name: geo.properties.name, valStr: displayVal, fips });
+                              const displayVal = formatMetricValue(val, metric);
+                              const countyColor = fill && fill !== "var(--color-muted)" ? fill : "#94a3b8";
+                              setTooltipData({ name: geo.properties.name, valStr: displayVal, color: countyColor, fips });
                             }
 
                             try {
@@ -733,25 +1007,29 @@ const MapContainer = ({
         </ComposableMap>
       </div>
 
-      {/* Floating Tooltip */}
+      {/* Cursor-Following Hover Tooltip */}
       {showTooltip && tooltipData && (
-        <div className="absolute top-12 right-3 sm:top-4 sm:right-4 z-30 pointer-events-none animate-in fade-in-70 slide-in-from-top-1 duration-200">
-          <div className="flex items-start gap-2 bg-background/95 backdrop-blur-md px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border border-border shadow-lg max-w-[180px] sm:max-w-[220px]">
-            <div className="p-1 sm:p-1.5 rounded-md bg-primary/10 shrink-0 mt-0.5">
-              <MapPin className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-primary animate-bounce-short" />
-            </div>
-            <div className="min-w-0">
-              <div className="text-[11px] sm:text-xs font-bold text-foreground truncate">{tooltipData.name}</div>
-              <div className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 truncate">{config.label}</div>
-              <div className="text-xs sm:text-sm font-bold text-foreground">{tooltipData.valStr}</div>
-            </div>
-          </div>
+        <div
+          ref={tooltipRef}
+          className="fixed z-50 pointer-events-none px-2.5 py-1 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-lg text-xs flex items-center gap-2 whitespace-nowrap animate-in fade-in-50 duration-75"
+          style={{
+            left: "-9999px",
+            top: "-9999px",
+          }}
+        >
+          <span
+            className="w-2.5 h-2.5 rounded-full shrink-0 shadow-xs border border-black/20"
+            style={{ backgroundColor: tooltipData.color }}
+          />
+          <span className="font-semibold text-foreground">{tooltipData.name}</span>
+          <span className="text-muted-foreground/60">•</span>
+          <span className="font-bold text-foreground">{tooltipData.valStr}</span>
         </div>
       )}
 
-      {/* Map Legend (Top-Right on Mobile, Bottom-Left on Desktop) */}
+      {/* Map Legend (Bottom-Left on Mobile & Desktop) */}
       {showLegend && (
-        <div className="absolute top-3 right-3 sm:top-auto sm:right-auto sm:bottom-4 sm:left-4 z-20">
+        <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-20">
           <div className="hidden sm:block bg-background/92 backdrop-blur-md p-3 rounded-xl border border-border shadow-md w-56 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">

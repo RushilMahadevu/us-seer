@@ -6,6 +6,7 @@ import SidePanel from "@/app/_components/sidebar/SidePanel";
 import Header from "@/app/_components/header/Header";
 import SearchModal from "@/app/_components/search/SearchModal";
 import AnalysisView from "@/app/_components/analysis/AnalysisView";
+import CountyCompareModal from "@/app/_components/analysis/CountyCompareModal";
 import DataSourcesView from "@/app/_components/sources/DataSourcesView";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
@@ -20,6 +21,9 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [compareFipsA, setCompareFipsA] = useState<string>("48201");
+  const [compareFipsB, setCompareFipsB] = useState<string>("17031");
   const [activeView, setActiveView] = useState<"map" | "analysis" | "sources">("map");
   const [mapTarget, setMapTarget] = useState<{ coordinates: [number, number]; zoom: number; label?: string } | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -103,15 +107,21 @@ export default function Home() {
 
   const selectedCountyName = selectedFips && data?.[selectedFips] ? data[selectedFips].County_Name : null;
 
+  const handleOpenCompare = (initialA?: string) => {
+    if (initialA) {
+      setCompareFipsA(initialA);
+    }
+    setIsCompareOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-background text-foreground p-3.5 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden pt-4 sm:pt-6 pb-4 sm:pb-5">
       {/* Top Navigation & Control Header */}
       <Header
-        mapMetric={mapMetric}
-        onMetricChange={setMapMetric}
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenCompare={() => handleOpenCompare()}
         activeView={activeView}
         onViewChange={setActiveView}
       />
@@ -132,9 +142,11 @@ export default function Home() {
             <section className="flex-1 h-full min-h-0 flex flex-col">
               <MapContainer
                 data={data || {}}
+                allCities={citiesData}
                 selectedFips={selectedFips}
                 onSelectCounty={handleSelectCounty}
                 metric={mapMetric}
+                onMetricChange={setMapMetric}
                 mapTarget={mapTarget}
                 onClearTarget={() => setMapTarget(null)}
                 autoOpenAnalytics={autoOpenAnalytics}
@@ -147,6 +159,7 @@ export default function Home() {
               <SidePanel
                 fips={selectedFips}
                 countyData={selectedFips && data ? data[selectedFips] : null}
+                onOpenCompare={handleOpenCompare}
               />
             </aside>
 
@@ -192,6 +205,7 @@ export default function Home() {
                     <SidePanel
                       fips={selectedFips}
                       countyData={selectedFips && data ? data[selectedFips] : null}
+                      onOpenCompare={handleOpenCompare}
                     />
                   </div>
                 </div>
@@ -213,6 +227,17 @@ export default function Home() {
           countyData={data}
           allCities={citiesData}
           onSelectResult={handleSelectSearchResult}
+        />
+      )}
+
+      {/* Dual-County Side-by-Side Comparison Modal */}
+      {data && (
+        <CountyCompareModal
+          isOpen={isCompareOpen}
+          onClose={() => setIsCompareOpen(false)}
+          countyDataMap={data}
+          initialFipsA={compareFipsA}
+          initialFipsB={compareFipsB}
         />
       )}
     </div>

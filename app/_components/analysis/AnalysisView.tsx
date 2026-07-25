@@ -313,68 +313,61 @@ export default function AnalysisView({ data }: AnalysisViewProps) {
 
   /* ── Render ──────────────────────────────────────────────────── */
   return (
-    <div className="flex flex-col w-full h-full overflow-y-auto bg-background text-foreground">
-      {/* ── Hero banner ──────────────────────────────────────── */}
-      <div className="relative border-b border-border bg-card px-4 sm:px-6 py-4 overflow-hidden shrink-0">
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-purple-500/5 pointer-events-none" />
-        <div className="absolute -top-10 -right-10 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2 mb-1.5">
-              <Badge variant="secondary" className="text-[11px]">
-                {totalCounties.toLocaleString()} counties · {(totalPopulation / 1e6).toFixed(0)}M residents
-              </Badge>
+    <div className="flex-1 h-full overflow-y-auto space-y-5 animate-in fade-in-50 duration-300 pb-8">
+      {/* ── Hero Header Banner ──────────────────────────────────────── */}
+      <div className="relative rounded-xl border border-border bg-gradient-to-r from-card via-card/90 to-primary/5 p-4 sm:p-6 shadow-sm overflow-hidden shrink-0">
+        <div className="absolute top-0 right-0 -translate-y-6 translate-x-6 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-muted-foreground">
+                {totalCounties.toLocaleString()} Counties · {(totalPopulation / 1e6).toFixed(0)}M Residents
+              </span>
             </div>
-            <h2 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground">
               {isSimpleMode
                 ? "What does the health data tell us?"
                 : "Cardiorespiratory Environmental Health Analytics"}
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5 max-w-xl leading-relaxed">
+            </h1>
+            <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
               {isSimpleMode
                 ? "We looked at health and pollution data for every U.S. county to find out where people are most at risk — and what could help."
                 : "Academic-grade epidemiology platform computing OLS regression, population attributable risk, and counterfactual policy simulations across all U.S. counties."}
             </p>
           </div>
 
-          {/* Top-line headline stats */}
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 shrink-0">
-            <div className="text-center px-2.5 sm:px-3 py-2 rounded-xl bg-rose-500/10 border border-rose-500/20">
-              <div className="text-[10px] font-semibold text-rose-400 uppercase">
-                {isSimpleMode ? "Deaths from dirty air" : "Attr. Deaths"}
-              </div>
-              <div className="text-lg sm:text-xl font-black text-rose-400">
+          {/* Quick Metrics KPI Pill */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4 gap-2.5 shrink-0">
+            <div className="p-2.5 rounded-lg border border-border bg-background/60 backdrop-blur-xs text-center">
+              <div className="text-base sm:text-lg font-extrabold text-rose-400">
                 {attributableRisk.totalAttributableDeaths.toLocaleString()}
               </div>
-              <div className="text-[9px] sm:text-[10px] text-muted-foreground">
-                {isSimpleMode ? "per year" : `${attributableRisk.overallParPct}% of total`}
+              <div className="text-[10px] text-muted-foreground font-medium">
+                {isSimpleMode ? "Deaths / Year" : "Attr. Deaths"}
               </div>
             </div>
-            <div className="text-center px-2.5 sm:px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-              <div className="text-[10px] font-semibold text-amber-400 uppercase">
-                {isSimpleMode ? "Underserved counties" : "Health Deserts"}
+            <div className="p-2.5 rounded-lg border border-border bg-background/60 backdrop-blur-xs text-center">
+              <div className="text-base sm:text-lg font-extrabold text-amber-400">
+                {clusterCounts.doubleBurden}
               </div>
-              <div className="text-lg sm:text-xl font-black text-amber-400">{clusterCounts.doubleBurden}</div>
-              <div className="text-[9px] sm:text-[10px] text-muted-foreground">
-                {isSimpleMode ? "high pollution + few doctors" : "High hazard + low MDs"}
+              <div className="text-[10px] text-muted-foreground font-medium">
+                {isSimpleMode ? "Underserved" : "Health Deserts"}
               </div>
             </div>
-            {!isSimpleMode && (
-              <div className="text-center px-2.5 sm:px-3 py-2 rounded-xl bg-primary/10 border border-primary/20">
-                <div className="text-[10px] font-semibold text-primary uppercase">PM2.5 r</div>
-                <div className="text-lg sm:text-xl font-black text-primary">
-                  {defaultOls.correlation.toFixed(2)}
-                </div>
-                <div className="text-[9px] sm:text-[10px] text-muted-foreground">vs mortality</div>
+            <div className="p-2.5 rounded-lg border border-border bg-background/60 backdrop-blur-xs text-center">
+              <div className="text-base sm:text-lg font-extrabold text-sky-400">
+                {defaultOls.correlation.toFixed(2)}
               </div>
-            )}
-            <div className="text-center px-2.5 sm:px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-              <div className="text-[10px] font-semibold text-emerald-400 uppercase">
-                {isSimpleMode ? "High-risk counties" : "High Risk"}
+              <div className="text-[10px] text-muted-foreground font-medium">
+                {isSimpleMode ? "Correlation" : "PM2.5 r"}
               </div>
-              <div className="text-lg sm:text-xl font-black text-emerald-400">{highRiskCount.toLocaleString()}</div>
-              <div className="text-[9px] sm:text-[10px] text-muted-foreground">
-                {isSimpleMode ? "need the most help" : "counties ≥ 70 risk score"}
+            </div>
+            <div className="p-2.5 rounded-lg border border-border bg-background/60 backdrop-blur-xs text-center">
+              <div className="text-base sm:text-lg font-extrabold text-emerald-400">
+                {highRiskCount.toLocaleString()}
+              </div>
+              <div className="text-[10px] text-muted-foreground font-medium">
+                {isSimpleMode ? "High-Risk" : "High Risk (≥70)"}
               </div>
             </div>
           </div>
