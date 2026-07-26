@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { CountyData } from "@/app/_lib/types";
+import { getCountyTriSummary, getTriFacilitiesByFips } from "@/app/_lib/tri-facilities-data";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/app/_components/ui/card";
 import { Badge } from "@/app/_components/ui/badge";
 import { Button } from "@/app/_components/ui/button";
@@ -548,6 +549,59 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                   </div>
                 )}
               </div>
+
+              {/* EPA TRI Industrial Facilities breakdown card */}
+              {fips && (() => {
+                const triSummary = getCountyTriSummary(fips);
+                if (triSummary.facilityCount === 0 && (!countyData.toxicReleases || countyData.toxicReleases === 0)) return null;
+
+                return (
+                  <div className="p-3.5 rounded-xl border border-amber-500/25 bg-amber-500/5 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
+                        <Factory className="w-3.5 h-3.5" />
+                        <span>EPA TRI Industrial Facilities</span>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] font-extrabold border-amber-500/30 text-amber-500">
+                        {triSummary.facilityCount > 0 ? `${triSummary.facilityCount} Facilities` : "Industrial Point Sources"}
+                      </Badge>
+                    </div>
+
+                    {triSummary.facilityCount > 0 ? (
+                      <div className="space-y-2">
+                        {triSummary.facilities.map((fac) => (
+                          <div key={fac.id} className="p-2.5 rounded-lg border border-border/60 bg-background/80 space-y-1 text-left">
+                            <div className="flex items-start justify-between gap-1">
+                              <span className="text-[11px] font-bold text-foreground leading-snug">{fac.name}</span>
+                              <span className="text-[9px] font-extrabold text-amber-500 shrink-0">{fac.emissionsLbs.toLocaleString()} lbs/yr</span>
+                            </div>
+                            <div className="text-[9.5px] text-muted-foreground flex items-center gap-1">
+                              <span>{fac.sector}</span>
+                              <span>•</span>
+                              <span className="font-semibold text-rose-400">{fac.hazardLevel} Risk</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1 pt-0.5">
+                              {fac.primaryChemicals.slice(0, 3).map((c) => (
+                                <span key={c} className="text-[8.5px] px-1.5 py-0.2 rounded bg-muted/60 text-muted-foreground font-medium">
+                                  {c}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        <p className="text-[9.5px] text-muted-foreground flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
+                          5-mi & 10-mi population exposure zones rendered on interactive map layer.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-muted-foreground">
+                        Total annual toxic chemical releases reported: <strong className="text-foreground">{countyData.toxicReleases?.toLocaleString()} lbs</strong>.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             {/* ── INFRA ─────────────────────────────────────── */}

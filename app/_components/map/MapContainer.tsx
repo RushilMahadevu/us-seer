@@ -1,12 +1,13 @@
 "use client";
 
 import React, { memo, useState, useRef, useEffect } from "react";
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker } from "react-simple-maps";
 import { scaleQuantize } from "d3-scale";
 import { geoCentroid } from "d3-geo";
 import { CountyDataMap } from "@/app/_lib/types";
 import { GEO_URL, STATES_GEO_URL, CityEntry } from "@/app/_lib/data-utils";
 import { SearchResultItem, performSearch, coordsFromFips } from "@/app/_lib/search-utils";
+import { TRIFacility, TRI_FACILITIES } from "@/app/_lib/tri-facilities-data";
 import { Card } from "@/app/_components/ui/card";
 import {
   ZoomIn,
@@ -201,16 +202,122 @@ const MapContainer = ({
     zoom: INITIAL_ZOOM,
   });
   const [isLegendExpanded, setIsLegendExpanded] = useState(false);
+  const MAP_SETTINGS_STORAGE_KEY = "biomap_map_preferences_v1";
+
   const [showStateBorders, setShowStateBorders] = useState(true);
-  const [stateBorderWeight, setStateBorderWeight] = useState<"subtle" | "normal" | "bold">("bold");
+  const [stateBorderWeight, setStateBorderWeight] = useState<"subtle" | "normal" | "bold">("normal");
   const [stateBorderTone, setStateBorderTone] = useState<"auto" | "white" | "dark" | "accent">("auto");
   const [showCountyBorders, setShowCountyBorders] = useState(true);
-  const [countyBorderWeight, setCountyBorderWeight] = useState<"subtle" | "normal">("subtle");
-  const [autoZoomOnClick, setAutoZoomOnClick] = useState(false);
+  const [countyBorderWeight, setCountyBorderWeight] = useState<"subtle" | "normal">("normal");
+  const [autoZoomOnClick, setAutoZoomOnClick] = useState(true);
   const [autoOpenAnalyticsState, setAutoOpenAnalyticsState] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
   const [showTooltip, setShowTooltip] = useState(true);
   const [selectedGlow, setSelectedGlow] = useState(true);
+  const [showTriFacilities, setShowTriFacilities] = useState(true);
+  const [showTriBuffers, setShowTriBuffers] = useState(true);
+  const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
+  // 1. Load saved preferences from localStorage on mount
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        const saved = localStorage.getItem(MAP_SETTINGS_STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (typeof parsed.showStateBorders === "boolean") setShowStateBorders(parsed.showStateBorders);
+          if (parsed.stateBorderWeight) setStateBorderWeight(parsed.stateBorderWeight);
+          if (parsed.stateBorderTone) setStateBorderTone(parsed.stateBorderTone);
+          if (typeof parsed.showCountyBorders === "boolean") setShowCountyBorders(parsed.showCountyBorders);
+          if (parsed.countyBorderWeight) setCountyBorderWeight(parsed.countyBorderWeight);
+          if (typeof parsed.autoZoomOnClick === "boolean") setAutoZoomOnClick(parsed.autoZoomOnClick);
+          if (typeof parsed.autoOpenAnalyticsState === "boolean") setAutoOpenAnalyticsState(parsed.autoOpenAnalyticsState);
+          if (typeof parsed.selectedGlow === "boolean") setSelectedGlow(parsed.selectedGlow);
+          if (typeof parsed.showLegend === "boolean") setShowLegend(parsed.showLegend);
+          if (typeof parsed.showTooltip === "boolean") setShowTooltip(parsed.showTooltip);
+          if (typeof parsed.showTriFacilities === "boolean") setShowTriFacilities(parsed.showTriFacilities);
+          if (typeof parsed.showTriBuffers === "boolean") setShowTriBuffers(parsed.showTriBuffers);
+        }
+      }
+    } catch (err) {
+      console.error("Error restoring map settings:", err);
+    } finally {
+      setIsSettingsLoaded(true);
+    }
+  }, []);
+
+  // 2. Automatically save map settings to localStorage whenever any option changes
+  useEffect(() => {
+    if (!isSettingsLoaded) return;
+    try {
+      if (typeof window !== "undefined") {
+        const payload = {
+          showStateBorders,
+          stateBorderWeight,
+          stateBorderTone,
+          showCountyBorders,
+          countyBorderWeight,
+          autoZoomOnClick,
+          autoOpenAnalyticsState,
+          selectedGlow,
+          showLegend,
+          showTooltip,
+          showTriFacilities,
+          showTriBuffers,
+        };
+        localStorage.setItem(MAP_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+      }
+    } catch (err) {
+      console.error("Error saving map settings:", err);
+    }
+  }, [
+    isSettingsLoaded,
+    showStateBorders,
+    stateBorderWeight,
+    stateBorderTone,
+    showCountyBorders,
+    countyBorderWeight,
+    autoZoomOnClick,
+    autoOpenAnalyticsState,
+    selectedGlow,
+    showLegend,
+    showTooltip,
+    showTriFacilities,
+    showTriBuffers,
+  ]);
+
+  const handleResetSettings = () => {
+    setShowStateBorders(true);
+    setStateBorderWeight("normal");
+    setStateBorderTone("auto");
+    setShowCountyBorders(true);
+    setCountyBorderWeight("normal");
+    setAutoZoomOnClick(true);
+    setAutoOpenAnalyticsState(true);
+    setSelectedGlow(true);
+    setShowLegend(true);
+    setShowTooltip(true);
+    setShowTriFacilities(true);
+    setShowTriBuffers(true);
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.removeItem(MAP_SETTINGS_STORAGE_KEY);
+      }
+    } catch (err) {
+      console.error("Error resetting map settings:", err);
+    }
+  };
+
+  const [hoveredFacility, setHoveredFacility] = useState<TRIFacility | null>(null);
+  const facilityHoverRef = useRef<HTMLDivElement>(null);
+
+  const updateFacilityHoverPos = (x: number, y: number) => {
+    if (facilityHoverRef.current) {
+      facilityHoverRef.current.style.left = `${Math.min(window.innerWidth - 330, x + 16)}px`;
+      facilityHoverRef.current.style.top = `${Math.min(window.innerHeight - 260, y + 16)}px`;
+    }
+  };
+
   const [activeSettingsTab, setActiveSettingsTab] = useState<"layers" | "interaction" | "display">("layers");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -278,6 +385,21 @@ const MapContainer = ({
       });
     }
   }, [mapTarget]);
+
+  // Sync zoom & position when selectedFips changes via link / URL parameter / external selection
+  const lastAutoZoomedFipsRef = useRef<string | null>(null);
+  React.useEffect(() => {
+    if (selectedFips && selectedFips !== lastAutoZoomedFipsRef.current && autoZoomOnClick) {
+      lastAutoZoomedFipsRef.current = selectedFips;
+      const coords = coordsFromFips(selectedFips);
+      if (coords && isSafeUsCenter(coords)) {
+        setPosition({
+          coordinates: coords,
+          zoom: 3.8,
+        });
+      }
+    }
+  }, [selectedFips, autoZoomOnClick]);
 
   const config = METRIC_CONFIG[metric];
   const colorScale = scaleQuantize<string>().domain(config.domain).range(config.range);
@@ -478,11 +600,10 @@ const MapContainer = ({
                         onMetricChange(opt.value);
                         setIsMetricOpen(false);
                       }}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${
-                        isSelected
-                          ? "bg-primary/10 text-primary font-bold"
-                          : "hover:bg-accent text-foreground font-medium"
-                      }`}
+                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${isSelected
+                        ? "bg-primary/10 text-primary font-bold"
+                        : "hover:bg-accent text-foreground font-medium"
+                        }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="p-1 rounded-lg bg-muted/60 shrink-0">
@@ -728,34 +849,57 @@ const MapContainer = ({
                     </div>
                   </div>
                 )}
+
+                {/* EPA TRI Industrial Facility Pins Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                  <div className="flex flex-col pr-2">
+                    <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                      <Factory className="w-3 h-3 text-amber-500 shrink-0" />
+                      EPA TRI Facility Markers
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">Display spatial points for industrial point sources</span>
+                  </div>
+                  <button
+                    onClick={() => setShowTriFacilities(!showTriFacilities)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showTriFacilities ? "bg-amber-500" : "bg-muted-foreground/30"
+                      }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showTriFacilities ? "translate-x-4" : "translate-x-0"
+                        }`}
+                    />
+                  </button>
+                </div>
+
+                {/* 5-mile & 10-mile Buffer Exposure Rings Toggle */}
+                {showTriFacilities && (
+                  <div className="flex items-center justify-between pl-2 border-l-2 border-amber-500/30 ml-1 py-1">
+                    <div className="flex flex-col pr-2">
+                      <span className="text-[10px] font-semibold text-foreground">5-mi & 10-mi Buffer Rings</span>
+                      <span className="text-[8.5px] text-muted-foreground">Visualize population exposure zones</span>
+                    </div>
+                    <button
+                      onClick={() => setShowTriBuffers(!showTriBuffers)}
+                      className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showTriBuffers ? "bg-rose-500" : "bg-muted-foreground/30"
+                        }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showTriBuffers ? "translate-x-3" : "translate-x-0"
+                          }`}
+                      />
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
             {/* TAB 2: INTERACTION */}
             {activeSettingsTab === "interaction" && (
               <>
-                {/* Auto Zoom on Click */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col pr-2">
-                    <span className="text-[11px] font-semibold text-foreground">Auto-Zoom on Click</span>
-                    <span className="text-[9px] text-muted-foreground">Automatically focus & center map on selected county</span>
-                  </div>
-                  <button
-                    onClick={() => setAutoZoomOnClick(!autoZoomOnClick)}
-                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${autoZoomOnClick ? "bg-primary" : "bg-muted-foreground/30"
-                      }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${autoZoomOnClick ? "translate-x-4" : "translate-x-0"
-                        }`}
-                    />
-                  </button>
-                </div>
-
                 {/* Auto Open Analytics Panel */}
                 <div className="flex items-center justify-between pt-2 border-t border-border/40">
                   <div className="flex flex-col pr-2">
-                    <span className="text-[11px] font-semibold text-foreground">Auto-Open Analytics</span>
+                    <span className="text-[11px] font-semibold text-foreground">Auto-Open Analytics (Mobile)</span>
                     <span className="text-[9px] text-muted-foreground">Auto open analytics drawer when region is selected</span>
                   </div>
                   <button
@@ -834,6 +978,20 @@ const MapContainer = ({
                 </div>
               </>
             )}
+          </div>
+
+          {/* Footer: Auto-saved status & Reset Defaults */}
+          <div className="flex items-center justify-between pt-2.5 mt-3 border-t border-border/60 text-[10px]">
+            <div className="flex items-center gap-1.5 text-emerald-500 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>Saved to browser</span>
+            </div>
+            <button
+              onClick={handleResetSettings}
+              className="text-muted-foreground hover:text-foreground font-semibold px-2 py-0.5 rounded hover:bg-muted transition-colors cursor-pointer"
+            >
+              Reset Defaults
+            </button>
           </div>
         </div>
       )}
@@ -1002,10 +1160,172 @@ const MapContainer = ({
                   }
                 </Geographies>
               )}
+
+              {/* EPA TRI Industrial Facility Map Pins & 5-mi / 10-mi Buffer Rings */}
+              {showTriFacilities &&
+                TRI_FACILITIES.map((facility) => {
+                  const isHovered = hoveredFacility?.id === facility.id;
+                  const isSelectedCounty = selectedFips === facility.fips;
+
+                  return (
+                    <Marker key={facility.id} coordinates={facility.coordinates}>
+                      {/* Interactive Buffer Circles (5-mile High Exposure & 10-mile Moderate Exposure Zones) */}
+                      {showTriBuffers && (
+                        <g className="pointer-events-none">
+                          {/* 10-mile Moderate Exposure Buffer Ring */}
+                          <circle
+                            r={17}
+                            fill="rgba(245, 158, 11, 0.12)"
+                            stroke="rgba(245, 158, 11, 0.65)"
+                            strokeWidth={0.8}
+                            strokeDasharray="3 3"
+                            className="transition-all duration-300"
+                          />
+                          {/* 5-mile High Exposure Buffer Ring */}
+                          <circle
+                            r={8.5}
+                            fill="rgba(239, 68, 68, 0.22)"
+                            stroke="rgba(239, 68, 68, 0.85)"
+                            strokeWidth={1.2}
+                            className="transition-all duration-300"
+                          />
+                        </g>
+                      )}
+
+                      {/* Interactive Pin Marker Graphic */}
+                      <g
+                        className="cursor-pointer group"
+                        onMouseEnter={(e) => {
+                          setHoveredFacility(facility);
+                          updateFacilityHoverPos(e.clientX, e.clientY);
+                        }}
+                        onMouseMove={(e) => {
+                          updateFacilityHoverPos(e.clientX, e.clientY);
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredFacility(null);
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectCounty(facility.fips);
+                          setPosition({
+                            coordinates: facility.coordinates,
+                            zoom: 4.2,
+                          });
+                          setLastClickedCoords({
+                            coordinates: facility.coordinates,
+                            label: facility.name,
+                          });
+                        }}
+                      >
+                        {/* Outer Glow Halo ring on Hover or County Selected */}
+                        {(isHovered || isSelectedCounty) && (
+                          <circle
+                            r={9}
+                            fill="none"
+                            stroke={facility.hazardLevel === "Critical" ? "#ef4444" : facility.hazardLevel === "High" ? "#f97316" : "#eab308"}
+                            strokeWidth={1.5}
+                            className="animate-ping opacity-75"
+                          />
+                        )}
+                        {/* Base Circle Pin */}
+                        <circle
+                          r={5.5}
+                          fill="#090d16"
+                          stroke={facility.hazardLevel === "Critical" ? "#ef4444" : facility.hazardLevel === "High" ? "#f97316" : "#eab308"}
+                          strokeWidth={1.8}
+                          className="transition-transform duration-200 group-hover:scale-125"
+                        />
+                        {/* Inner Core Dot */}
+                        <circle
+                          r={2.8}
+                          fill={facility.hazardLevel === "Critical" ? "#ef4444" : facility.hazardLevel === "High" ? "#f97316" : "#eab308"}
+                        />
+                      </g>
+                    </Marker>
+                  );
+                })}
             </g>
           </ZoomableGroup>
         </ComposableMap>
       </div>
+
+      {/* EPA TRI Facility Hover Card */}
+      {hoveredFacility && (
+        <div
+          ref={facilityHoverRef}
+          className="fixed z-50 pointer-events-none w-72 sm:w-80 p-3.5 bg-slate-950/95 backdrop-blur-xl rounded-2xl border border-amber-500/30 shadow-2xl text-slate-100 animate-in fade-in-50 zoom-in-95 duration-150 space-y-2.5"
+          style={{
+            left: "-9999px",
+            top: "-9999px",
+          }}
+        >
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2 border-b border-slate-800 pb-2">
+            <div className="min-w-0 pr-1">
+              <div className="flex items-center gap-1.5 text-amber-400 font-bold text-xs">
+                <Factory className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate">{hoveredFacility.name}</span>
+              </div>
+              <p className="text-[10px] text-slate-400 truncate mt-0.5">
+                {hoveredFacility.city}, {hoveredFacility.state} • {hoveredFacility.sector}
+              </p>
+            </div>
+            <span
+              className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full border shrink-0 ${hoveredFacility.hazardLevel === "Critical"
+                ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
+                : hoveredFacility.hazardLevel === "High"
+                  ? "bg-orange-500/20 text-orange-300 border-orange-500/40"
+                  : "bg-amber-500/20 text-amber-300 border-amber-500/40"
+                }`}
+            >
+              {hoveredFacility.hazardLevel} Risk
+            </span>
+          </div>
+
+          {/* Emissions Gauge */}
+          <div className="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] font-semibold text-slate-400">
+              <span>Annual Toxic Releases</span>
+              <span className="text-amber-400 font-extrabold text-xs">
+                {hoveredFacility.emissionsLbs.toLocaleString()} lbs/yr
+              </span>
+            </div>
+            <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500"
+                style={{ width: `${Math.min(100, (hoveredFacility.emissionsLbs / 10000000) * 100)}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Primary Toxic Chemicals */}
+          <div>
+            <div className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+              Primary Toxic Chemicals Released
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {hoveredFacility.primaryChemicals.map((chem) => (
+                <span
+                  key={chem}
+                  className="text-[9.5px] font-medium px-2 py-0.5 rounded-md bg-slate-900 border border-slate-800 text-slate-300"
+                >
+                  {chem}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Buffer Ring Exposure Zone Status */}
+          <div className="flex items-center justify-between pt-1 border-t border-slate-800/60 text-[9.5px] text-slate-400">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping shrink-0" />
+              5-mi & 10-mi Exposure Zone Active
+            </span>
+            <span className="text-amber-400 font-semibold">Click pin to focus</span>
+          </div>
+        </div>
+      )}
 
       {/* Cursor-Following Hover Tooltip */}
       {showTooltip && tooltipData && (
