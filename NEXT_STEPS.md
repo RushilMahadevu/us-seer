@@ -40,11 +40,13 @@ graph TD
   - Generates policy briefs containing executive findings, indicator scorecard matrix, EconML causal policy simulation estimates (lives saved / healthcare savings), relative deltas, and data source citations.
   - Interactive document preview with paper theme toggle (Light/Dark paper) and plain text markdown copy to clipboard.
 
-### 3️⃣ URL Query Parameter Synchronization & Shareable Bookmarks
-* **Current State**: Refreshing the browser or sharing a URL resets the map, clearing selected county, active metric, and search state.
-* **What's Needed**:
-  - Sync UI state with Next.js `useSearchParams` and `useRouter` (`/map?fips=06037&metric=pm25&view=analysis`).
-  - Copy-to-clipboard "Share Link" button with toast notification so users can send exact map views to colleagues.
+### 3️⃣ URL Query Parameter Synchronization & Shareable Bookmarks ✅ **COMPLETED**
+* **Current State**: Fully synchronized URL query parameter state engine supporting shareable deep links and instant map views.
+* **Key Features**:
+  - Bidirectional UI state sync with Next.js `useSearchParams`, `usePathname`, and `useRouter` supporting `/map?fips=06037&metric=pm25&view=analysis` and `/` query parameters.
+  - Automatic map coordinate resolution & auto-centering on initial load for shared FIPS parameters (`coordsFromFips`).
+  - Copy-to-clipboard **"Share"** button in header toolbar with glassmorphic toast notification feedback (`Toast.tsx`).
+  - Full browser back/forward history navigation support via `popstate` event listeners and `<Suspense>` boundary wrapping.
 
 ### 4️⃣ EPA TRI Industrial Facility Map Pins & Buffer Rings (`MapContainer.tsx`)
 * **Current State**: Facilities are listed as text in `SidePanel`, but not displayed as spatial points on the map.

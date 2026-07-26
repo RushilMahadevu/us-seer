@@ -12,6 +12,7 @@ import {
   CirclePile,
   Scale,
   FileText,
+  Share2,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -22,6 +23,7 @@ interface HeaderProps {
   onOpenSearch?: () => void;
   onOpenCompare?: () => void;
   onOpenExporter?: () => void;
+  onShareLink?: () => void;
   activeView: "map" | "analysis" | "sources";
   onViewChange: (view: "map" | "analysis" | "sources") => void;
 }
@@ -31,6 +33,7 @@ export default function Header({
   onToggleDarkMode,
   onOpenCompare,
   onOpenExporter,
+  onShareLink,
   activeView,
   onViewChange,
 }: HeaderProps) {
@@ -100,6 +103,20 @@ export default function Header({
           >
             <Scale className="h-3.5 w-3.5 shrink-0" />
             <span className="hidden md:inline">Compare</span>
+          </button>
+        )}
+
+        {/* Share Link Button */}
+        {onShareLink && (
+          <button
+            onClick={onShareLink}
+            id="header-share-btn"
+            className="cursor-pointer flex items-center justify-center gap-1.5 h-8 sm:h-9 px-2.5 sm:px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-semibold text-blue-400 transition-all duration-150 shadow-2xs active:scale-97"
+            aria-label="Share bookmark link"
+            title="Copy shareable link with current map view, county, and metric state"
+          >
+            <Share2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden sm:inline">Share</span>
           </button>
         )}
 
