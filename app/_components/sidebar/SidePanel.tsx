@@ -8,8 +8,9 @@ import { Badge } from "@/app/_components/ui/badge";
 import { Button } from "@/app/_components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/app/_components/ui/tabs";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "@/app/_components/ui/dialog";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer } from "recharts";
+import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer, ReferenceLine } from "recharts";
 import { useSimpleMode } from "@/app/_lib/simple-mode-context";
+import { TemporalYear, getCountyHistory, getMetricDelta, CountyYearHistoryPoint, TEMPORAL_EVENTS } from "@/app/_lib/temporal-data";
 import {
   Users,
   Cigarette,
@@ -40,6 +41,8 @@ interface SidePanelProps {
   countyData: CountyData | null;
   onOpenCompare?: (fipsA?: string) => void;
   onOpenExporter?: (fipsA?: string) => void;
+  selectedYear?: TemporalYear;
+  onYearChange?: (year: TemporalYear) => void;
 }
 
 /* ── Tiny helpers ─────────────────────────────────────────────── */
@@ -122,9 +125,10 @@ function uninsuredFraction(pct: number): string {
 
 /* ── Main Component ───────────────────────────────────────────── */
 
-export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExporter }: SidePanelProps) {
+export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExporter, selectedYear, onYearChange }: SidePanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { isSimpleMode } = useSimpleMode();
+  const [trendMetric, setTrendMetric] = useState<"pm25Avg" | "mortalityRate" | "toxicReleases" | "overallRisk">("pm25Avg");
 
   /* Empty state */
   if (!fips || !countyData) {
@@ -248,16 +252,19 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
           {/* ── Tabs bar ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 pt-2.5 pb-2 shrink-0">
             <TabsList className="flex items-center w-full h-8.5 bg-muted/60 p-0.5 rounded-lg overflow-x-auto scrollbar-none gap-0.5">
-              <TabsTrigger value="overview" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="overview" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
                 {isSimpleMode ? "Summary" : "Overview"}
               </TabsTrigger>
-              <TabsTrigger value="demographics" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="trends" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
+                Trends
+              </TabsTrigger>
+              <TabsTrigger value="demographics" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
                 {isSimpleMode ? "People" : "Census"}
               </TabsTrigger>
-              <TabsTrigger value="health" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="health" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
                 Health
               </TabsTrigger>
-              <TabsTrigger value="care" className="flex-1 min-w-[65px] text-[11px] rounded-md px-2 py-1 cursor-pointer">
+              <TabsTrigger value="care" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
                 {isSimpleMode ? "Doctors" : "Infra"}
               </TabsTrigger>
             </TabsList>
@@ -604,7 +611,191 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
               })()}
             </TabsContent>
 
-            {/* ── INFRA ─────────────────────────────────────── */}
+            {/* ── TRENDS (2018–2024 TIME-SERIES) ────────────────── */}
+            <TabsContent value="trends" className="space-y-3 mt-0">
+              {(() => {
+                const history = fips && countyData ? getCountyHistory(countyData, fips) : [];
+                const trendDelta = history.length > 0 ? getMetricDelta(history, trendMetric) : null;
+
+                if (!history.length) return null;
+
+                return (
+                  <>
+                    {/* Metric Selector Pills */}
+                    <div className="flex items-center justify-between gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
+                      <button
+                        onClick={() => setTrendMetric("pm25Avg")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
+                          trendMetric === "pm25Avg"
+                            ? "bg-amber-500 text-black shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        PM2.5 Air
+                      </button>
+                      <button
+                        onClick={() => setTrendMetric("mortalityRate")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
+                          trendMetric === "mortalityRate"
+                            ? "bg-blue-500 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Mortality
+                      </button>
+                      <button
+                        onClick={() => setTrendMetric("toxicReleases")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
+                          trendMetric === "toxicReleases"
+                            ? "bg-slate-700 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Toxics
+                      </button>
+                      <button
+                        onClick={() => setTrendMetric("overallRisk")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
+                          trendMetric === "overallRisk"
+                            ? "bg-purple-600 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Risk
+                      </button>
+                    </div>
+
+                    {/* 2018–2024 Recharts Line Chart Card */}
+                    <div className="p-3 rounded-xl border border-border bg-background/80 space-y-2">
+                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                          <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                          <span>2018–2024 Annual Trend</span>
+                        </div>
+                        <Badge variant="outline" className="font-mono text-[9.5px]">
+                          {trendMetric === "pm25Avg"
+                            ? "µg/m³"
+                            : trendMetric === "mortalityRate"
+                            ? "/ 100k"
+                            : trendMetric === "toxicReleases"
+                            ? "lbs/yr"
+                            : "Index"}
+                        </Badge>
+                      </div>
+
+                      <div className="h-44 w-full pt-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={history}
+                            onClick={(e) => {
+                              const activePayload = (e as any)?.activePayload;
+                              if (activePayload?.[0] && onYearChange) {
+                                onYearChange(activePayload[0].payload.year as TemporalYear);
+                              }
+                            }}
+                          >
+                            <XAxis dataKey="year" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} width={35} />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (!active || !payload || !payload.length) return null;
+                                const dataPt = payload[0].payload as CountyYearHistoryPoint;
+                                return (
+                                  <div className="p-2 rounded-xl bg-card border border-border shadow-xl text-xs space-y-1">
+                                    <div className="font-mono font-bold text-foreground flex items-center justify-between gap-3">
+                                      <span>Year {dataPt.year}</span>
+                                      {dataPt.eventEmoji && <span>{dataPt.eventEmoji}</span>}
+                                    </div>
+                                    <div className="text-primary font-extrabold">
+                                      {dataPt[trendMetric].toLocaleString()}{" "}
+                                      <span className="text-[9px] text-muted-foreground">
+                                        {trendMetric === "pm25Avg" ? "µg/m³" : trendMetric === "mortalityRate" ? "/100k" : "lbs"}
+                                      </span>
+                                    </div>
+                                    {dataPt.eventTitle && (
+                                      <p className="text-[9.5px] text-amber-500 font-semibold">{dataPt.eventTitle}</p>
+                                    )}
+                                    <p className="text-[8.5px] text-muted-foreground italic">Click point to select year on map</p>
+                                  </div>
+                                );
+                              }}
+                            />
+                            {selectedYear && (
+                              <ReferenceLine
+                                x={selectedYear}
+                                stroke="#f59e0b"
+                                strokeDasharray="3 3"
+                                strokeWidth={1.5}
+                              />
+                            )}
+                            <Line
+                              type="monotone"
+                              dataKey={trendMetric}
+                              stroke={
+                                trendMetric === "pm25Avg"
+                                  ? "#f59e0b"
+                                  : trendMetric === "mortalityRate"
+                                  ? "#3b82f6"
+                                  : trendMetric === "toxicReleases"
+                                  ? "#64748b"
+                                  : "#8b5cf6"
+                              }
+                              strokeWidth={2.5}
+                              dot={{ r: 4, strokeWidth: 1 }}
+                              activeDot={{ r: 7, strokeWidth: 2, fill: "#f59e0b" }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <p className="text-[9.5px] text-muted-foreground text-center italic">
+                        💡 Click any data point above to switch map snapshot year.
+                      </p>
+                    </div>
+
+                    {/* 6-Year Change Summary Stat Box */}
+                    {trendDelta && (
+                      <div className="p-3 rounded-xl border border-border bg-background/70 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                            6-Year Delta (2018 vs 2024)
+                          </span>
+                          <Badge
+                            variant={trendDelta.isImprovement ? "outline" : "destructive"}
+                            className={`text-[10px] font-bold ${
+                              trendDelta.isImprovement
+                                ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
+                                : ""
+                            }`}
+                          >
+                            {trendDelta.pctChange <= 0 ? "📉" : "📈"} {trendDelta.pctChange}%
+                          </Badge>
+                        </div>
+
+                        <div className="flex items-baseline justify-between pt-1">
+                          <div>
+                            <div className="text-[10px] text-muted-foreground">2018 Baseline</div>
+                            <div className="text-sm font-bold text-foreground">{trendDelta.startVal}</div>
+                          </div>
+                          <div className="text-center font-mono text-xs text-muted-foreground">→</div>
+                          <div className="text-right">
+                            <div className="text-[10px] text-muted-foreground">2024 Target</div>
+                            <div className="text-sm font-bold text-foreground">{trendDelta.endVal}</div>
+                          </div>
+                        </div>
+
+                        {isSimpleMode && (
+                          <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-1.5">
+                            {trendDelta.isImprovement
+                              ? `Overall, this indicator improved by ${Math.abs(trendDelta.pctChange)}% between 2018 and 2024. 🟢`
+                              : `This indicator increased by ${trendDelta.pctChange}% between 2018 and 2024. 🔴`}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </TabsContent>
             <TabsContent value="care" className="space-y-3">
               {isSimpleMode && (
                 <p className="text-[11px] text-muted-foreground leading-relaxed px-0.5">

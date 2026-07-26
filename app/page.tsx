@@ -14,6 +14,7 @@ import Toast from "@/app/_components/ui/Toast";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
+import { TemporalYear, AVAILABLE_YEARS } from "@/app/_lib/temporal-data";
 import { useSimpleMode } from "@/app/_lib/simple-mode-context";
 import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract } from "lucide-react";
 
@@ -49,6 +50,7 @@ function BioMapMain() {
   const [citiesData, setCitiesData] = useState<CityEntry[]>([]);
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
   const [mapMetric, setMapMetric] = useState<MapMetric>("overallRisk");
+  const [selectedYear, setSelectedYear] = useState<TemporalYear>(2024);
   const [isLoading, setIsLoading] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -76,12 +78,19 @@ function BioMapMain() {
     const fipsParam = searchParams.get("fips");
     const metricParam = searchParams.get("metric");
     const viewParam = searchParams.get("view");
+    const yearParam = searchParams.get("year");
 
     if (metricParam) {
       setMapMetric(normalizeMetric(metricParam));
     }
     if (viewParam) {
       setActiveView(normalizeView(viewParam));
+    }
+    if (yearParam) {
+      const yr = Number(yearParam);
+      if (AVAILABLE_YEARS.includes(yr as any)) {
+        setSelectedYear(yr as TemporalYear);
+      }
     }
     if (fipsParam) {
       setSelectedFips(fipsParam);
@@ -98,7 +107,7 @@ function BioMapMain() {
 
   // Sync state back to URL search params
   const updateUrlParams = useCallback(
-    (fips: string | null, metric: MapMetric, view: "map" | "analysis" | "sources") => {
+    (fips: string | null, metric: MapMetric, view: "map" | "analysis" | "sources", year: TemporalYear) => {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
 
@@ -120,6 +129,12 @@ function BioMapMain() {
         params.delete("view");
       }
 
+      if (year && year !== 2024) {
+        params.set("year", String(year));
+      } else {
+        params.delete("year");
+      }
+
       const queryString = params.toString();
       const currentBasePath = pathname === "/map" ? "/map" : "/";
       const newUrl = queryString ? `${currentBasePath}?${queryString}` : currentBasePath;
@@ -129,8 +144,8 @@ function BioMapMain() {
   );
 
   useEffect(() => {
-    updateUrlParams(selectedFips, mapMetric, activeView);
-  }, [selectedFips, mapMetric, activeView, updateUrlParams]);
+    updateUrlParams(selectedFips, mapMetric, activeView, selectedYear);
+  }, [selectedFips, mapMetric, activeView, selectedYear, updateUrlParams]);
 
   // Handle browser back/forward buttons (popstate)
   useEffect(() => {
@@ -187,9 +202,14 @@ function BioMapMain() {
 
   // Open mobile drawer when a county is selected on smaller screens if autoOpenAnalytics is enabled
   const handleSelectCounty = (fips: string) => {
-    setSelectedFips(fips);
-    if (autoOpenAnalytics && window.innerWidth < 768) {
-      setIsMobileDrawerOpen(true);
+    if (selectedFips === fips) {
+      setSelectedFips(null);
+      setIsMobileDrawerOpen(false);
+    } else {
+      setSelectedFips(fips);
+      if (autoOpenAnalytics && window.innerWidth < 768) {
+        setIsMobileDrawerOpen(true);
+      }
     }
   };
 
@@ -332,6 +352,8 @@ function BioMapMain() {
                 onClearTarget={() => setMapTarget(null)}
                 autoOpenAnalytics={autoOpenAnalytics}
                 onToggleAutoOpenAnalytics={setAutoOpenAnalytics}
+                selectedYear={selectedYear}
+                onYearChange={setSelectedYear}
               />
             </section>
 
@@ -342,6 +364,8 @@ function BioMapMain() {
                 countyData={selectedFips && data ? data[selectedFips] : null}
                 onOpenCompare={handleOpenCompare}
                 onOpenExporter={handleOpenExporter}
+                selectedYear={selectedYear}
+                onYearChange={setSelectedYear}
               />
             </aside>
 
@@ -389,6 +413,8 @@ function BioMapMain() {
                       countyData={selectedFips && data ? data[selectedFips] : null}
                       onOpenCompare={handleOpenCompare}
                       onOpenExporter={handleOpenExporter}
+                      selectedYear={selectedYear}
+                      onYearChange={setSelectedYear}
                     />
                   </div>
                 </div>

@@ -8,6 +8,8 @@ import { CountyDataMap } from "@/app/_lib/types";
 import { GEO_URL, STATES_GEO_URL, CityEntry } from "@/app/_lib/data-utils";
 import { SearchResultItem, performSearch, coordsFromFips } from "@/app/_lib/search-utils";
 import { TRIFacility, TRI_FACILITIES } from "@/app/_lib/tri-facilities-data";
+import { TemporalYear, getCountyDataForYear } from "@/app/_lib/temporal-data";
+import TemporalScrubber from "@/app/_components/map/TemporalScrubber";
 import { Card } from "@/app/_components/ui/card";
 import {
   ZoomIn,
@@ -63,6 +65,8 @@ interface MapContainerProps {
   onClearTarget?: () => void;
   autoOpenAnalytics?: boolean;
   onToggleAutoOpenAnalytics?: (val: boolean) => void;
+  selectedYear?: TemporalYear;
+  onYearChange?: (year: TemporalYear) => void;
 }
 
 export const METRIC_OPTIONS: { value: MapMetric; label: string; icon: React.ReactNode }[] = [
@@ -186,7 +190,13 @@ const MapContainer = ({
   onClearTarget,
   autoOpenAnalytics,
   onToggleAutoOpenAnalytics,
+  selectedYear,
+  onYearChange,
 }: MapContainerProps) => {
+  const effectiveData = React.useMemo(() => {
+    return selectedYear ? getCountyDataForYear(data, selectedYear) : data;
+  }, [data, selectedYear]);
+
   const [tooltipData, setTooltipData] = useState<{ name: string; valStr: string; color: string; fips: string } | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
@@ -492,134 +502,142 @@ const MapContainer = ({
 
   return (
     <Card className="relative w-full h-full min-h-[350px] sm:min-h-[450px] overflow-hidden border-border bg-card shadow-sm flex flex-col">
-      {/* Top Floating Map Controls Bar (Search + Metric Selector in Top-Right) */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 flex flex-col sm:flex-row items-end sm:items-center gap-1.5 sm:gap-2 pointer-events-none">
-        {/* On-Map County Search Bar */}
-        <div ref={mapSearchRef} className="relative pointer-events-auto w-48 sm:w-60 md:w-64">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-md transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
-            <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
-            <input
-              type="text"
-              value={mapSearchQuery}
-              onChange={(e) => {
-                setMapSearchQuery(e.target.value);
-                setIsSearchOpen(true);
+      {/* ─── Top-Center: Search Bar ─── */}
+      <div
+        ref={mapSearchRef}
+        className="absolute top-3 sm:top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-auto w-56 sm:w-72 md:w-80"
+      >
+        <div className="flex items-center gap-2 px-3 py-1.5 sm:py-2 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-md transition-all focus-within:ring-2 focus-within:ring-primary/40 focus-within:border-primary">
+          <Search className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <input
+            type="text"
+            value={mapSearchQuery}
+            onChange={(e) => {
+              setMapSearchQuery(e.target.value);
+              setIsSearchOpen(true);
+            }}
+            onFocus={() => setIsSearchOpen(true)}
+            placeholder="Find county, state, city…"
+            className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-w-0"
+          />
+          {mapSearchQuery ? (
+            <button
+              onClick={() => {
+                setMapSearchQuery("");
+                setMapSearchResults([]);
               }}
-              onFocus={() => setIsSearchOpen(true)}
-              placeholder="Find county, state, city…"
-              className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground/60 focus:outline-none min-w-0"
-            />
-            {mapSearchQuery ? (
-              <button
-                onClick={() => {
-                  setMapSearchQuery("");
-                  setMapSearchResults([]);
-                }}
-                className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border bg-muted/60 font-mono text-[9px] text-muted-foreground pointer-events-none select-none">
-                ⌘K
-              </kbd>
-            )}
-          </div>
-
-          {/* Search Autocomplete Results Overlay */}
-          {isSearchOpen && mapSearchQuery.trim() !== "" && (
-            <div className="absolute right-0 left-auto w-64 sm:w-72 top-full mt-1.5 bg-card/98 backdrop-blur-md border border-border rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto z-50 animate-in fade-in-50 slide-in-from-top-1 duration-150">
-              {mapSearchResults.length === 0 ? (
-                <div className="px-4 py-3 text-center text-xs text-muted-foreground">
-                  No results for &quot;{mapSearchQuery}&quot;
-                </div>
-              ) : (
-                <div className="p-1 space-y-0.5">
-                  {mapSearchResults.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => handleSelectMapSearchResult(item)}
-                      className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-1 rounded-md bg-muted/60 shrink-0">
-                          {item.type === "county" && <MapPin className="h-3.5 w-3.5 text-emerald-400" />}
-                          {item.type === "state" && <Landmark className="h-3.5 w-3.5 text-blue-400" />}
-                          {item.type === "city" && <Building2 className="h-3.5 w-3.5 text-amber-400" />}
-                          {item.type === "region" && <Compass className="h-3.5 w-3.5 text-purple-400" />}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                            {item.title}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground truncate">{item.subtitle}</div>
-                        </div>
-                      </div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border border-border bg-muted/40 text-muted-foreground shrink-0 ml-2">
-                        {item.badge}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+              className="p-0.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded border border-border bg-muted/60 font-mono text-[9px] text-muted-foreground pointer-events-none select-none">
+              ⌘K
+            </kbd>
           )}
         </div>
 
-        {/* On-Map Metric Selector Custom Popover */}
-        {onMetricChange && (
-          <div ref={metricDropdownRef} className="pointer-events-auto relative shrink-0">
-            <button
-              onClick={() => setIsMetricOpen((prev) => !prev)}
-              aria-label="Select Map Metric"
-              className="flex items-center justify-between gap-2 px-3 py-1.5 sm:py-2 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-md hover:bg-accent transition-all cursor-pointer w-44 sm:w-52"
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="shrink-0">
-                  {METRIC_OPTIONS.find((m) => m.value === metric)?.icon || <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
-                </div>
-                <span className="text-xs font-semibold text-foreground truncate">
-                  {METRIC_OPTIONS.find((m) => m.value === metric)?.label || "Select Layer"}
-                </span>
+        {/* Search Autocomplete Results Overlay */}
+        {isSearchOpen && mapSearchQuery.trim() !== "" && (
+          <div className="absolute left-1/2 -translate-x-1/2 w-64 sm:w-80 top-full mt-1.5 bg-card/98 backdrop-blur-md border border-border rounded-xl shadow-2xl overflow-hidden max-h-64 overflow-y-auto z-50 animate-in fade-in-50 slide-in-from-top-1 duration-150">
+            {mapSearchResults.length === 0 ? (
+              <div className="px-4 py-3 text-center text-xs text-muted-foreground">
+                No results for &quot;{mapSearchQuery}&quot;
               </div>
-              <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-200 ${isMetricOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {/* Custom Glassmorphism Dropdown Menu */}
-            {isMetricOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-56 sm:w-64 bg-card/98 backdrop-blur-md border border-border rounded-2xl shadow-2xl overflow-hidden p-1 z-50 animate-in fade-in-50 zoom-in-95 duration-150 space-y-0.5">
-                <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 mb-1">
-                  Map Metric Layer
-                </div>
-                {METRIC_OPTIONS.map((opt) => {
-                  const isSelected = opt.value === metric;
-                  return (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        onMetricChange(opt.value);
-                        setIsMetricOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${isSelected
-                        ? "bg-primary/10 text-primary font-bold"
-                        : "hover:bg-accent text-foreground font-medium"
-                        }`}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="p-1 rounded-lg bg-muted/60 shrink-0">
-                          {opt.icon}
-                        </div>
-                        <span className="text-xs truncate">{opt.label}</span>
+            ) : (
+              <div className="p-1 space-y-0.5">
+                {mapSearchResults.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleSelectMapSearchResult(item)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left group cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-1 rounded-md bg-muted/60 shrink-0">
+                        {item.type === "county" && <MapPin className="h-3.5 w-3.5 text-emerald-400" />}
+                        {item.type === "state" && <Landmark className="h-3.5 w-3.5 text-blue-400" />}
+                        {item.type === "city" && <Building2 className="h-3.5 w-3.5 text-amber-400" />}
+                        {item.type === "region" && <Compass className="h-3.5 w-3.5 text-purple-400" />}
                       </div>
-                      {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-2" />}
-                    </button>
-                  );
-                })}
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                          {item.title}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground truncate">{item.subtitle}</div>
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border border-border bg-muted/40 text-muted-foreground shrink-0 ml-2">
+                      {item.badge}
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* ─── Top-Right: Metric Selector ─── */}
+      {onMetricChange && (
+        <div
+          ref={metricDropdownRef}
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 pointer-events-auto"
+        >
+          <button
+            onClick={() => setIsMetricOpen((prev) => !prev)}
+            aria-label="Select Map Metric"
+            className="flex items-center justify-between gap-2 px-3 py-1.5 sm:py-2 bg-background/95 backdrop-blur-md rounded-xl border border-border shadow-md hover:bg-accent transition-all cursor-pointer w-44 sm:w-52"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <div className="shrink-0">
+                {METRIC_OPTIONS.find((m) => m.value === metric)?.icon || <ShieldAlert className="w-3.5 h-3.5 text-primary" />}
+              </div>
+              <span className="text-xs font-semibold text-foreground truncate">
+                {METRIC_OPTIONS.find((m) => m.value === metric)?.label || "Select Layer"}
+              </span>
+            </div>
+            <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-transform duration-200 ${isMetricOpen ? "rotate-180" : ""}`} />
+          </button>
+
+          {isMetricOpen && (
+            <div className="absolute right-0 top-full mt-1.5 w-56 sm:w-64 bg-card/98 backdrop-blur-md border border-border rounded-2xl shadow-2xl overflow-hidden p-1 z-50 animate-in fade-in-50 zoom-in-95 duration-150 space-y-0.5">
+              <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border/50 mb-1">
+                Map Metric Layer
+              </div>
+              {METRIC_OPTIONS.map((opt) => {
+                const isSelected = opt.value === metric;
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => {
+                      onMetricChange(opt.value);
+                      setIsMetricOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-2.5 py-2 rounded-xl text-left transition-colors cursor-pointer ${isSelected ? "bg-primary/10 text-primary font-bold" : "hover:bg-accent text-foreground font-medium"
+                      }`}
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="p-1 rounded-lg bg-muted/60 shrink-0">{opt.icon}</div>
+                      <span className="text-xs truncate">{opt.label}</span>
+                    </div>
+                    {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-2" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Bottom-Right: Temporal Scrubber ─── */}
+      {selectedYear && onYearChange && (
+        <div className="absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20">
+          <TemporalScrubber
+            selectedYear={selectedYear}
+            onYearChange={onYearChange}
+          />
+        </div>
+      )}
       {/* Controls Overlay */}
       <div className="absolute top-3 left-3 sm:top-4 sm:left-4 z-10 flex flex-col gap-2">
         <div className="p-1 flex flex-col gap-0.5 bg-background/90 backdrop-blur-md rounded-2xl border border-border shadow-md">
@@ -996,25 +1014,6 @@ const MapContainer = ({
         </div>
       )}
 
-      {/* Location target badge — right side, above legend */}
-      {mapTarget?.label && (
-        <div className="absolute bottom-16 sm:bottom-20 right-3 sm:right-4 z-10 animate-in fade-in-50 slide-in-from-right-2 duration-200">
-          <div className="flex items-center gap-1.5 bg-primary/90 text-primary-foreground backdrop-blur-md px-2.5 py-1.5 rounded-lg shadow-md text-[11px] font-semibold">
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate max-w-[130px] sm:max-w-[160px]">{mapTarget.label}</span>
-            {onClearTarget && (
-              <button
-                onClick={onClearTarget}
-                className="ml-0.5 rounded p-0.5 hover:bg-white/20 transition-colors cursor-pointer"
-                aria-label="Clear target"
-              >
-                <RotateCcw className="h-2.5 w-2.5" />
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
 
       {/* Map Graphic */}
       <div
@@ -1043,7 +1042,7 @@ const MapContainer = ({
                 {({ geographies }) =>
                   geographies.map((geo) => {
                     const fips = geo.id;
-                    const countyData = data[fips];
+                    const countyData = effectiveData[fips];
                     const isSelected = selectedFips === fips;
                     const val = countyData ? countyData[metric] : undefined;
                     const fill = val != null ? colorScale(val) : "var(--color-muted)";
@@ -1354,7 +1353,9 @@ const MapContainer = ({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-1.5">
                 <Layers className="h-3 w-3 text-primary animate-pulse" />
-                <span className="text-[10px] font-semibold text-foreground">{config.label}</span>
+                <span className="text-[10px] font-semibold text-foreground">
+                  {config.label} {selectedYear ? `(${selectedYear})` : ""}
+                </span>
               </div>
               <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground border border-border/60 bg-muted/40 px-1.5 py-0.5 rounded">
                 {config.unit}
@@ -1407,6 +1408,7 @@ const MapContainer = ({
           </div>
         </div>
       )}
+
     </Card>
   );
 };
