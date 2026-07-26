@@ -55,12 +55,13 @@ import {
   Map,
   X,
   ChevronRight,
-  ArrowLeft,
   Maximize2,
 } from "lucide-react";
 
 interface AnalysisViewProps {
   data: CountyDataMap;
+  onOpenExporter?: (fipsA?: string) => void;
+  selectedFips?: string | null;
 }
 
 /* ── Metric options for Research Lab ─────────────────────────── */
@@ -180,7 +181,7 @@ function PolicySlider({
 }
 
 /* ── Main AnalysisView ───────────────────────────────────────── */
-export default function AnalysisView({ data }: AnalysisViewProps) {
+export default function AnalysisView({ data, onOpenExporter, selectedFips }: AnalysisViewProps) {
   const [activeTab, setActiveTab] = useState<"impact" | "lab" | "simulator" | "equity">("impact");
   const [mobileModalTab, setMobileModalTab] = useState<"impact" | "lab" | "simulator" | "equity" | null>(null);
   const { isSimpleMode } = useSimpleMode();
@@ -311,6 +312,21 @@ export default function AnalysisView({ data }: AnalysisViewProps) {
   const xMeta = METRIC_OPTIONS.find((m) => m.key === xAxisKey)!;
   const yMeta = METRIC_OPTIONS.find((m) => m.key === yAxisKey)!;
 
+  /* Highest-risk county as default export target when no county is selected on map */
+  const topRiskFips = useMemo(() => {
+    let best: string | null = null;
+    let bestRisk = -Infinity;
+    Object.entries(data).forEach(([fips, c]) => {
+      const r = c.overallRisk ?? 0;
+      if (r > bestRisk) { bestRisk = r; best = fips; }
+    });
+    return best ?? "48201";
+  }, [data]);
+
+  /* Resolved export FIPS: prefer the map-selected county, fall back to highest-risk */
+  const exportFips = selectedFips ?? topRiskFips;
+  const exportCountyName = data[exportFips]?.County_Name ?? exportFips;;
+
   /* ── Render ──────────────────────────────────────────────────── */
   return (
     <div className="flex-1 h-full overflow-y-auto space-y-5 animate-in fade-in-50 duration-300 pb-8">
@@ -323,6 +339,16 @@ export default function AnalysisView({ data }: AnalysisViewProps) {
               <span className="text-[11px] text-muted-foreground">
                 {totalCounties.toLocaleString()} Counties · {(totalPopulation / 1e6).toFixed(0)}M Residents
               </span>
+              {onOpenExporter && (
+                <button
+                  onClick={() => onOpenExporter(exportFips)}
+                  className="cursor-pointer px-2.5 py-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-500 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs"
+                  title={`Export PDF brief for ${exportCountyName}`}
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Export: {exportCountyName}</span>
+                </button>
+              )}
             </div>
             <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-foreground">
               {isSimpleMode

@@ -37,6 +37,7 @@ import {
   Sparkles,
   Layers,
   MapPin,
+  FileText,
 } from "lucide-react";
 
 interface CountyCompareModalProps {
@@ -45,6 +46,7 @@ interface CountyCompareModalProps {
   countyDataMap: CountyDataMap;
   initialFipsA?: string | null;
   initialFipsB?: string | null;
+  onOpenExporter?: (fipsA?: string, fipsB?: string) => void;
 }
 
 // Preset popular county comparison pairings
@@ -325,6 +327,7 @@ export default function CountyCompareModal({
   countyDataMap,
   initialFipsA = "48201", // Harris County, TX
   initialFipsB = "17031", // Cook County, IL
+  onOpenExporter,
 }: CountyCompareModalProps) {
   const { isSimpleMode } = useSimpleMode();
 
@@ -419,13 +422,27 @@ export default function CountyCompareModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
-              aria-label="Close modal"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onOpenExporter && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenExporter(fipsA, fipsB)}
+                  className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 cursor-pointer shadow-2xs"
+                  title="Export side-by-side comparative policy brief to PDF"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Export Brief (PDF)</span>
+                </Button>
+              )}
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                aria-label="Close modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Quick Presets Bar */}

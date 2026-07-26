@@ -1,6 +1,22 @@
 import type { Metadata } from "next";
+import { DM_Sans, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SimpleModeProvider } from "@/app/_lib/simple-mode-context";
+
+const fontSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
+const fontSerif = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+});
+
+const fontMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+});
 
 export const metadata: Metadata = {
   title: "BioMap | Biomedical & Demographic Risk Mapping Tool",
@@ -22,7 +38,7 @@ export default function RootLayout({
           src="https://tweakcn.com/live-preview.min.js"
         />
       </head>
-      <body className="antialiased min-h-full flex flex-col">
+      <body className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} font-sans antialiased min-h-full flex flex-col`}>
         <SimpleModeProvider>
           {children}
         </SimpleModeProvider>

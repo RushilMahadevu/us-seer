@@ -31,12 +31,14 @@ import {
   PieChart,
   Building2,
   Scale,
+  FileText,
 } from "lucide-react";
 
 interface SidePanelProps {
   fips: string | null;
   countyData: CountyData | null;
   onOpenCompare?: (fipsA?: string) => void;
+  onOpenExporter?: (fipsA?: string) => void;
 }
 
 /* ── Tiny helpers ─────────────────────────────────────────────── */
@@ -119,7 +121,7 @@ function uninsuredFraction(pct: number): string {
 
 /* ── Main Component ───────────────────────────────────────────── */
 
-export default function SidePanel({ fips, countyData, onOpenCompare }: SidePanelProps) {
+export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExporter }: SidePanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { isSimpleMode } = useSimpleMode();
 
@@ -199,6 +201,18 @@ export default function SidePanel({ fips, countyData, onOpenCompare }: SidePanel
                 </CardTitle>
               </div>
               <div className="flex items-center gap-1 shrink-0">
+                {onOpenExporter && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 px-2 rounded-lg text-xs font-medium text-emerald-500 border-emerald-500/30 hover:bg-emerald-500/10 gap-1 cursor-pointer"
+                    onClick={() => onOpenExporter(fips)}
+                    title="Export PDF executive summary for this county"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>PDF</span>
+                  </Button>
+                )}
                 {onOpenCompare && (
                   <Button
                     variant="outline"

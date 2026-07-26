@@ -35,9 +35,9 @@
   --sidebar-accent-foreground: oklch(0.2178 0 0);
   --sidebar-border: oklch(0.8986 0.0258 97.1423);
   --sidebar-ring: oklch(0.7414 0.0738 84.5946);
-  --font-sans: Inter, -apple-system, sans-serif;
-  --font-serif: Georgia, serif;
-  --font-mono: JetBrains Mono, monospace;
+  --font-sans: var(--font-sans), Montserrat, -apple-system, sans-serif;
+  --font-serif: var(--font-serif), "Playfair Display", Georgia, serif;
+  --font-mono: var(--font-mono), "Fira Code", monospace;
   --radius: 0.75rem;
   --shadow-x: 0px;
   --shadow-y: 8px;
@@ -206,5 +206,77 @@
   .scrollbar-none {
     -ms-overflow-style: none;
     scrollbar-width: none;
+  }
+}
+
+/* Printable PDF Document Styles */
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 20mm;
+  }
+
+  /* Hide everything except the report */
+  body * {
+    visibility: hidden !important;
+  }
+
+  .no-print,
+  nav,
+  header,
+  aside,
+  button,
+  [role="dialog"] > div:first-child {
+    display: none !important;
+  }
+
+  #printable-report,
+  #printable-report * {
+    visibility: visible !important;
+  }
+
+  /* Reset the report container for print */
+  #printable-report {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    font-size: 10.5pt !important;
+    overflow: visible !important;
+    /* Allow natural multi-page flow */
+  }
+
+  /* Page break helpers */
+  .print-break-before {
+    break-before: page !important;
+  }
+
+  .print-no-break {
+    break-inside: avoid !important;
+  }
+
+  /* Tables: keep thead with first row on same page */
+  table {
+    break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tr {
+    break-inside: avoid !important;
+  }
+
+  /* Avoid orphaned section headings */
+  h1, h2, h3 {
+    break-after: avoid !important;
   }
 }

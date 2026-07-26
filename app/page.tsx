@@ -7,13 +7,16 @@ import Header from "@/app/_components/header/Header";
 import SearchModal from "@/app/_components/search/SearchModal";
 import AnalysisView from "@/app/_components/analysis/AnalysisView";
 import CountyCompareModal from "@/app/_components/analysis/CountyCompareModal";
+import ReportExporter, { ReportMode } from "@/app/_components/ui/ReportExporter";
 import DataSourcesView from "@/app/_components/sources/DataSourcesView";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
-import { Loader2, BarChart2, X, ChevronUp } from "lucide-react";
+import { useSimpleMode } from "@/app/_lib/simple-mode-context";
+import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract } from "lucide-react";
 
 export default function Home() {
+  const { isSimpleMode, toggleSimpleMode } = useSimpleMode();
   const [data, setData] = useState<CountyDataMap | null>(null);
   const [citiesData, setCitiesData] = useState<CityEntry[]>([]);
   const [selectedFips, setSelectedFips] = useState<string | null>(null);
@@ -24,6 +27,12 @@ export default function Home() {
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [compareFipsA, setCompareFipsA] = useState<string>("48201");
   const [compareFipsB, setCompareFipsB] = useState<string>("17031");
+
+  // Report Exporter state
+  const [isExporterOpen, setIsExporterOpen] = useState(false);
+  const [exporterFipsA, setExporterFipsA] = useState<string>("48201");
+  const [exporterFipsB, setExporterFipsB] = useState<string>("17031");
+  const [exporterMode, setExporterMode] = useState<ReportMode>("single");
   const [activeView, setActiveView] = useState<"map" | "analysis" | "sources">("map");
   const [mapTarget, setMapTarget] = useState<{ coordinates: [number, number]; zoom: number; label?: string } | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
@@ -114,6 +123,24 @@ export default function Home() {
     setIsCompareOpen(true);
   };
 
+  const handleOpenExporter = (fipsA?: string, fipsB?: string) => {
+    if (fipsB) {
+      setExporterFipsA(fipsA || "48201");
+      setExporterFipsB(fipsB);
+      setExporterMode("compare");
+    } else if (fipsA) {
+      setExporterFipsA(fipsA);
+      setExporterMode("single");
+    } else if (selectedFips) {
+      setExporterFipsA(selectedFips);
+      setExporterMode("single");
+    } else {
+      setExporterFipsA("48201");
+      setExporterMode("single");
+    }
+    setIsExporterOpen(true);
+  };
+
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-background text-foreground p-3.5 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden pt-4 sm:pt-6 pb-4 sm:pb-5">
       {/* Top Navigation & Control Header */}
@@ -122,6 +149,7 @@ export default function Home() {
         onToggleDarkMode={handleToggleDarkMode}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenCompare={() => handleOpenCompare()}
+        onOpenExporter={() => handleOpenExporter()}
         activeView={activeView}
         onViewChange={setActiveView}
       />
@@ -160,6 +188,7 @@ export default function Home() {
                 fips={selectedFips}
                 countyData={selectedFips && data ? data[selectedFips] : null}
                 onOpenCompare={handleOpenCompare}
+                onOpenExporter={handleOpenExporter}
               />
             </aside>
 
@@ -176,7 +205,7 @@ export default function Home() {
               </button>
             )}
 
-            {/* Mobile Sheet / Bottom Drawer Overlay */}
+            {/* Mobile Drawer */}
             {isMobileDrawerOpen && (
               <div className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-xs flex flex-col justify-end animate-in fade-in duration-200">
                 <div
@@ -206,6 +235,7 @@ export default function Home() {
                       fips={selectedFips}
                       countyData={selectedFips && data ? data[selectedFips] : null}
                       onOpenCompare={handleOpenCompare}
+                      onOpenExporter={handleOpenExporter}
                     />
                   </div>
                 </div>
@@ -213,7 +243,11 @@ export default function Home() {
             )}
           </div>
         ) : activeView === "analysis" ? (
-          <AnalysisView data={data || {}} />
+          <AnalysisView
+            data={data || {}}
+            onOpenExporter={handleOpenExporter}
+            selectedFips={selectedFips}
+          />
         ) : (
           <DataSourcesView />
         )}
@@ -238,8 +272,47 @@ export default function Home() {
           countyDataMap={data}
           initialFipsA={compareFipsA}
           initialFipsB={compareFipsB}
+          onOpenExporter={handleOpenExporter}
         />
       )}
+
+      {/* PDF & Executive Summary Exporter Modal */}
+      {data && (
+        <ReportExporter
+          isOpen={isExporterOpen}
+          onClose={() => setIsExporterOpen(false)}
+          countyDataMap={data}
+          initialFipsA={exporterFipsA}
+          initialFipsB={exporterFipsB}
+          initialMode={exporterMode}
+        />
+      )}
+
+      {/* Floating Bottom-Right Simplify Mode Toggle Widget */}
+      <button
+        id="floating-simple-mode-btn"
+        onClick={toggleSimpleMode}
+        title={isSimpleMode ? "Switch to standard detailed mode" : "Switch to Simplify mode (plain English summary)"}
+        aria-label="Toggle Simplify mode"
+        className={`fixed bottom-5 right-5 z-40 group cursor-pointer flex items-center gap-2.5 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-300 shadow-xl backdrop-blur-xl active:scale-95 hover:scale-105 ${isSimpleMode
+          ? "bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/10 border-amber-500/50 text-amber-400 shadow-amber-500/15 ring-1 ring-amber-500/30"
+          : "bg-card/90 border-border/80 text-muted-foreground hover:text-foreground hover:bg-card hover:border-primary/40 hover:shadow-primary/10"
+          }`}
+      >
+        <span
+          className={`w-2 h-2 rounded-full transition-all duration-300 ${isSimpleMode
+            ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse"
+            : "bg-muted-foreground/40 group-hover:bg-primary/70"
+            }`}
+        />
+        <SquaresSubtract
+          className={`w-4 h-4 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 ${isSimpleMode ? "text-amber-400" : "text-muted-foreground group-hover:text-primary"
+            }`}
+        />
+        <span className="select-none tracking-tight">
+          {isSimpleMode ? "Simplified" : "Simplify"}
+        </span>
+      </button>
     </div>
   );
 }

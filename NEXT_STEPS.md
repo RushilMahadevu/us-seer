@@ -33,12 +33,12 @@ graph TD
   - Risk factor Radar Chart (`Recharts`) comparing baseline vulnerabilities.
   - Relative risk delta calculation (e.g., *"County A has 42% higher toxic releases and 1.8x higher mortality than County B"*).
 
-### 2️⃣ PDF & Executive Summary Exporter (`/app/_components/ui/ReportExporter.tsx`)
-* **Current State**: No way to export or save data.
-* **What's Needed**:
-  - 1-click **"Export County Health Profile"** button producing a formatted 1-page PDF/PNG.
-  - Generates a print-ready report containing the county map thumbnail, metric scorecard, policy simulation estimates (lives saved/economic savings), and data source citations.
-  - Enables community members to hand physical reports to city council members or teachers.
+### 2️⃣ PDF & Executive Summary Exporter (`/app/_components/ui/ReportExporter.tsx`) ✅ **COMPLETED**
+* **Current State**: Fully operational interactive PDF/Report Exporter supporting single county health profiles and dual-county comparative policy briefs.
+* **Key Features**:
+  - 1-click **"Export PDF"** button producing print-ready, high-resolution vector PDF policy reports (`window.print()` + `@media print`).
+  - Generates policy briefs containing executive findings, indicator scorecard matrix, EconML causal policy simulation estimates (lives saved / healthcare savings), relative deltas, and data source citations.
+  - Interactive document preview with paper theme toggle (Light/Dark paper) and plain text markdown copy to clipboard.
 
 ### 3️⃣ URL Query Parameter Synchronization & Shareable Bookmarks
 * **Current State**: Refreshing the browser or sharing a URL resets the map, clearing selected county, active metric, and search state.
