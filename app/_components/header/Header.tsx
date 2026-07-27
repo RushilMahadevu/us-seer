@@ -15,7 +15,7 @@ import {
   Share2,
   Menu,
   X,
-  Sparkles,
+  SquaresSubtract
 } from "lucide-react";
 
 interface HeaderProps {
@@ -97,22 +97,6 @@ export default function Header({
 
       {/* Desktop Quick Tools (Hidden on Mobile) */}
       <div className="hidden md:flex items-center gap-2 shrink-0">
-        {/* Simplify Mode Toggle */}
-        {onToggleSimpleMode && (
-          <button
-            onClick={onToggleSimpleMode}
-            id="header-simplify-btn"
-            className={`cursor-pointer flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border text-xs font-semibold transition-all duration-150 shadow-2xs active:scale-97 ${
-              isSimpleMode
-                ? "bg-amber-500/15 border-amber-500/40 text-amber-400"
-                : "bg-muted/40 border-border text-muted-foreground hover:text-foreground hover:bg-muted"
-            }`}
-            title={isSimpleMode ? "Switch to standard detailed mode" : "Switch to Simplify mode (plain English summary)"}
-          >
-            <Sparkles className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-            <span>{isSimpleMode ? "Simplified" : "Simplify"}</span>
-          </button>
-        )}
 
         {/* PDF Exporter Button */}
         {onOpenExporter && (
@@ -239,13 +223,12 @@ export default function Header({
                     onToggleSimpleMode();
                     setMobileMenuOpen(false);
                   }}
-                  className={`cursor-pointer flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border active:scale-98 transition-all ${
-                    isSimpleMode
-                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                      : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
-                  }`}
+                  className={`cursor-pointer flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border active:scale-98 transition-all ${isSimpleMode
+                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                    : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
+                    }`}
                 >
-                  <Sparkles className="h-4 w-4 text-amber-400" />
+                  <SquaresSubtract className="h-4 w-4 text-amber-400" />
                   <span>{isSimpleMode ? "Simplified Mode (Active)" : "Simplify Mode"}</span>
                 </button>
               )}

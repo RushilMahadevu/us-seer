@@ -625,41 +625,37 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                     <div className="flex items-center justify-between gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
                       <button
                         onClick={() => setTrendMetric("pm25Avg")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
-                          trendMetric === "pm25Avg"
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "pm25Avg"
                             ? "bg-amber-500 text-black shadow-xs"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         PM2.5 Air
                       </button>
                       <button
                         onClick={() => setTrendMetric("mortalityRate")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
-                          trendMetric === "mortalityRate"
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "mortalityRate"
                             ? "bg-blue-500 text-white shadow-xs"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         Mortality
                       </button>
                       <button
                         onClick={() => setTrendMetric("toxicReleases")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
-                          trendMetric === "toxicReleases"
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "toxicReleases"
                             ? "bg-slate-700 text-white shadow-xs"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         Toxics
                       </button>
                       <button
                         onClick={() => setTrendMetric("overallRisk")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${
-                          trendMetric === "overallRisk"
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "overallRisk"
                             ? "bg-purple-600 text-white shadow-xs"
                             : "text-muted-foreground hover:text-foreground"
-                        }`}
+                          }`}
                       >
                         Risk
                       </button>
@@ -676,10 +672,10 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                           {trendMetric === "pm25Avg"
                             ? "µg/m³"
                             : trendMetric === "mortalityRate"
-                            ? "/ 100k"
-                            : trendMetric === "toxicReleases"
-                            ? "lbs/yr"
-                            : "Index"}
+                              ? "/ 100k"
+                              : trendMetric === "toxicReleases"
+                                ? "lbs/yr"
+                                : "Index"}
                         </Badge>
                       </div>
 
@@ -735,10 +731,10 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                                 trendMetric === "pm25Avg"
                                   ? "#f59e0b"
                                   : trendMetric === "mortalityRate"
-                                  ? "#3b82f6"
-                                  : trendMetric === "toxicReleases"
-                                  ? "#64748b"
-                                  : "#8b5cf6"
+                                    ? "#3b82f6"
+                                    : trendMetric === "toxicReleases"
+                                      ? "#64748b"
+                                      : "#8b5cf6"
                               }
                               strokeWidth={2.5}
                               dot={{ r: 4, strokeWidth: 1 }}
@@ -761,11 +757,10 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                           </span>
                           <Badge
                             variant={trendDelta.isImprovement ? "outline" : "destructive"}
-                            className={`text-[10px] font-bold ${
-                              trendDelta.isImprovement
+                            className={`text-[10px] font-bold ${trendDelta.isImprovement
                                 ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
                                 : ""
-                            }`}
+                              }`}
                           >
                             {trendDelta.pctChange <= 0 ? "📉" : "📈"} {trendDelta.pctChange}%
                           </Badge>
