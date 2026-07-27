@@ -73,7 +73,7 @@ const DATA_SOURCES: DataSourceItem[] = [
       { name: "Total Respiratory Deaths", code: "deaths", unit: "deaths" },
     ],
     contribution:
-      "Serves as the primary epidemiological health endpoint across BioMap. Enables evaluating respiratory disease mortality burden for all U.S. counties.",
+      "Serves as the primary epidemiological health endpoint across US-SEER. Enables evaluating respiratory disease mortality burden for all U.S. counties.",
     whyItMatters:
       "Mortality data grounds ambient air quality observations in hard public health outcomes, revealing where environmental hazards manifest in preventable loss of life.",
     joinKey: "5-Digit County FIPS Code",
@@ -119,7 +119,7 @@ const DATA_SOURCES: DataSourceItem[] = [
       { name: "Smoking Prevalence", code: "smokingPrev", unit: "%" },
     ],
     contribution:
-      "CRITICAL CONFOUNDER CONTROL: Smoking is the primary behavioral confounder in respiratory epidemiology. PLACES allows BioMap to control for smoking rates.",
+      "CRITICAL CONFOUNDER CONTROL: Smoking is the primary behavioral confounder in respiratory epidemiology. PLACES allows US-SEER to control for smoking rates.",
     whyItMatters:
       "Without controlling for local smoking rates, critics can argue respiratory mortality is driven by tobacco, not air pollution. Controlling for smoking isolates the true PM2.5 attributable risk.",
     joinKey: "LocationID (5-Digit FIPS Code)",
@@ -226,9 +226,9 @@ const DATA_SOURCES: DataSourceItem[] = [
     icon: <Map className="w-5 h-5 text-indigo-400" />,
   },
   {
-    id: "biomap-ovi",
-    name: "BioMap Overall Vulnerability Index",
-    agency: "BioMap Spatial Analytics Engine (Derived Composite)",
+    id: "seer-ovi",
+    name: "US-SEER Overall Vulnerability Index",
+    agency: "US-SEER Spatial Analytics Engine (Derived Composite)",
     category: "derived",
     status: "active",
     tier: "Integrated",
@@ -331,7 +331,7 @@ const DATA_SOURCES: DataSourceItem[] = [
       { name: "Arsenic Detection", code: "p01000", unit: "µg/L" },
     ],
     contribution:
-      "Extends BioMap from air quality research to cumulative multi-media environmental burden analysis.",
+      "Extends US-SEER from air quality research to cumulative multi-media environmental burden analysis.",
     whyItMatters:
       "Evaluating compound exposures (poor air quality + contaminated groundwater) represents the cutting edge of modern environmental epidemiology.",
     joinKey: "County Hydrologic Unit Code (HUC) / FIPS",
@@ -445,7 +445,7 @@ export default function DataSourcesView() {
               Data Sources
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              BioMap integrates 11 federal databases across all 3,142 U.S. counties, combining environmental exposures, health outcomes, and socioeconomic controls.
+              US-SEER integrates 11 federal databases across all 3,142 U.S. counties, combining environmental exposures, health outcomes, and socioeconomic controls.
             </p>
           </div>
 
@@ -586,7 +586,7 @@ export default function DataSourcesView() {
                   <div className="flex items-center gap-1.5 shrink-0">
                     {source.status === "active" ? (
                       <Badge className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-semibold px-2 py-0.5">
-                        Active in BioMap
+                        Active in US-SEER
                       </Badge>
                     ) : (
                       <Badge className="bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-semibold px-2 py-0.5">

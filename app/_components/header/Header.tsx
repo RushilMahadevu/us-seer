@@ -45,9 +45,19 @@ export default function Header({
         <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
           <HeartPulse className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary" aria-hidden="true" />
         </div>
-        <h1 className="text-xs sm:text-sm font-bold tracking-tight text-foreground leading-none">
-          BioMap
-        </h1>
+        <div className="flex flex-col justify-center">
+          <div className="flex items-center gap-1.5">
+            <h1 className="text-xs sm:text-sm font-bold tracking-tight text-foreground leading-none">
+              US-SEER
+            </h1>
+            <span className="hidden md:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold rounded bg-primary/10 text-primary border border-primary/20 leading-none">
+              National Index
+            </span>
+          </div>
+          <p className="hidden sm:block text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
+            US Spatial Environmental Exposure & Respiratory Risk Index
+          </p>
+        </div>
       </div>
 
       {/* Center Cluster: View Switcher */}

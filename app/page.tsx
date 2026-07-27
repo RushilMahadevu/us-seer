@@ -41,7 +41,7 @@ function normalizeView(param: string | null): "map" | "analysis" | "sources" {
   return "map";
 }
 
-function BioMapMain() {
+function USSEERMain() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { isSimpleMode, toggleSimpleMode } = useSimpleMode();
@@ -513,11 +513,11 @@ export default function Home() {
       fallback={
         <div className="w-full h-screen flex flex-col items-center justify-center bg-background text-foreground gap-3">
           <Loader2 className="h-7 w-7 text-primary animate-spin" />
-          <p className="text-xs font-semibold text-muted-foreground">Initializing BioMap Engine…</p>
+          <p className="text-xs font-semibold text-muted-foreground">Initializing US-SEER Engine…</p>
         </div>
       }
     >
-      <BioMapMain />
+      <USSEERMain />
     </Suspense>
   );
 }

@@ -212,7 +212,7 @@ const MapContainer = ({
     zoom: INITIAL_ZOOM,
   });
   const [isLegendExpanded, setIsLegendExpanded] = useState(false);
-  const MAP_SETTINGS_STORAGE_KEY = "biomap_map_preferences_v1";
+  const MAP_SETTINGS_STORAGE_KEY = "us_seer_map_preferences_v1";
 
   const [showStateBorders, setShowStateBorders] = useState(true);
   const [stateBorderWeight, setStateBorderWeight] = useState<"subtle" | "normal" | "bold">("normal");

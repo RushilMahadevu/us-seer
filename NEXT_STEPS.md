@@ -1,6 +1,6 @@
-# 🛠️ BioMap: Core App Features & Technical Requirements
+# 🛠️ US-SEER: Core App Features & Technical Requirements
 
-> **Platform Goal**: BioMap is an advanced environmental epidemiology & spatial analytics engine connecting multi-source federal databases (EPA, CDC WONDER, NASA FIRMS, US Census) with machine learning and causal inference to quantify environmental injustice and project health policy outcomes across 3,100+ U.S. counties.
+> **Platform Goal**: **US-SEER** (*US Spatial Environmental Exposure & Respiratory Risk Index*) is an advanced environmental epidemiology & spatial analytics engine connecting multi-source federal databases (EPA, CDC WONDER, NASA FIRMS, US Census) with machine learning and causal inference to quantify environmental injustice and project health policy outcomes across 3,100+ U.S. counties.
 
 ---
 
@@ -16,7 +16,7 @@ Below is the definitive breakdown of what the core frontend and backend app need
 
 ```mermaid
 graph TD
-    App[BioMap Core Next.js App] --> F1[1. Side-by-Side County Comparison]
+    App[US-SEER Core Next.js App] --> F1[1. Side-by-Side County Comparison]
     App --> F2[2. PDF & Image Report Exporter]
     App --> F3[3. URL Query State & Share Links]
     App --> F4[4. Industrial Facility Map Markers & Buffer Rings]
@@ -128,13 +128,13 @@ flowchart TD
 
 ---
 
-## ✍️ How to Frame BioMap in College Applications
+## ✍️ How to Frame US-SEER in College Applications
 
 ### Common App Activities List (150 Characters)
-> **Lead Researcher & Developer, BioMap** | Built ML spatial epidemiology engine merging CDC/EPA/NASA data across 3,100+ counties. 1,000+ users, published policy briefs used by regional EJ groups.
+> **Lead Researcher & Architect, US-SEER** | Built national spatial epidemiology platform merging CDC, EPA, & Census data across 3,142 U.S. counties. 1,000+ users.
 
 ### College Essay Hook Angle
-> *"When I plotted PM2.5 concentrations against CDC respiratory mortality rates, the highest-risk counties were not random. They traced freeway corridors and industrial valleys in low-income zip codes. BioMap was born from a simple question: Can we use causal machine learning and spatial data to prove environmental injustice and give vulnerable communities the data to fight back?"*
+> *"When I plotted PM2.5 concentrations against CDC respiratory mortality rates, the highest-risk counties were not random. They traced freeway corridors and industrial valleys in low-income zip codes. US-SEER was born from a simple question: Can we use causal machine learning and spatial data to prove environmental injustice and give vulnerable communities the data to fight back?"*
 
 ---
-*Document updated on July 25, 2026 for BioMap Core App Features & Technical Roadmap.*
+*Document updated for US-SEER Core App Features & Technical Roadmap.*

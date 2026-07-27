@@ -19,9 +19,9 @@ const fontMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BioMap | Biomedical & Demographic Risk Mapping Tool",
+  title: "US-SEER | US Spatial Environmental Exposure & Respiratory Risk Index",
   description:
-    "Explore environmental hazards, public health risk metrics, pollution data, and demographic analytics across all U.S. counties.",
+    "National spatial epidemiology platform mapping ambient air quality, toxic industrial releases, CDC respiratory mortality, and demographic vulnerability across all 3,142 U.S. counties.",
 };
 
 export default function RootLayout({
