@@ -280,3 +280,13 @@
     break-after: avoid !important;
   }
 }
+
+/* Hardware-Accelerated Smooth Map Camera Transition */
+.rsm-zoomable-group {
+  transition: transform 550ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.map-dragging .rsm-zoomable-group {
+  transition: none !important;
+}

@@ -319,6 +319,8 @@ function USSEERMain() {
       <Header
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
+        isSimpleMode={isSimpleMode}
+        onToggleSimpleMode={toggleSimpleMode}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenCompare={() => handleOpenCompare()}
         onOpenExporter={() => handleOpenExporter()}
@@ -373,11 +375,11 @@ function USSEERMain() {
             {selectedFips && (
               <button
                 onClick={() => setIsMobileDrawerOpen(true)}
-                className="md:hidden absolute bottom-4 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4.5 py-2.5 rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-2xl active:scale-95 transition-all duration-300 animate-in fade-in-50 slide-in-from-bottom-3 hover:scale-105"
+                className="md:hidden absolute bottom-3 left-3 z-30 flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-2xl active:scale-95 transition-all duration-300 animate-in fade-in-50 slide-in-from-bottom-3 hover:scale-105"
                 aria-label="View county analytics"
               >
                 <BarChart2 className="w-4 h-4 animate-pulse" />
-                <span>{selectedCountyName ? `${selectedCountyName} Analytics` : "View Details"}</span>
+                <span>{selectedCountyName ? `${selectedCountyName}` : "Analytics"}</span>
                 <ChevronUp className="w-4 h-4 ml-0.5" />
               </button>
             )}
@@ -475,13 +477,13 @@ function USSEERMain() {
         onClose={() => setToastOpen(false)}
       />
 
-      {/* Floating Bottom-Right Simplify Mode Toggle Widget */}
+      {/* Floating Bottom-Right Simplify Mode Toggle Widget (Desktop only, included in Header menu on Mobile) */}
       <button
         id="floating-simple-mode-btn"
         onClick={toggleSimpleMode}
         title={isSimpleMode ? "Switch to standard detailed mode" : "Switch to Simplify mode (plain English summary)"}
         aria-label="Toggle Simplify mode"
-        className={`fixed bottom-5 right-5 z-40 group cursor-pointer flex items-center gap-2.5 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-300 shadow-xl backdrop-blur-xl active:scale-95 hover:scale-105 ${
+        className={`hidden md:flex fixed bottom-5 right-5 z-40 group cursor-pointer items-center gap-2.5 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-300 shadow-xl backdrop-blur-xl active:scale-95 hover:scale-105 ${
           isSimpleMode
             ? "bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/10 border-amber-500/50 text-amber-400 shadow-amber-500/15 ring-1 ring-amber-500/30"
             : "bg-card/90 border-border/80 text-muted-foreground hover:text-foreground hover:bg-card hover:border-primary/40 hover:shadow-primary/10"
