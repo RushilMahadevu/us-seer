@@ -56,6 +56,8 @@ import {
   X,
   ChevronRight,
   Maximize2,
+  BookOpen,
+  Microscope,
 } from "lucide-react";
 
 interface AnalysisViewProps {
@@ -182,8 +184,8 @@ function PolicySlider({
 
 /* ── Main AnalysisView ───────────────────────────────────────── */
 export default function AnalysisView({ data, onOpenExporter, selectedFips }: AnalysisViewProps) {
-  const [activeTab, setActiveTab] = useState<"impact" | "lab" | "simulator" | "equity">("impact");
-  const [mobileModalTab, setMobileModalTab] = useState<"impact" | "lab" | "simulator" | "equity" | null>(null);
+  const [activeTab, setActiveTab] = useState<"impact" | "lab" | "simulator" | "equity" | "findings">("impact");
+  const [mobileModalTab, setMobileModalTab] = useState<"impact" | "lab" | "simulator" | "equity" | "findings" | null>(null);
   const { isSimpleMode } = useSimpleMode();
 
   /* Research Lab state */
@@ -467,6 +469,18 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
               bg: "bg-gradient-to-br from-rose-500/10 via-card to-card",
               badgeColor: "bg-rose-500/15 text-rose-400 border-rose-500/30",
             },
+            {
+              id: "findings",
+              title: isSimpleMode ? "What We Found" : "Key Findings",
+              subtitle: isSimpleMode
+                ? "The discoveries US-SEER uncovered from federal data"
+                : "Quantified empirical results across 2,953 counties",
+              badge: "74 EJ Hotspots",
+              icon: <BookOpen className="w-5 h-5 text-amber-400" />,
+              border: "border-amber-500/30",
+              bg: "bg-gradient-to-br from-amber-500/10 via-card to-card",
+              badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+            },
           ].map((item) => (
             <button
               key={item.id}
@@ -535,6 +549,13 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
             >
               <ShieldAlert className="w-3.5 h-3.5" />
               {isSimpleMode ? "Who's at Risk?" : "Equity & Clusters"}
+            </TabsTrigger>
+            <TabsTrigger
+              value="findings"
+              className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 whitespace-nowrap"
+            >
+              <BookOpen className="w-3.5 h-3.5" />
+              {isSimpleMode ? "What We Found" : "Key Findings"}
             </TabsTrigger>
           </TabsList>
         </div>
@@ -1527,6 +1548,191 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
             </div>
           </TabsContent>
 
+          {/* ═══════════════════════════════════════════════════════════
+                TAB 5 — KEY FINDINGS (empirical results from FINDINGS.md)
+            ═══════════════════════════════════════════════════════════ */}
+          <TabsContent value="findings" className="space-y-5 outline-none">
+            {isSimpleMode && (
+              <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 leading-relaxed">
+                <span className="font-bold">🔬 What this shows:</span> The actual discoveries US-SEER made by analyzing air quality, poverty, and health outcomes across all 3,142 U.S. counties.
+              </div>
+            )}
+
+            {/* Headline quote */}
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-card border border-amber-500/25">
+              <div className="flex items-center gap-2 mb-2">
+                <Microscope className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Headline Finding</span>
+              </div>
+              <p className="text-sm font-semibold text-foreground leading-relaxed">
+                {isSimpleMode
+                  ? "74 counties in America have the worst air, the highest respiratory death rates, and the lowest incomes — all at the same time. They have 59% more respiratory deaths than the national average."
+                  : "74 U.S. counties simultaneously rank in the top quartile for PM₂.₅, top quartile for respiratory mortality, and bottom quartile for household income — averaging 59% excess respiratory mortality vs. the national county mean."}
+              </p>
+            </div>
+
+            {/* Stat grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              {[
+                {
+                  label: isSimpleMode ? "Triple-Burden Counties" : "EJ Hotspot Counties",
+                  value: "74",
+                  sub: isSimpleMode ? "High pollution + high mortality + low income" : "Top-quartile PM₂.₅ + mortality + bottom-quartile income",
+                  color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/5",
+                  icon: <ShieldAlert className="w-3.5 h-3.5" />,
+                },
+                {
+                  label: isSimpleMode ? "Extra Deaths in Those Areas" : "Excess Mortality vs. National Avg",
+                  value: "+59%",
+                  sub: isSimpleMode ? "More respiratory deaths than average counties" : "EJ hotspot counties average 116.3 vs. national 73.3 per 100k",
+                  color: "text-rose-400", border: "border-rose-500/25", bg: "bg-rose-500/5",
+                  icon: <HeartPulse className="w-3.5 h-3.5" />,
+                },
+                {
+                  label: isSimpleMode ? "Rural vs City Gap" : "Rural–Urban Mortality Gap",
+                  value: "+49%",
+                  sub: isSimpleMode ? "Rural areas have way more respiratory deaths than cities, even with cleaner air" : "Rural counties: 82.9/100k median vs. urban 55.7/100k despite lower PM₂.₅",
+                  color: "text-blue-400", border: "border-blue-500/25", bg: "bg-blue-500/5",
+                  icon: <Map className="w-3.5 h-3.5" />,
+                },
+                {
+                  label: isSimpleMode ? "Smoking Impact" : "Smoking → Mortality (r²)",
+                  value: "27.2%",
+                  sub: isSimpleMode ? "Of respiratory death differences between counties are explained by how much people smoke" : "Smoking prevalence is the single largest county-level predictor of respiratory mortality",
+                  color: "text-purple-400", border: "border-purple-500/25", bg: "bg-purple-500/5",
+                  icon: <Wind className="w-3.5 h-3.5" />,
+                },
+                {
+                  label: isSimpleMode ? "Pollution → Lung Disease" : "PM₂.₅ → COPD Prevalence",
+                  value: "r = 0.13",
+                  sub: isSimpleMode ? "Counties with dirtier air have more lung disease cases (p < 0.001)" : "PM₂.₅ significantly predicts county COPD burden; r = 0.129, p < 0.001 across 2,953 counties",
+                  color: "text-cyan-400", border: "border-cyan-500/25", bg: "bg-cyan-500/5",
+                  icon: <Stethoscope className="w-3.5 h-3.5" />,
+                },
+                {
+                  label: isSimpleMode ? "5 Factors Explain" : "5-Variable Model R²",
+                  value: "35.4%",
+                  sub: isSimpleMode ? "Of county respiratory death differences when we combine air quality, smoking, poverty, race, and insurance" : "PM₂.₅ + smoking + poverty + race + uninsured jointly explain 35.4% of county mortality variance",
+                  color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/5",
+                  icon: <Activity className="w-3.5 h-3.5" />,
+                },
+              ].map((s) => (
+                <div key={s.label} className={`p-4 rounded-2xl border ${s.border} ${s.bg}`}>
+                  <div className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider mb-2 ${s.color}`}>
+                    {s.icon}{s.label}
+                  </div>
+                  <div className={`text-2xl sm:text-3xl font-black font-mono tracking-tight ${s.color}`}>{s.value}</div>
+                  <p className="text-[10px] text-muted-foreground mt-1.5 leading-snug">{s.sub}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Urbanicity breakdown */}
+            <Card className="border-border shadow-xs">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <Map className="w-4 h-4 text-blue-400" />
+                  {isSimpleMode ? "Pollution → Deaths by Area Type" : "PM₂.₅ × Mortality by Urbanicity (RUCC)"}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {isSimpleMode
+                    ? "Why cities show a different pattern than rural areas"
+                    : "The PM₂.₅–mortality correlation reverses direction across urban/rural strata — demonstrating the healthcare access confound"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-3">
+                <div className="space-y-2.5">
+                  {[
+                    { type: isSimpleMode ? "Rural Areas" : "Rural (RUCC 7–9)", n: "1,138", pm25: "7.17", mort: "82.9", r: "r = +0.17", rColor: "text-rose-400", note: isSimpleMode ? "Dirtier air reliably predicts more deaths" : "Positive, significant: p < 0.001" },
+                    { type: isSimpleMode ? "Suburban Areas" : "Suburban (RUCC 4–6)", n: "650", pm25: "7.81", mort: "73.0", r: "r = +0.19", rColor: "text-amber-400", note: isSimpleMode ? "Similar pattern to rural" : "Positive, significant: p < 0.001" },
+                    { type: isSimpleMode ? "Cities" : "Urban (RUCC 1–3)", n: "1,165", pm25: "8.11", mort: "55.7", r: "r = −0.07", rColor: "text-blue-400", note: isSimpleMode ? "Cities have more pollution but better hospitals" : "Negative: healthcare access confound dominates" },
+                  ].map((row) => (
+                    <div key={row.type} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-semibold text-foreground">{row.type}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{row.note}</div>
+                      </div>
+                      <div className="text-right shrink-0 space-y-0.5">
+                        <div className={`text-sm font-black font-mono ${row.rColor}`}>{row.r}</div>
+                        <div className="text-[9px] text-muted-foreground font-mono">n={row.n}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-[10px] text-muted-foreground leading-relaxed p-2.5 rounded-lg bg-blue-500/5 border border-blue-500/15">
+                  {isSimpleMode
+                    ? "💡 Cities have MORE air pollution but FEWER respiratory deaths — because they also have better hospitals, higher incomes, and more doctors. US-SEER is designed to separate these effects."
+                    : "⚠️ The unadjusted overall PM₂.₅–mortality correlation is near zero (r = −0.04) due to this urban confound. Stratification by RUCC and multivariate adjustment reveals the true within-group signal."}
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Notable outlier counties */}
+            <Card className="border-border shadow-xs">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-400" />
+                  {isSimpleMode ? "Surprising Counties" : "Outlier Counties (Regression Residuals)"}
+                </CardTitle>
+                <CardDescription className="text-xs">
+                  {isSimpleMode ? "Places that don't follow the pattern — and why that's interesting" : "High PM₂.₅ but low mortality (protective factors) and vice versa"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-3 space-y-3">
+                <div>
+                  <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">High Pollution, Unexpectedly Low Mortality</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { name: "Travis County, TX (Austin)", pm25: "9.32", mort: "15.8", note: isSimpleMode ? "World-class medical center, young population" : "−55.7 residual · $92,731 median income · dense physician access" },
+                      { name: "Santa Clara County, CA", pm25: "8.87", mort: "16.5", note: isSimpleMode ? "Silicon Valley: wealthy, well-insured" : "−55.5 residual · $153,792 median income · highest physician density" },
+                      { name: "Fort Bend County, TX", pm25: "9.85", mort: "14.5", note: isSimpleMode ? "Affluent suburb with excellent hospitals nearby" : "−56.6 residual · $109,987 median income" },
+                    ].map((c) => (
+                      <div key={c.name} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-semibold text-foreground">{c.name}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{c.note}</div>
+                          <div className="flex gap-2 mt-1">
+                            <span className="text-[9px] font-mono bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">PM₂.₅: {c.pm25}</span>
+                            <span className="text-[9px] font-mono bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">Mort: {c.mort}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-2">Clean Air, Unexpectedly High Mortality</p>
+                  <div className="space-y-1.5">
+                    {[
+                      { name: "Sierra County, NM", pm25: "4.79", mort: "250.2", note: isSimpleMode ? "Clean air, but very remote — almost no doctors" : "+174 residual · 18.3% smoking · extreme rural healthcare desert" },
+                      { name: "Donley County, TX", pm25: "6.25", mort: "218.0", note: isSimpleMode ? "No major hospitals nearby and high smoking rates" : "+143 residual · 19.2% smoking prevalence" },
+                      { name: "Foard County, TX", pm25: "6.70", mort: "195.5", note: isSimpleMode ? "Rural Texas: clean air but few resources" : "+121 residual · 19.9% smoking · severe healthcare access deficit" },
+                    ].map((c) => (
+                      <div key={c.name} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-rose-500/5 border border-rose-500/15">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-semibold text-foreground">{c.name}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{c.note}</div>
+                          <div className="flex gap-2 mt-1">
+                            <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded">PM₂.₅: {c.pm25}</span>
+                            <span className="text-[9px] font-mono bg-rose-500/10 text-rose-400 px-1.5 py-0.5 rounded">Mort: {c.mort}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Methodology note */}
+            <div className="p-3.5 rounded-xl bg-muted/30 border border-border text-[10px] text-muted-foreground leading-relaxed space-y-1">
+              <p className="font-semibold text-foreground flex items-center gap-1.5"><Info className="w-3.5 h-3.5" /> Methodological Transparency</p>
+              <p>All statistics are computed via <span className="font-mono bg-background px-1 rounded">data_pipeline/findings_analysis.py</span> from 2,953 U.S. counties with complete EPA PM₂.₅ (2018–2022 avg), CDC WONDER mortality, and Census ACS data. Correlations use Pearson r. Regression uses OLS with county-level observations. The ecological fallacy applies — county-level relationships do not prove individual-level causation.</p>
+            </div>
+          </TabsContent>
+
         </div>
       </Tabs>
 
@@ -1542,6 +1748,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                   {mobileModalTab === "lab" && <Activity className="w-5 h-5 text-blue-400" />}
                   {mobileModalTab === "simulator" && <Sliders className="w-5 h-5 text-purple-400" />}
                   {mobileModalTab === "equity" && <ShieldAlert className="w-5 h-5 text-rose-400" />}
+                  {mobileModalTab === "findings" && <BookOpen className="w-5 h-5 text-amber-400" />}
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-foreground leading-none truncate">
@@ -1549,6 +1756,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                     {mobileModalTab === "lab" && (isSimpleMode ? "Explorer" : "Research Lab")}
                     {mobileModalTab === "simulator" && (isSimpleMode ? "What If?" : "Policy Simulator")}
                     {mobileModalTab === "equity" && (isSimpleMode ? "Who's at Risk?" : "Equity & Clusters")}
+                    {mobileModalTab === "findings" && (isSimpleMode ? "What We Found" : "Key Findings")}
                   </h3>
                   <p className="text-[10px] text-muted-foreground mt-0.5">Full Screen Popover Analytics</p>
                 </div>
@@ -1570,6 +1778,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 { id: "lab", label: isSimpleMode ? "Explorer" : "Lab", icon: <Activity className="w-3 h-3 text-blue-400" /> },
                 { id: "simulator", label: isSimpleMode ? "What If?" : "Simulator", icon: <Sliders className="w-3 h-3 text-purple-400" /> },
                 { id: "equity", label: isSimpleMode ? "Who's at Risk?" : "Equity", icon: <ShieldAlert className="w-3 h-3 text-rose-400" /> },
+                { id: "findings", label: isSimpleMode ? "Found" : "Findings", icon: <BookOpen className="w-3 h-3 text-amber-400" /> },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -1876,6 +2085,35 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
               </div>
             )}
 
+            {mobileModalTab === "findings" && (
+              <div className="space-y-4">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-card border border-amber-500/25">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Microscope className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-amber-400">Headline Finding</span>
+                  </div>
+                  <p className="text-sm font-semibold text-foreground leading-relaxed">
+                    {isSimpleMode
+                      ? "74 counties have the worst air, highest death rates, and lowest incomes — simultaneously. They have 59% more respiratory deaths than the national average."
+                      : "74 U.S. counties rank simultaneously in the top quartile for PM₂.₅, respiratory mortality, and bottom quartile for income — averaging 59% excess mortality."}
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: "EJ Hotspots", value: "74", sub: "+59% mortality", color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/5" },
+                    { label: "Rural Gap", value: "+49%", sub: "vs urban counties", color: "text-blue-400", border: "border-blue-500/25", bg: "bg-blue-500/5" },
+                    { label: "Smoking r²", value: "27.2%", sub: "mortality variance", color: "text-purple-400", border: "border-purple-500/25", bg: "bg-purple-500/5" },
+                    { label: "5-Factor R²", value: "35.4%", sub: "joint model", color: "text-emerald-400", border: "border-emerald-500/25", bg: "bg-emerald-500/5" },
+                  ].map((s) => (
+                    <div key={s.label} className={`p-3.5 rounded-2xl border ${s.border} ${s.bg}`}>
+                      <div className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${s.color}`}>{s.label}</div>
+                      <div className={`text-2xl font-black font-mono ${s.color}`}>{s.value}</div>
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{s.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {mobileModalTab === "equity" && (
               <div className="space-y-4">
                 {isSimpleMode && (
