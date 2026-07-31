@@ -11,11 +11,13 @@ import CountyCompareModal from "@/app/_components/analysis/CountyCompareModal";
 import ReportExporter, { ReportMode } from "@/app/_components/ui/ReportExporter";
 import DataSourcesView from "@/app/_components/sources/DataSourcesView";
 import Toast from "@/app/_components/ui/Toast";
+import MyDistrictPanel from "@/app/_components/ui/MyDistrictPanel";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
 import { TemporalYear, AVAILABLE_YEARS } from "@/app/_lib/temporal-data";
 import { useSimpleMode } from "@/app/_lib/simple-mode-context";
+import { MY_DISTRICT } from "@/app/_lib/district-data";
 import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract } from "lucide-react";
 
 function normalizeMetric(param: string | null): MapMetric {
@@ -67,6 +69,7 @@ function USSEERMain() {
   const [mapTarget, setMapTarget] = useState<{ coordinates: [number, number]; zoom: number; label?: string } | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [autoOpenAnalytics, setAutoOpenAnalytics] = useState(true);
+  const [isDistrictOpen, setIsDistrictOpen] = useState(false);
 
   // Toast notification state
   const [toastOpen, setToastOpen] = useState(false);
@@ -313,6 +316,17 @@ function USSEERMain() {
     setIsExporterOpen(true);
   };
 
+  const handleZoomToDistrict = () => {
+    setActiveView("map");
+    setMapTarget({
+      coordinates: MY_DISTRICT.mapCenter as [number, number],
+      zoom: MY_DISTRICT.mapZoom,
+      label: `NV-${MY_DISTRICT.districtNumber.toString().padStart(2, "0")} — ${MY_DISTRICT.representative}`,
+    });
+    // Also select home county (Washoe) so SidePanel opens with local data
+    setSelectedFips(MY_DISTRICT.homeCountyFips);
+  };
+
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-background text-foreground p-3.5 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden pt-4 sm:pt-6 pb-4 sm:pb-5">
       {/* Top Navigation & Control Header */}
@@ -325,6 +339,7 @@ function USSEERMain() {
         onOpenCompare={() => handleOpenCompare()}
         onOpenExporter={() => handleOpenExporter()}
         onShareLink={handleShareLink}
+        onOpenDistrict={() => setIsDistrictOpen(true)}
         activeView={activeView}
         onViewChange={setActiveView}
       />
@@ -466,6 +481,25 @@ function USSEERMain() {
           initialFipsA={exporterFipsA}
           initialFipsB={exporterFipsB}
           initialMode={exporterMode}
+        />
+      )}
+
+      {/* My District Panel — NV-02 */}
+      {data && (
+        <MyDistrictPanel
+          isOpen={isDistrictOpen}
+          onClose={() => setIsDistrictOpen(false)}
+          countyDataMap={data}
+          onZoomToDistrict={handleZoomToDistrict}
+          onSelectCounty={(fips) => {
+            handleSelectCounty(fips);
+            setMapTarget({
+              coordinates: MY_DISTRICT.mapCenter as [number, number],
+              zoom: MY_DISTRICT.mapZoom,
+              label: MY_DISTRICT.homeCountyName,
+            });
+            setActiveView("map");
+          }}
         />
       )}
 

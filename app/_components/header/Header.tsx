@@ -15,7 +15,8 @@ import {
   Share2,
   Menu,
   X,
-  SquaresSubtract
+  SquaresSubtract,
+  Landmark,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -29,6 +30,7 @@ interface HeaderProps {
   onOpenCompare?: () => void;
   onOpenExporter?: () => void;
   onShareLink?: () => void;
+  onOpenDistrict?: () => void;
   activeView: "map" | "analysis" | "sources";
   onViewChange: (view: "map" | "analysis" | "sources") => void;
 }
@@ -41,41 +43,70 @@ export default function Header({
   onOpenCompare,
   onOpenExporter,
   onShareLink,
+  onOpenDistrict,
   activeView,
   onViewChange,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const views = [
-    { id: "map" as const, label: "Map View", Icon: Map },
-    { id: "analysis" as const, label: "Analysis Lab", Icon: Stethoscope },
-    { id: "sources" as const, label: "Data Sources", Icon: CirclePile },
+    { id: "map" as const,      label: "Map",     Icon: Map },
+    { id: "analysis" as const, label: "Lab",     Icon: Stethoscope },
+    { id: "sources" as const,  label: "Sources", Icon: CirclePile },
   ];
 
+  /** Icon-only pill button for desktop quick tools */
+  function IconBtn({
+    id,
+    onClick,
+    title,
+    ariaLabel,
+    children,
+    colorClass = "text-muted-foreground hover:text-foreground hover:bg-accent",
+  }: {
+    id?: string;
+    onClick: () => void;
+    title: string;
+    ariaLabel: string;
+    children: React.ReactNode;
+    colorClass?: string;
+  }) {
+    return (
+      <button
+        id={id}
+        onClick={onClick}
+        title={title}
+        aria-label={ariaLabel}
+        className={`cursor-pointer h-8 w-8 rounded-lg flex items-center justify-center transition-all duration-150 active:scale-95 ${colorClass}`}
+      >
+        {children}
+      </button>
+    );
+  }
+
   return (
-    <header className="relative flex items-center justify-between gap-2 px-3 py-2 sm:px-5 sm:py-2.5 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs animate-in fade-in-50 slide-in-from-top-2 duration-400 z-50">
-      {/* Left Cluster: Brand Logo & Title */}
-      <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-        <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-          <HeartPulse className="h-4 w-4 sm:h-4.5 sm:w-4.5 text-primary" aria-hidden="true" />
+    <header className="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs animate-in fade-in-50 slide-in-from-top-2 duration-400 z-50">
+
+      {/* ── Brand ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2.5 shrink-0">
+        <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+          <HeartPulse className="h-4 w-4 text-primary" aria-hidden="true" />
         </div>
-        <div className="flex flex-col justify-center">
+        <div className="flex flex-col justify-center leading-none">
           <div className="flex items-center gap-1.5">
-            <h1 className="text-xs sm:text-sm font-bold tracking-tight text-foreground leading-none">
-              US-SEER
-            </h1>
-            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold rounded bg-primary/10 text-primary border border-primary/20 leading-none">
+            <h1 className="text-sm font-bold tracking-tight text-foreground">US-SEER</h1>
+            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold rounded bg-primary/10 text-primary border border-primary/20">
               National Index
             </span>
           </div>
-          <p className="hidden md:block text-[10px] text-muted-foreground font-medium leading-tight mt-0.5">
-            US Spatial Environmental Exposure & Respiratory Risk Index
+          <p className="hidden lg:block text-[9.5px] text-muted-foreground font-medium mt-0.5 tracking-tight">
+            Spatial Environmental Exposure &amp; Respiratory Risk
           </p>
         </div>
       </div>
 
-      {/* Desktop Navigation View Switcher (Hidden on Mobile) */}
-      <nav className="hidden md:flex items-center p-1 bg-muted/60 border border-border/80 rounded-xl gap-1 shrink-0">
+      {/* ── Desktop: View Switcher ──────────────────────────────── */}
+      <nav className="hidden md:flex items-center p-0.5 bg-muted/60 border border-border/80 rounded-xl gap-0.5 shrink-0">
         {views.map(({ id, label, Icon }) => {
           const isActive = activeView === id;
           return (
@@ -83,81 +114,96 @@ export default function Header({
               key={id}
               id={`view-toggle-${id}`}
               onClick={() => onViewChange(id)}
-              className={`cursor-pointer px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all duration-200 select-none min-h-[32px] ${isActive
-                ? "bg-background text-foreground shadow-xs border border-border/60"
-                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-                }`}
+              className={`cursor-pointer px-3 py-1.5 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 select-none whitespace-nowrap ${
+                isActive
+                  ? "bg-background text-foreground shadow-xs border border-border/60"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+              }`}
             >
               <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : ""}`} />
-              <span>{label}</span>
+              {label}
             </button>
           );
         })}
       </nav>
 
-      {/* Desktop Quick Tools (Hidden on Mobile) */}
-      <div className="hidden md:flex items-center gap-2 shrink-0">
+      {/* ── Desktop: Quick Tools ────────────────────────────────── */}
+      <div className="hidden md:flex items-center gap-1 shrink-0">
 
-        {/* PDF Exporter Button */}
+        {/* My District — only labeled button (primary CTA) */}
+        {onOpenDistrict && (
+          <button
+            onClick={onOpenDistrict}
+            id="header-my-district-btn"
+            title="View NV-02 district data"
+            aria-label="View my congressional district data"
+            className="cursor-pointer flex items-center gap-1.5 h-8 px-3 rounded-lg border border-violet-500/30 bg-violet-500/10 hover:bg-violet-500/20 text-xs font-semibold text-violet-400 transition-all duration-150 active:scale-95"
+          >
+            <Landmark className="h-3.5 w-3.5 shrink-0" />
+            <span className="hidden lg:inline">My District</span>
+          </button>
+        )}
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-border/60 mx-1" />
+
+        {/* Export PDF — icon only */}
         {onOpenExporter && (
-          <button
-            onClick={onOpenExporter}
+          <IconBtn
             id="header-exporter-btn"
-            className="cursor-pointer flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-xs font-semibold text-emerald-500 transition-all duration-150 shadow-2xs active:scale-97"
-            aria-label="Open PDF report exporter"
-            title="Export PDF / Executive Summary Brief"
+            onClick={onOpenExporter}
+            title="Export PDF / Executive Summary"
+            ariaLabel="Open PDF report exporter"
+            colorClass="text-emerald-500 hover:bg-emerald-500/10"
           >
-            <FileText className="h-3.5 w-3.5 shrink-0" />
-            <span>Export PDF</span>
-          </button>
+            <FileText className="h-4 w-4" />
+          </IconBtn>
         )}
 
-        {/* Compare Counties */}
+        {/* Compare — icon only */}
         {onOpenCompare && (
-          <button
-            onClick={onOpenCompare}
+          <IconBtn
             id="header-compare-btn"
-            className="cursor-pointer flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-primary/30 bg-primary/10 hover:bg-primary/20 text-xs font-semibold text-primary transition-all duration-150 shadow-2xs active:scale-97"
-            aria-label="Open county comparison tool"
+            onClick={onOpenCompare}
             title="Compare two counties side-by-side"
+            ariaLabel="Open county comparison tool"
+            colorClass="text-primary hover:bg-primary/10"
           >
-            <Scale className="h-3.5 w-3.5 shrink-0" />
-            <span>Compare</span>
-          </button>
+            <Scale className="h-4 w-4" />
+          </IconBtn>
         )}
 
-        {/* Share Link Button */}
+        {/* Share — icon only */}
         {onShareLink && (
-          <button
-            onClick={onShareLink}
+          <IconBtn
             id="header-share-btn"
-            className="cursor-pointer flex items-center justify-center gap-1.5 h-9 px-3 rounded-xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20 text-xs font-semibold text-blue-400 transition-all duration-150 shadow-2xs active:scale-97"
-            aria-label="Share bookmark link"
-            title="Copy shareable link with current map view, county, and metric state"
+            onClick={onShareLink}
+            title="Copy shareable link"
+            ariaLabel="Copy bookmark link"
+            colorClass="text-blue-400 hover:bg-blue-500/10"
           >
-            <Share2 className="h-3.5 w-3.5 shrink-0" />
-            <span>Share</span>
-          </button>
+            <Share2 className="h-4 w-4" />
+          </IconBtn>
         )}
+
+        {/* Divider */}
+        <div className="w-px h-5 bg-border/60 mx-1" />
 
         {/* Theme toggle */}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={onToggleDarkMode}
+        <IconBtn
           id="theme-toggle-btn"
-          className="cursor-pointer h-9 w-9 shrink-0 rounded-xl hover:bg-accent text-muted-foreground hover:text-foreground"
+          onClick={onToggleDarkMode}
           title={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
-          aria-label="Toggle color theme"
+          ariaLabel="Toggle color theme"
         >
           {isDarkMode
             ? <Sun className="h-4 w-4 text-amber-400" />
             : <Moon className="h-4 w-4" />}
-        </Button>
+        </IconBtn>
       </div>
 
-      {/* Mobile Hamburger Toggle */}
-      <div className="flex items-center gap-1.5 md:hidden">
+      {/* ── Mobile: Right cluster ───────────────────────────────── */}
+      <div className="flex items-center gap-1 md:hidden">
         <Button
           variant="ghost"
           size="icon"
@@ -180,97 +226,94 @@ export default function Header({
         </Button>
       </div>
 
-      {/* Mobile Menu Popover */}
+      {/* ── Mobile Menu Popover ─────────────────────────────────── */}
       {mobileMenuOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl md:hidden flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-200 z-50">
-          {/* Views Section */}
+
+          {/* Views */}
           <div className="flex flex-col gap-1">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-0.5">
-              Views
-            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">Views</span>
             <div className="grid grid-cols-3 gap-1.5">
               {views.map(({ id, label, Icon }) => {
                 const isActive = activeView === id;
                 return (
                   <button
                     key={id}
-                    onClick={() => {
-                      onViewChange(id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`cursor-pointer px-2 py-2 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 justify-center transition-all ${isActive
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                      }`}
+                    onClick={() => { onViewChange(id); setMobileMenuOpen(false); }}
+                    className={`cursor-pointer px-2 py-2.5 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 justify-center transition-all ${
+                      isActive
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                    }`}
                   >
                     <Icon className="w-4 h-4" />
-                    <span className="text-[11px]">{label.split(" ")[0]}</span>
+                    <span className="text-[11px]">{label}</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Quick Actions Section */}
+          {/* Tools */}
           <div className="flex flex-col gap-1 pt-1 border-t border-border/60">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2 py-0.5">
-              Tools & Actions
-            </span>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">Tools</span>
             <div className="grid grid-cols-1 gap-1.5">
+
               {onToggleSimpleMode && (
                 <button
-                  onClick={() => {
-                    onToggleSimpleMode();
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`cursor-pointer flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold border active:scale-98 transition-all ${isSimpleMode
-                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                    : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
-                    }`}
+                  onClick={() => { onToggleSimpleMode(); setMobileMenuOpen(false); }}
+                  className={`cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
+                    isSimpleMode
+                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                      : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
+                  }`}
                 >
-                  <SquaresSubtract className="h-4 w-4 text-amber-400" />
-                  <span>{isSimpleMode ? "Simplified Mode (Active)" : "Simplify Mode"}</span>
+                  <SquaresSubtract className="h-4 w-4 text-amber-400 shrink-0" />
+                  {isSimpleMode ? "Simplified Mode (Active)" : "Simplify Mode"}
+                </button>
+              )}
+
+              {onOpenDistrict && (
+                <button
+                  onClick={() => { onOpenDistrict(); setMobileMenuOpen(false); }}
+                  id="mobile-my-district-btn"
+                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold bg-violet-500/10 text-violet-400 border border-violet-500/20 transition-all"
+                >
+                  <Landmark className="h-4 w-4 shrink-0" />
+                  My District (NV-02)
                 </button>
               )}
 
               {onOpenExporter && (
                 <button
-                  onClick={() => {
-                    onOpenExporter();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 active:scale-98 transition-all"
+                  onClick={() => { onOpenExporter(); setMobileMenuOpen(false); }}
+                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 transition-all"
                 >
-                  <FileText className="h-4 w-4" />
-                  <span>Export PDF Report</span>
+                  <FileText className="h-4 w-4 shrink-0" />
+                  Export PDF Report
                 </button>
               )}
 
               {onOpenCompare && (
                 <button
-                  onClick={() => {
-                    onOpenCompare();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/20 active:scale-98 transition-all"
+                  onClick={() => { onOpenCompare(); setMobileMenuOpen(false); }}
+                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold bg-primary/10 text-primary border border-primary/20 transition-all"
                 >
-                  <Scale className="h-4 w-4" />
-                  <span>Compare Counties</span>
+                  <Scale className="h-4 w-4 shrink-0" />
+                  Compare Counties
                 </button>
               )}
 
               {onShareLink && (
                 <button
-                  onClick={() => {
-                    onShareLink();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 active:scale-98 transition-all"
+                  onClick={() => { onShareLink(); setMobileMenuOpen(false); }}
+                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20 transition-all"
                 >
-                  <Share2 className="h-4 w-4" />
-                  <span>Share Link</span>
+                  <Share2 className="h-4 w-4 shrink-0" />
+                  Share Link
                 </button>
               )}
+
             </div>
           </div>
         </div>
@@ -278,4 +321,3 @@ export default function Header({
     </header>
   );
 }
-

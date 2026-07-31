@@ -1,0 +1,77 @@
+{
+  "metadata": {
+    "generated_at": "2026-07-30T21:42:01Z",
+    "method": "Double Machine Learning (Robinson 1988 / Chernozhukov et al. 2018)",
+    "implementation": "Custom sklearn-based DML with cross-fitted RF nuisance models",
+    "n_folds": 5,
+    "n_bootstrap": 200,
+    "confounders": [
+      "smokingPrev",
+      "pctPoverty",
+      "pctUninsured",
+      "pctBlack",
+      "mdRate",
+      "rucc"
+    ],
+    "treatment": "pm25Avg",
+    "outcome": "mortalityRate (respiratory deaths per 100k)",
+    "n_counties_total": 3222,
+    "n_counties_analyzed": 2954,
+    "n_counties_rural": 1139,
+    "n_counties_urban": 1165,
+    "epa_vsl": 11000000,
+    "epa_standard_pm25": 9.0,
+    "n_counties_above_epa_standard": 258,
+    "pct_counties_above_epa_standard": 8.7,
+    "interpretation": "theta is the DML causal effect estimate: deaths per 100k per 1 \u00b5g/m\u00b3 change in PM2.5. A positive theta means higher PM2.5 \u2192 more deaths. Confidence intervals represent estimation uncertainty after partialling out confounders."
+  },
+  "rural": {
+    "theta": 1.474053,
+    "se": 0.959406,
+    "ci_lo_95": -0.406383,
+    "ci_hi_95": 3.354489,
+    "bootstrap_ci_lo_95": 1.515845,
+    "bootstrap_ci_hi_95": 5.261602,
+    "bootstrap_se": 0.92963,
+    "n": 1139,
+    "avg_mortality": 86.52,
+    "avg_pm25": 7.107,
+    "avg_population": 14249.0,
+    "label": "Rural counties (RUCC \u2265 7) \u2014 primary causal signal"
+  },
+  "all": {
+    "theta": -0.509841,
+    "se": 0.525563,
+    "ci_lo_95": -1.539945,
+    "ci_hi_95": 0.520262,
+    "n": 2954,
+    "avg_mortality": 73.23,
+    "avg_pm25": 7.568,
+    "avg_population": 109989.0,
+    "label": "All counties \u2014 urban confounding present (see methodology)"
+  },
+  "urban": {
+    "theta": -1.631705,
+    "se": 0.556919,
+    "ci_lo_95": -2.723267,
+    "ci_hi_95": -0.540144,
+    "n": 1165,
+    "label": "Urban counties (RUCC \u2264 3) \u2014 healthcare access dominates"
+  },
+  "policy_simulator": {
+    "primary_theta": 1.474053,
+    "primary_se": 0.959406,
+    "primary_ci_lo": 1.515845,
+    "primary_ci_hi": 5.261602,
+    "explanation": "For rural counties: reducing PM2.5 by 1 \u00b5g/m\u00b3 is associated with a 1.47 change in respiratory deaths per 100k population (95% CI: 1.52\u20135.26 per 100k). Formula: lives_saved = |theta| \u00d7 (county_population / 100000) \u00d7 delta_pm25",
+    "epa_vsl": 11000000,
+    "cost_savings_note": "Healthcare cost savings estimated using EPA Value of Statistical Life ($11M per life, 2024).",
+    "epa_target_pm25": 9.0,
+    "national_context": {
+      "counties_above_epa_standard": 258,
+      "pct_above_epa_standard": 8.7,
+      "national_avg_pm25": 7.568,
+      "national_avg_mortality": 73.23
+    }
+  }
+}

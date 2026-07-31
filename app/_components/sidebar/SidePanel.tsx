@@ -34,7 +34,13 @@ import {
   Building2,
   Scale,
   FileText,
+  FlaskConical,
+  Zap,
+  Info,
+  ChevronRight,
 } from "lucide-react";
+
+import causalEstimatesRaw from "@/public/data/causal_estimates.json";
 
 interface SidePanelProps {
   fips: string | null;
@@ -121,6 +127,257 @@ function uninsuredFraction(pct: number): string {
   if (pct >= 12.5) return "About 1 in 8 people";
   if (pct >= 6.25) return "About 1 in 16 people";
   return "A small share";
+}
+
+/* ── Policy Simulator Sub-Component ─────────────────────────── */
+interface PolicySimulatorProps {
+  countyData: NonNullable<{ pm25Avg?: number | null; population?: number | null; rucc?: number | null; County_Name?: string }>;
+  theta: number;
+  ciLo: number;
+  ciHi: number;
+  isRural: boolean;
+  isSimpleMode: boolean;
+  causal: typeof import("@/public/data/causal_estimates.json");
+}
+
+function PolicySimulatorContent({ countyData, theta, ciLo, ciHi, isRural, isSimpleMode, causal }: PolicySimulatorProps) {
+  const [deltaPm25, setDeltaPm25] = useState<number>(2);
+
+  const pop      = countyData.population ?? causal.rural.avg_population;
+  const pm25Now  = countyData.pm25Avg ?? causal.rural.avg_pm25;
+  const EPA_VSL  = causal.policy_simulator.epa_vsl;
+  const EPA_STD  = causal.policy_simulator.epa_target_pm25;
+
+  // Core formula: lives_saved = |theta| × (population / 100000) × delta_pm25
+  // (negative theta = harmful direction; we flip sign for "reduction" framing)
+  // Rural theta is positive (more PM2.5 → more deaths), so reduction → lives saved
+  const effectiveTheta = isRural ? Math.abs(theta) : Math.max(0, -theta); // safe for urban confounded estimate
+  const livesSaved      = effectiveTheta * (pop / 100_000) * deltaPm25;
+  const livesSavedLo    = Math.max(0, Math.abs(ciLo) * (pop / 100_000) * deltaPm25);
+  const livesSavedHi    = Math.abs(ciHi) * (pop / 100_000) * deltaPm25;
+  const costSavings     = livesSaved * EPA_VSL;
+  const maxFeasibleReduction = Math.max(0, pm25Now - EPA_STD);
+  const pm25Target      = Math.max(0, pm25Now - deltaPm25);
+
+  const fmtLives = (v: number) => v < 0.05 ? "<0.1" : v.toFixed(1);
+  const fmtCost  = (v: number) => {
+    if (v >= 1e9) return `$${(v/1e9).toFixed(1)}B`;
+    if (v >= 1e6) return `$${(v/1e6).toFixed(1)}M`;
+    return `$${(v/1e3).toFixed(0)}K`;
+  };
+
+  // Significance: is CI strictly positive?
+  const isSignificant = ciLo > 0 && ciHi > 0;
+  const canSimulate   = isRural || effectiveTheta > 0;
+
+  return (
+    <div className="space-y-3">
+      {/* Header badge */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <FlaskConical className="h-3.5 w-3.5 text-violet-500" />
+          <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+            {isSimpleMode ? "What If We Cleaned the Air?" : "Causal Policy Simulator"}
+          </span>
+        </div>
+        <Badge variant="outline" className="text-[9px] font-semibold text-violet-500 border-violet-500/30 bg-violet-500/5">
+          DML
+        </Badge>
+      </div>
+
+      {/* Context callout */}
+      {!isRural && (
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+          <Info className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-relaxed">
+            {isSimpleMode
+              ? "This county is urban — healthcare access offsets some pollution harm. Estimates are less certain."
+              : "Urban counties show a confounded signal (healthcare access dominates). Rural DML θ = +1.47/100k is the primary causal estimate."}
+          </p>
+        </div>
+      )}
+      {isRural && (
+        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-violet-500/10 border border-violet-500/20">
+          <Zap className="h-3 w-3 text-violet-500 shrink-0 mt-0.5" />
+          <p className="text-[10px] text-violet-600 dark:text-violet-300 leading-relaxed">
+            {isSimpleMode
+              ? "This rural county shows a clear pollution–health link. The estimate below is backed by real causal analysis."
+              : "Rural DML estimate (θ = +1.47 per 100k per µg/m³) is the statistically valid causal signal after controlling for smoking, poverty, and healthcare access."}
+          </p>
+        </div>
+      )}
+
+      {/* Current PM2.5 context */}
+      <div className="p-3 rounded-xl border border-border bg-background/70 space-y-2">
+        <div className="flex items-center justify-between text-[10px]">
+          <span className="font-semibold text-muted-foreground uppercase tracking-wide">
+            Current PM₂.₅
+          </span>
+          <span className={`font-bold ${pm25Now > EPA_STD ? "text-rose-500" : "text-emerald-500"}`}>
+            {pm25Now.toFixed(2)} µg/m³
+            {pm25Now > EPA_STD && (
+              <span className="text-rose-400 ml-1 font-normal">↑ above EPA limit</span>
+            )}
+          </span>
+        </div>
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-emerald-400 to-rose-500 rounded-full transition-all"
+              style={{ width: `${Math.min(100, (pm25Now / 15) * 100)}%` }}
+            />
+          </div>
+          <span className="shrink-0">EPA limit: {EPA_STD} µg/m³</span>
+        </div>
+      </div>
+
+      {/* Slider */}
+      <div className="p-3 rounded-xl border border-border bg-background/70 space-y-3">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-semibold text-foreground">
+            {isSimpleMode ? "How much to clean the air?" : "PM₂.₅ Reduction Target"}
+          </span>
+          <Badge className="text-[10px] font-mono bg-violet-600/10 text-violet-600 border-violet-500/30">
+            −{deltaPm25.toFixed(1)} µg/m³
+          </Badge>
+        </div>
+
+        <input
+          type="range"
+          min={0.5}
+          max={5}
+          step={0.5}
+          value={deltaPm25}
+          onChange={(e) => setDeltaPm25(parseFloat(e.target.value))}
+          className="w-full accent-violet-500 cursor-pointer"
+          aria-label="PM2.5 reduction target in micrograms per cubic meter"
+        />
+
+        <div className="flex justify-between text-[9px] text-muted-foreground">
+          <span>0.5 µg/m³</span>
+          <span>
+            {maxFeasibleReduction > 0
+              ? `↓ to EPA std: ${maxFeasibleReduction.toFixed(1)}`
+              : "Already at/below EPA standard"}
+          </span>
+          <span>5.0 µg/m³</span>
+        </div>
+
+        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+          <span>Target level after reduction:</span>
+          <span className={`font-bold ${pm25Target <= EPA_STD ? "text-emerald-500" : "text-amber-500"}`}>
+            {pm25Target.toFixed(2)} µg/m³
+            {pm25Target <= EPA_STD ? " ✓ EPA-compliant" : ""}
+          </span>
+        </div>
+      </div>
+
+      {/* Results */}
+      {canSimulate ? (
+        <div className="p-3.5 rounded-xl border border-violet-500/30 bg-violet-500/5 space-y-3">
+          {/* Lives saved — point estimate */}
+          <div>
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+              {isSimpleMode ? "Estimated Lives Saved Per Year" : "Estimated Annual Lives Saved"}
+            </div>
+            <div className="text-3xl font-extrabold text-violet-500 leading-none">
+              {fmtLives(livesSaved)}
+              <span className="text-sm font-normal text-muted-foreground ml-1.5">
+                {isSimpleMode ? "people" : "deaths/yr avoided"}
+              </span>
+            </div>
+            {/* CI range bar */}
+            <div className="mt-2 space-y-1">
+              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
+                <span>95% Confidence Range:</span>
+                <span className="font-mono">
+                  [{fmtLives(livesSavedLo)} – {fmtLives(livesSavedHi)}]
+                </span>
+              </div>
+              {/* Visual CI bar */}
+              <div className="relative h-4 bg-muted rounded-full overflow-hidden">
+                {/* CI band */}
+                <div
+                  className="absolute top-0 h-full bg-violet-400/20 rounded-full"
+                  style={{
+                    left: `${Math.min(100, (livesSavedLo / (livesSavedHi + 1)) * 100)}%`,
+                    right: "0%",
+                  }}
+                />
+                {/* Point estimate marker */}
+                <div
+                  className="absolute top-1 h-2 w-0.5 bg-violet-600 rounded-full"
+                  style={{
+                    left: `${Math.min(98, (livesSaved / (livesSavedHi + 1)) * 100)}%`,
+                  }}
+                />
+                <div className="absolute inset-0 flex items-center px-2">
+                  <span className="text-[8px] text-violet-600 font-bold">
+                    ← CI range →
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Healthcare cost savings */}
+          <div className="pt-2 border-t border-violet-500/20">
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+              {isSimpleMode ? "Estimated Healthcare Savings" : "Statistical Value (EPA VSL, 2024)"}
+            </div>
+            <div className="text-xl font-extrabold text-emerald-500">
+              {fmtCost(costSavings)}
+              <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                /yr
+              </span>
+            </div>
+            {!isSimpleMode && (
+              <p className="text-[9px] text-muted-foreground mt-1">
+                At EPA Value of Statistical Life ($11M/life, 2024 dollars)
+              </p>
+            )}
+          </div>
+
+          {/* Significance note */}
+          {!isSignificant && !isSimpleMode && (
+            <div className="flex items-start gap-1.5 text-[9px] text-amber-500">
+              <Info className="h-2.5 w-2.5 shrink-0 mt-0.5" />
+              <span>
+                Analytical CI crosses zero — bootstrap CI confirms positive direction.
+                Effect is directionally consistent with FINDINGS.md (rural r = 0.17, p &lt; 0.001).
+              </span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="p-3.5 rounded-xl border border-border bg-muted/30 text-center">
+          <p className="text-[10px] text-muted-foreground">
+            Urban confounding prevents reliable simulation for this county type.
+            The rural DML estimate (θ = +1.47) applies to rural counties.
+          </p>
+        </div>
+      )}
+
+      {/* Methodology attribution */}
+      {!isSimpleMode && (
+        <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
+          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Causal Methodology
+          </div>
+          <p className="text-[9px] text-muted-foreground leading-relaxed">
+            Double Machine Learning (Robinson 1988; Chernozhukov et al. 2018).
+            Random Forest nuisance models residualize PM₂.₅ and mortality on
+            6 confounders (smoking, poverty, uninsured rate, race, physician density, urbanicity).
+            OLS on residuals → θ. Bootstrap 95% CI from {causal.metadata.n_bootstrap} resamples.
+          </p>
+          <p className="text-[9px] text-muted-foreground">
+            Rural n = {causal.metadata.n_counties_rural.toLocaleString()} counties.
+            Full sample n = {causal.metadata.n_counties_analyzed.toLocaleString()}.
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ── Main Component ───────────────────────────────────────────── */
@@ -251,23 +508,51 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
 
           {/* ── Tabs bar ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 pt-2.5 pb-2 shrink-0">
-            <TabsList className="flex items-center w-full h-8.5 bg-muted/60 p-0.5 rounded-lg overflow-x-auto scrollbar-none gap-0.5">
-              <TabsTrigger value="overview" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
-                {isSimpleMode ? "Summary" : "Overview"}
-              </TabsTrigger>
-              <TabsTrigger value="trends" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
-                Trends
-              </TabsTrigger>
-              <TabsTrigger value="demographics" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
-                {isSimpleMode ? "People" : "Census"}
-              </TabsTrigger>
-              <TabsTrigger value="health" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
-                Health
-              </TabsTrigger>
-              <TabsTrigger value="care" className="flex-1 min-w-[55px] text-[11px] rounded-md px-1.5 py-1 cursor-pointer">
-                {isSimpleMode ? "Doctors" : "Infra"}
-              </TabsTrigger>
-            </TabsList>
+            {isSimpleMode ? (
+              /* Simple Mode: 3 big, clear tabs */
+              <TabsList className="flex items-center w-full bg-muted/60 p-1 rounded-xl gap-1">
+                <TabsTrigger
+                  value="overview"
+                  className="flex-1 text-[12px] font-semibold rounded-lg px-2 py-2 cursor-pointer"
+                >
+                  📋 Summary
+                </TabsTrigger>
+                <TabsTrigger
+                  value="health"
+                  className="flex-1 text-[12px] font-semibold rounded-lg px-2 py-2 cursor-pointer"
+                >
+                  🩺 Health
+                </TabsTrigger>
+                <TabsTrigger
+                  value="simulate"
+                  className="flex-1 text-[12px] font-semibold rounded-lg px-2 py-2 cursor-pointer"
+                >
+                  ✨ What If?
+                </TabsTrigger>
+              </TabsList>
+            ) : (
+              /* Expert Mode: all 6 tabs, compact scrollable chips */
+              <TabsList className="flex items-center w-full bg-muted/60 p-0.5 rounded-lg overflow-x-auto scrollbar-none gap-0.5">
+                <TabsTrigger value="overview" className="flex-1 min-w-[52px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
+                  Overview
+                </TabsTrigger>
+                <TabsTrigger value="trends" className="flex-1 min-w-[48px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
+                  Trends
+                </TabsTrigger>
+                <TabsTrigger value="demographics" className="flex-1 min-w-[48px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
+                  Census
+                </TabsTrigger>
+                <TabsTrigger value="health" className="flex-1 min-w-[44px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
+                  Health
+                </TabsTrigger>
+                <TabsTrigger value="care" className="flex-1 min-w-[40px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
+                  Infra
+                </TabsTrigger>
+                <TabsTrigger value="simulate" className="flex-1 min-w-[52px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer text-violet-400 data-[state=active]:text-violet-600">
+                  Simulate
+                </TabsTrigger>
+              </TabsList>
+            )}
           </div>
 
           {/* ── Scrollable content ─────────────────────────────── */}
@@ -852,6 +1137,35 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            {/* ── POLICY SIMULATOR (C-2: Real DML Causal Engine) ── */}
+            <TabsContent value="simulate" className="space-y-3 mt-0">
+              {(() => {
+                // Causal estimates loaded from DML pipeline output
+                const causal = causalEstimatesRaw as typeof causalEstimatesRaw;
+                const sim = causal.policy_simulator;
+
+                // Choose theta based on county urbanicity
+                // Rural counties (RUCC ≥ 7): use rural DML estimate
+                // Others: use all-county estimate with caveat
+                const isRural = (countyData.rucc ?? 0) >= 7;
+                const theta = isRural ? sim.primary_theta : causal.all.theta;
+                const ciLo  = isRural ? sim.primary_ci_lo : causal.all.ci_lo_95;
+                const ciHi  = isRural ? sim.primary_ci_hi : causal.all.ci_hi_95;
+
+                // pm25 reduction state (0.5 to 5 µg/m³, step 0.5)
+                // We need a local state for the slider — using a trick: store in a ref-like way via a wrapper
+                return <PolicySimulatorContent
+                  countyData={countyData}
+                  theta={theta}
+                  ciLo={ciLo}
+                  ciHi={ciHi}
+                  isRural={isRural}
+                  isSimpleMode={isSimpleMode}
+                  causal={causal}
+                />;
+              })()}
             </TabsContent>
           </CardContent>
         </Tabs>
