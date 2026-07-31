@@ -206,15 +206,22 @@ That sentence is your title, your video hook, your short-answer response, and yo
 
 ---
 
-#### H-2: Make the Policy Simulator Feel Actionable to a Lawmaker
+#### H-2: Make the Policy Simulator Feel Actionable to a Lawmaker ✅ COMPLETED
 
-**Problem:** The simulator exists but needs to feel like a decision-support tool, not a toy.
+**What was done:**
+- Added **Geographic Scope Selection** (`This County` / `My State` / `National Aggregate` scope selector) in both SidePanel (`SidePanel.tsx`) and the main Analysis workspace (`AnalysisView.tsx`).
+- Updated simulation calculations in `app/_lib/bme-analytics.ts` (`runCounterfactualSimulation`) to dynamically filter and scale by single FIPS, statewide FIPS prefix, or all 3,142 US counties.
+- Added **Lawmaker-Grade Health & Economic Outputs**:
+  - **Estimated Annual Lives Saved** with DML 95% Confidence Interval range.
+  - **Asthma ER Visits & Exacerbations Prevented / Year** (calculated from population prevalence and exposure reduction slopes).
+  - **Total Economic & Healthcare Savings / Year** featuring EPA's official Value of Statistical Life (**$11.0M per avoided mortality** in 2024 USD; 40 CFR Part 50) + direct clinical savings.
+- Created **"Contact Your Representative" Action Feature**:
+  - Added a prominent action button in the Policy Simulator controls and results panels.
+  - Opens a dynamic **Congressional Policy Briefing Memo** modal with pre-filled legislative memo, `mailto:` link populated with subject & body for congressional staffers, one-click "Copy Policy Brief" button, and direct link to [Find Your Representative (House.gov)](https://www.house.gov/representatives/find-your-representative).
+- Added **Regulatory Citation Banners**:
+  - Formally cites the EPA's revised National Ambient Air Quality Standard (NAAQS) for PM₂.₅ of **9.0 μg/m³** (40 CFR Part 50, revised Feb 2024) and Double Machine Learning (DML) causal inference methodology.
 
-**What to do:**
-- Add a scope dropdown: "Apply to: [This County] / [My State] / [National]"
-- Output: estimated lives saved per year, estimated reduction in asthma ER visits, estimated healthcare cost savings (use the EPA's standard value of a statistical life — currently ~$11M — cite it)
-- Add a "Contact Your Representative" button: a mailto link to your congressional rep's contact page — theatrical but exactly right for judges who ARE legislators
-- Reference specific legislation: "This simulation models the effect of reaching the EPA's revised PM2.5 standard of 9 μg/m³"
+**Deliverable:** Actionable decision-support Policy Simulator that allows lawmakers and constituents to model regional policies, view EPA VSL economic returns, and instantly contact congressional representatives with pre-formatted policy briefs. ✅
 
 ---
 

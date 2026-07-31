@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { CountyData, CountyDataMap } from "@/app/_lib/types";
 import { getCountyTriSummary, getTriFacilitiesByFips } from "@/app/_lib/tri-facilities-data";
 import EquityTab from "@/app/_components/sidebar/EquityTab";
@@ -39,6 +39,12 @@ import {
   Zap,
   Info,
   ChevronRight,
+  Landmark,
+  Mail,
+  Copy,
+  Check,
+  ExternalLink,
+  Sliders,
 } from "lucide-react";
 
 import causalEstimatesRaw from "@/public/data/causal_estimates.json";
@@ -132,8 +138,12 @@ function uninsuredFraction(pct: number): string {
 }
 
 /* ── Policy Simulator Sub-Component ─────────────────────────── */
+import { runCounterfactualSimulation } from "@/app/_lib/bme-analytics";
+
 interface PolicySimulatorProps {
-  countyData: NonNullable<{ pm25Avg?: number | null; population?: number | null; rucc?: number | null; County_Name?: string }>;
+  fips?: string;
+  countyData: NonNullable<{ pm25Avg?: number | null; population?: number | null; rucc?: number | null; County_Name?: string; asthmaPrev?: number | null; copdPrev?: number | null }>;
+  allCountyData?: CountyDataMap | null;
   theta: number;
   ciLo: number;
   ciHi: number;
@@ -142,39 +152,123 @@ interface PolicySimulatorProps {
   causal: typeof import("@/public/data/causal_estimates.json");
 }
 
-function PolicySimulatorContent({ countyData, theta, ciLo, ciHi, isRural, isSimpleMode, causal }: PolicySimulatorProps) {
+function PolicySimulatorContent({ fips, countyData, allCountyData, theta, ciLo, ciHi, isRural, isSimpleMode, causal }: PolicySimulatorProps) {
   const [deltaPm25, setDeltaPm25] = useState<number>(2);
+  const [scope, setScope] = useState<"county" | "state" | "national">("county");
+  const [isBriefingOpen, setIsBriefingOpen] = useState(false);
+  const [copiedBrief, setCopiedBrief] = useState(false);
 
   const pop      = countyData.population ?? causal.rural.avg_population;
   const pm25Now  = countyData.pm25Avg ?? causal.rural.avg_pm25;
-  const EPA_VSL  = causal.policy_simulator.epa_vsl;
   const EPA_STD  = causal.policy_simulator.epa_target_pm25;
 
-  // Core formula: lives_saved = |theta| × (population / 100000) × delta_pm25
-  // (negative theta = harmful direction; we flip sign for "reduction" framing)
-  // Rural theta is positive (more PM2.5 → more deaths), so reduction → lives saved
-  const effectiveTheta = isRural ? Math.abs(theta) : Math.max(0, -theta); // safe for urban confounded estimate
-  const livesSaved      = effectiveTheta * (pop / 100_000) * deltaPm25;
-  const livesSavedLo    = Math.max(0, Math.abs(ciLo) * (pop / 100_000) * deltaPm25);
-  const livesSavedHi    = Math.abs(ciHi) * (pop / 100_000) * deltaPm25;
-  const costSavings     = livesSaved * EPA_VSL;
+  // Extract state code if available
+  const stateCode = useMemo(() => {
+    if (countyData.County_Name && countyData.County_Name.includes(", ")) {
+      return countyData.County_Name.split(", ")[1].trim();
+    }
+    if (fips) {
+      const prefix = fips.padStart(5, "0").substring(0, 2);
+      const FIPS_PREFIX_MAP: Record<string, string> = {
+        "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL",
+        "13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME",
+        "24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH",
+        "34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
+        "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"
+      };
+      return FIPS_PREFIX_MAP[prefix] || "State";
+    }
+    return "State";
+  }, [countyData.County_Name, fips]);
+
+  // Target PM2.5 calculation
+  const targetPm25Cap = Math.max(5.0, pm25Now - deltaPm25);
+
+  // Compute aggregated simulation results based on selected scope
+  const scopedSim = useMemo(() => {
+    if (allCountyData && Object.keys(allCountyData).length > 0) {
+      return runCounterfactualSimulation(
+        allCountyData,
+        targetPm25Cap,
+        50000,
+        15,
+        { scope, selectedFips: fips, selectedState: stateCode }
+      );
+    }
+    return null;
+  }, [allCountyData, targetPm25Cap, scope, fips, stateCode]);
+
+  // Single-county point estimate fallback if allCountyData isn't available
+  const effectiveTheta = isRural ? Math.abs(theta) : Math.max(0, -theta);
+  const countyLivesSaved  = effectiveTheta * (pop / 100_000) * deltaPm25;
+  const countyLivesLo     = Math.max(0, Math.abs(ciLo) * (pop / 100_000) * deltaPm25);
+  const countyLivesHi     = Math.abs(ciHi) * (pop / 100_000) * deltaPm25;
+
+  // Active KPI numbers
+  const activeLivesSaved = scopedSim ? scopedSim.projectedLivesSaved : countyLivesSaved;
+  const activeAsthmaEr   = scopedSim ? scopedSim.asthmaErVisitsPrevented : Math.round(pop * ((countyData.asthmaPrev || 9.0) / 100) * (deltaPm25 * 0.017));
+  const activeEpaVsl     = scopedSim ? scopedSim.epaVslSavingsMillions : +(activeLivesSaved * 11.0).toFixed(1);
+  const activeTotalCost  = scopedSim ? scopedSim.totalEconomicSavingsMillions : +(activeEpaVsl + activeLivesSaved * 0.18).toFixed(1);
+
   const maxFeasibleReduction = Math.max(0, pm25Now - EPA_STD);
   const pm25Target      = Math.max(0, pm25Now - deltaPm25);
 
-  const fmtLives = (v: number) => v < 0.05 ? "<0.1" : v.toFixed(1);
+  const fmtLives = (v: number) => v < 0.05 ? "<0.1" : v >= 1000 ? v.toLocaleString() : v.toFixed(1);
   const fmtCost  = (v: number) => {
-    if (v >= 1e9) return `$${(v/1e9).toFixed(1)}B`;
-    if (v >= 1e6) return `$${(v/1e6).toFixed(1)}M`;
-    return `$${(v/1e3).toFixed(0)}K`;
+    if (v >= 1000) return `$${(v/1000).toFixed(1)}B`;
+    if (v >= 1) return `$${v.toFixed(1)}M`;
+    return `$${(v * 1000).toFixed(0)}K`;
   };
 
-  // Significance: is CI strictly positive?
   const isSignificant = ciLo > 0 && ciHi > 0;
-  const canSimulate   = isRural || effectiveTheta > 0;
+  const canSimulate   = isRural || effectiveTheta > 0 || scope !== "county";
+
+  // Congressional email template text
+  const countyNameStr = countyData.County_Name || "our district";
+  const emailSubject = encodeURIComponent(`Policy Brief: Public Health & Healthcare Savings for ${countyNameStr}`);
+  const emailBody = encodeURIComponent(
+`DEAR CONGRESSIONAL REPRESENTATIVE / LEGISLATIVE STAFF,
+
+I am writing to share key quantitative health and economic findings regarding air quality and health outcomes for ${countyNameStr}${scope === "state" ? ` and ${stateCode}` : ""}.
+
+ACCORDING TO CAUSAL POLICY SIMULATIONS (US-SEER / DOUBLE MACHINE LEARNING ENGINE):
+- Regulatory Target: Achieving the EPA's revised PM2.5 standard of 9.0 μg/m³ (40 CFR Part 50)
+- Reduction Target: -${deltaPm25.toFixed(1)} μg/m³ PM2.5 cap across ${scope === "county" ? countyNameStr : scope === "state" ? `${stateCode} counties` : "all US counties"}
+- Estimated Annual Lives Saved: ${Math.round(activeLivesSaved).toLocaleString()} premature deaths avoided per year
+- Estimated Asthma & Respiratory ER Visits Avoided: ${Math.round(activeAsthmaEr).toLocaleString()} visits per year
+- Total Economic & Healthcare Value: $${activeTotalCost.toLocaleString()} Million / year (using EPA standard VSL of $11.0M per avoided mortality)
+
+These findings highlight that targeted environmental compliance and healthcare access investments produce measurable reductions in public health expenditures and mortality.
+
+Detailed findings available at US-SEER Policy Simulator.
+
+Respectfully submitted,
+Constituent & Public Health Advocate`
+  );
+
+  const rawBriefText = 
+`CONGRESSIONAL POLICY BRIEFING MEMORANDUM
+SUBJECT: Public Health & Healthcare Savings Model for ${countyNameStr} (${scope.toUpperCase()} SCOPE)
+TARGET POLICY: Reaching EPA Revised PM2.5 Standard (9.0 μg/m³, 40 CFR Part 50)
+
+KEY METRICS (-${deltaPm25.toFixed(1)} μg/m³ PM2.5 Target):
+• Estimated Lives Saved / Year: ${Math.round(activeLivesSaved).toLocaleString()}
+• Asthma & Respiratory ER Visits Prevented / Year: ${Math.round(activeAsthmaEr).toLocaleString()}
+• EPA Value of Statistical Life (VSL @ $11.0M/life): $${activeEpaVsl.toLocaleString()}M / year
+• Total Healthcare & Economic Value: $${activeTotalCost.toLocaleString()}M / year
+
+DATA SOURCE & METHODOLOGY:
+US-SEER Causal Policy Simulator utilizing Double Machine Learning (DML; Chernozhukov et al. 2018) residualizing PM2.5 exposure and respiratory mortality against 6 socioeconomic & clinical confounders.`;
+
+  const copyBriefToClipboard = () => {
+    navigator.clipboard.writeText(rawBriefText);
+    setCopiedBrief(true);
+    setTimeout(() => setCopiedBrief(false), 2500);
+  };
 
   return (
     <div className="space-y-3">
-      {/* Header badge */}
+      {/* Header & DML Badge */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <FlaskConical className="h-3.5 w-3.5 text-violet-500" />
@@ -183,55 +277,58 @@ function PolicySimulatorContent({ countyData, theta, ciLo, ciHi, isRural, isSimp
           </span>
         </div>
         <Badge variant="outline" className="text-[9px] font-semibold text-violet-500 border-violet-500/30 bg-violet-500/5">
-          DML
+          EPA 9.0 μg/m³ Standard
         </Badge>
       </div>
 
+      {/* Scope Selector */}
+      <div className="p-1 rounded-xl bg-muted/60 border border-border grid grid-cols-3 gap-1">
+        <button
+          type="button"
+          onClick={() => setScope("county")}
+          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+            scope === "county"
+              ? "bg-violet-600 text-white shadow-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          This County
+        </button>
+        <button
+          type="button"
+          onClick={() => setScope("state")}
+          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+            scope === "state"
+              ? "bg-violet-600 text-white shadow-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          My State ({stateCode})
+        </button>
+        <button
+          type="button"
+          onClick={() => setScope("national")}
+          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+            scope === "national"
+              ? "bg-violet-600 text-white shadow-xs"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+          }`}
+        >
+          National (US)
+        </button>
+      </div>
+
       {/* Context callout */}
-      {!isRural && (
+      {scope === "county" && !isRural && (
         <div className="flex items-start gap-2 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
           <Info className="h-3 w-3 text-amber-500 shrink-0 mt-0.5" />
           <p className="text-[10px] text-amber-600 dark:text-amber-400 leading-relaxed">
             {isSimpleMode
-              ? "This county is urban — healthcare access offsets some pollution harm. Estimates are less certain."
-              : "Urban counties show a confounded signal (healthcare access dominates). Rural DML θ = +1.47/100k is the primary causal estimate."}
+              ? "Urban healthcare access offsets some pollution harm. Switch scope to State or National to see aggregate policy impact."
+              : "Urban county signal confounded by hospital density. Switch to State or National scope to aggregate rural DML causal effects."}
           </p>
         </div>
       )}
-      {isRural && (
-        <div className="flex items-start gap-2 p-2.5 rounded-lg bg-violet-500/10 border border-violet-500/20">
-          <Zap className="h-3 w-3 text-violet-500 shrink-0 mt-0.5" />
-          <p className="text-[10px] text-violet-600 dark:text-violet-300 leading-relaxed">
-            {isSimpleMode
-              ? "This rural county shows a clear pollution–health link. The estimate below is backed by real causal analysis."
-              : "Rural DML estimate (θ = +1.47 per 100k per µg/m³) is the statistically valid causal signal after controlling for smoking, poverty, and healthcare access."}
-          </p>
-        </div>
-      )}
-
-      {/* Current PM2.5 context */}
-      <div className="p-3 rounded-xl border border-border bg-background/70 space-y-2">
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="font-semibold text-muted-foreground uppercase tracking-wide">
-            Current PM₂.₅
-          </span>
-          <span className={`font-bold ${pm25Now > EPA_STD ? "text-rose-500" : "text-emerald-500"}`}>
-            {pm25Now.toFixed(2)} µg/m³
-            {pm25Now > EPA_STD && (
-              <span className="text-rose-400 ml-1 font-normal">↑ above EPA limit</span>
-            )}
-          </span>
-        </div>
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <div className="h-1.5 flex-1 bg-muted rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-400 to-rose-500 rounded-full transition-all"
-              style={{ width: `${Math.min(100, (pm25Now / 15) * 100)}%` }}
-            />
-          </div>
-          <span className="shrink-0">EPA limit: {EPA_STD} µg/m³</span>
-        </div>
-      </div>
 
       {/* Slider */}
       <div className="p-3 rounded-xl border border-border bg-background/70 space-y-3">
@@ -256,128 +353,161 @@ function PolicySimulatorContent({ countyData, theta, ciLo, ciHi, isRural, isSimp
         />
 
         <div className="flex justify-between text-[9px] text-muted-foreground">
-          <span>0.5 µg/m³</span>
+          <span>-0.5 µg/m³</span>
           <span>
             {maxFeasibleReduction > 0
               ? `↓ to EPA std: ${maxFeasibleReduction.toFixed(1)}`
               : "Already at/below EPA standard"}
           </span>
-          <span>5.0 µg/m³</span>
-        </div>
-
-        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-          <span>Target level after reduction:</span>
-          <span className={`font-bold ${pm25Target <= EPA_STD ? "text-emerald-500" : "text-amber-500"}`}>
-            {pm25Target.toFixed(2)} µg/m³
-            {pm25Target <= EPA_STD ? " ✓ EPA-compliant" : ""}
-          </span>
+          <span>-5.0 µg/m³</span>
         </div>
       </div>
 
-      {/* Results */}
+      {/* Results Box */}
       {canSimulate ? (
         <div className="p-3.5 rounded-xl border border-violet-500/30 bg-violet-500/5 space-y-3">
-          {/* Lives saved — point estimate */}
-          <div>
-            <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-              {isSimpleMode ? "Estimated Lives Saved Per Year" : "Estimated Annual Lives Saved"}
-            </div>
-            <div className="text-3xl font-extrabold text-violet-500 leading-none">
-              {fmtLives(livesSaved)}
-              <span className="text-sm font-normal text-muted-foreground ml-1.5">
-                {isSimpleMode ? "people" : "deaths/yr avoided"}
-              </span>
-            </div>
-            {/* CI range bar */}
-            <div className="mt-2 space-y-1">
-              <div className="flex items-center justify-between text-[9px] text-muted-foreground">
-                <span>95% Confidence Range:</span>
-                <span className="font-mono">
-                  [{fmtLives(livesSavedLo)} – {fmtLives(livesSavedHi)}]
-                </span>
-              </div>
-              {/* Visual CI bar */}
-              <div className="relative h-4 bg-muted rounded-full overflow-hidden">
-                {/* CI band */}
-                <div
-                  className="absolute top-0 h-full bg-violet-400/20 rounded-full"
-                  style={{
-                    left: `${Math.min(100, (livesSavedLo / (livesSavedHi + 1)) * 100)}%`,
-                    right: "0%",
-                  }}
-                />
-                {/* Point estimate marker */}
-                <div
-                  className="absolute top-1 h-2 w-0.5 bg-violet-600 rounded-full"
-                  style={{
-                    left: `${Math.min(98, (livesSaved / (livesSavedHi + 1)) * 100)}%`,
-                  }}
-                />
-                <div className="absolute inset-0 flex items-center px-2">
-                  <span className="text-[8px] text-violet-600 font-bold">
-                    ← CI range →
-                  </span>
-                </div>
-              </div>
-            </div>
+          {/* Scope Label Banner */}
+          <div className="flex items-center justify-between text-[10px] font-bold text-violet-400 border-b border-violet-500/20 pb-1.5">
+            <span className="uppercase tracking-wider">
+              {scope === "county" ? countyData.County_Name || "County Scope" : scope === "state" ? `${stateCode} Statewide Scope` : "National Aggregate Scope"}
+            </span>
+            <span className="font-mono text-[9px] bg-violet-500/10 px-1.5 py-0.5 rounded border border-violet-500/20">
+              {scopedSim?.affectedCountyCount ? `${scopedSim.affectedCountyCount} counties` : "1 county"}
+            </span>
           </div>
 
-          {/* Healthcare cost savings */}
-          <div className="pt-2 border-t border-violet-500/20">
+          {/* Lives saved */}
+          <div>
             <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-              {isSimpleMode ? "Estimated Healthcare Savings" : "Statistical Value (EPA VSL, 2024)"}
+              {isSimpleMode ? "Estimated Annual Lives Saved" : "Projected Annual Lives Saved"}
             </div>
-            <div className="text-xl font-extrabold text-emerald-500">
-              {fmtCost(costSavings)}
+            <div className="text-3xl font-extrabold text-violet-500 leading-none">
+              {fmtLives(activeLivesSaved)}
               <span className="text-xs font-normal text-muted-foreground ml-1.5">
-                /yr
+                deaths/yr avoided
               </span>
             </div>
-            {!isSimpleMode && (
-              <p className="text-[9px] text-muted-foreground mt-1">
-                At EPA Value of Statistical Life ($11M/life, 2024 dollars)
-              </p>
+            {scope === "county" && (
+              <div className="mt-2 text-[9px] font-mono text-muted-foreground">
+                95% CI Range: [{fmtLives(countyLivesLo)} – {fmtLives(countyLivesHi)}]
+              </div>
             )}
           </div>
 
-          {/* Significance note */}
-          {!isSignificant && !isSimpleMode && (
-            <div className="flex items-start gap-1.5 text-[9px] text-amber-500">
-              <Info className="h-2.5 w-2.5 shrink-0 mt-0.5" />
-              <span>
-                Analytical CI crosses zero — bootstrap CI confirms positive direction.
-                Effect is directionally consistent with FINDINGS.md (rural r = 0.17, p &lt; 0.001).
-              </span>
+          {/* Asthma & ER visits */}
+          <div className="pt-2 border-t border-violet-500/20 flex items-center justify-between">
+            <div>
+              <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
+                Asthma ER Visits Prevented
+              </div>
+              <div className="text-lg font-bold text-blue-400 font-mono">
+                {Math.round(activeAsthmaEr).toLocaleString()}
+                <span className="text-xs font-normal text-muted-foreground ml-1">/yr</span>
+              </div>
             </div>
-          )}
+            <Stethoscope className="h-5 w-5 text-blue-400/40" />
+          </div>
+
+          {/* Healthcare & Economic cost savings */}
+          <div className="pt-2 border-t border-violet-500/20">
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-muted-foreground mb-0.5">
+              Healthcare & Economic Savings (EPA VSL)
+            </div>
+            <div className="text-2xl font-black text-emerald-500 font-mono">
+              {fmtCost(activeTotalCost)}
+              <span className="text-xs font-normal text-muted-foreground ml-1.5">/yr</span>
+            </div>
+            <p className="text-[9px] text-muted-foreground mt-1 leading-tight">
+              Includes EPA Value of Statistical Life ($11.0M/life, 2024 USD) + avoided clinical treatment costs.
+            </p>
+          </div>
+
+          {/* Contact Representative Action Button */}
+          <div className="pt-2">
+            <Button
+              onClick={() => setIsBriefingOpen(true)}
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs gap-2 shadow-sm cursor-pointer"
+            >
+              <Landmark className="h-3.5 w-3.5 shrink-0" />
+              Contact Your Representative
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="p-3.5 rounded-xl border border-border bg-muted/30 text-center">
           <p className="text-[10px] text-muted-foreground">
-            Urban confounding prevents reliable simulation for this county type.
-            The rural DML estimate (θ = +1.47) applies to rural counties.
+            Urban confounding prevents single-county calculation. Switch scope to State or National.
           </p>
         </div>
       )}
 
-      {/* Methodology attribution */}
-      {!isSimpleMode && (
-        <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
-          <div className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Causal Methodology
-          </div>
-          <p className="text-[9px] text-muted-foreground leading-relaxed">
-            Double Machine Learning (Robinson 1988; Chernozhukov et al. 2018).
-            Random Forest nuisance models residualize PM₂.₅ and mortality on
-            6 confounders (smoking, poverty, uninsured rate, race, physician density, urbanicity).
-            OLS on residuals → θ. Bootstrap 95% CI from {causal.metadata.n_bootstrap} resamples.
-          </p>
-          <p className="text-[9px] text-muted-foreground">
-            Rural n = {causal.metadata.n_counties_rural.toLocaleString()} counties.
-            Full sample n = {causal.metadata.n_counties_analyzed.toLocaleString()}.
-          </p>
+      {/* Sourcing Attribution */}
+      <div className="p-2.5 rounded-lg bg-muted/40 border border-border/50 space-y-1">
+        <div className="flex items-center justify-between text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <span>Legislative & Causal Basis</span>
+          <span className="text-amber-500 font-mono">EPA 40 CFR Part 50</span>
         </div>
-      )}
+        <p className="text-[9px] text-muted-foreground leading-relaxed">
+          Models compliance with EPA&apos;s revised PM₂.₅ NAAQS limit (9.0 μg/m³, Feb 2024). Causal effects estimated via Double Machine Learning (Chernozhukov et al. 2018).
+        </p>
+      </div>
+
+      {/* Congressional Briefing Modal */}
+      <Dialog open={isBriefingOpen} onOpenChange={setIsBriefingOpen}>
+        <div className="space-y-4 p-1">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-foreground">
+              <Landmark className="h-5 w-5 text-amber-500" />
+              Congressional Policy Briefing Memo
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Pre-formatted legislative brief for {countyData.County_Name || "your district"} ({scope.toUpperCase()} scope) to send to your congressional representative or committee staff.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Pre-formatted memo display */}
+          <div className="p-3.5 rounded-xl bg-muted/60 border border-border font-mono text-[11px] leading-relaxed text-foreground space-y-2 max-h-[220px] overflow-y-auto">
+            <div className="text-amber-500 font-bold text-[10px] uppercase border-b border-border pb-1">
+              TO: CONGRESSIONAL DELEGATION & LEGISLATIVE STAFF
+            </div>
+            <pre className="whitespace-pre-wrap font-sans text-xs">
+              {rawBriefText}
+            </pre>
+          </div>
+
+          {/* Actions */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+            <a
+              href={`mailto:?subject=${emailSubject}&body=${emailBody}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs transition-colors cursor-pointer text-center"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Send Email
+            </a>
+
+            <button
+              type="button"
+              onClick={copyBriefToClipboard}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted font-semibold text-xs transition-colors cursor-pointer"
+            >
+              {copiedBrief ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5 text-muted-foreground" />}
+              {copiedBrief ? "Copied Brief!" : "Copy Brief Text"}
+            </button>
+
+            <a
+              href="https://www.house.gov/representatives/find-your-representative"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-semibold text-xs transition-colors cursor-pointer text-center"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              Find Rep Portal
+            </a>
+          </div>
+        </div>
+      </Dialog>
     </div>
   );
 }
@@ -1014,7 +1144,9 @@ export default function SidePanel({ fips, countyData, allCountyData, onOpenCompa
                 // pm25 reduction state (0.5 to 5 µg/m³, step 0.5)
                 // We need a local state for the slider — using a trick: store in a ref-like way via a wrapper
                 return <PolicySimulatorContent
+                  fips={fips}
                   countyData={countyData}
+                  allCountyData={allCountyData}
                   theta={theta}
                   ciLo={ciLo}
                   ciHi={ciHi}

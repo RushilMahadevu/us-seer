@@ -27,8 +27,14 @@ export interface SimulationResult {
   projectedLivesSaved: number;
   preventedCopdCases: number;
   preventedAsthmaCases: number;
+  asthmaErVisitsPrevented: number;
+  epaVslSavingsMillions: number;
+  clinicalCostSavingsMillions: number;
+  totalEconomicSavingsMillions: number;
   estimatedCostSavingsMillions: number;
   affectedCountyCount: number;
+  scope?: "county" | "state" | "national";
+  scopeLabel?: string;
   priorityCounties: {
     fips: string;
     name: string;
@@ -186,14 +192,59 @@ export function calculateAttributableRisk(dataMap: CountyDataMap, baselinePm25 =
 }
 
 /**
- * Run counterfactual policy simulation across all counties.
+ * Run counterfactual policy simulation across all or scoped counties.
  */
 export function runCounterfactualSimulation(
   dataMap: CountyDataMap,
   targetPm25Cap: number,
   targetToxicCap: number,
-  mdDensityBoostPct: number
+  mdDensityBoostPct: number,
+  scopeFilter?: {
+    scope: "county" | "state" | "national";
+    selectedFips?: string;
+    selectedState?: string;
+  }
 ): SimulationResult {
+  let filteredMap = dataMap;
+
+  // Filter map based on requested scope
+  if (scopeFilter?.scope === "county" && scopeFilter.selectedFips) {
+    const single = dataMap[scopeFilter.selectedFips] || dataMap[scopeFilter.selectedFips.padStart(5, "0")];
+    filteredMap = single ? { [scopeFilter.selectedFips]: single } : {};
+  } else if (scopeFilter?.scope === "state") {
+    let targetStateCode = scopeFilter.selectedState;
+    if (!targetStateCode && scopeFilter.selectedFips) {
+      const prefix = scopeFilter.selectedFips.padStart(5, "0").substring(0, 2);
+      // Map FIPS prefix to 2-letter state code if needed
+      const FIPS_PREFIX_MAP: Record<string, string> = {
+        "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL",
+        "13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME",
+        "24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH",
+        "34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
+        "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"
+      };
+      targetStateCode = FIPS_PREFIX_MAP[prefix];
+    }
+
+    if (targetStateCode) {
+      const out: CountyDataMap = {};
+      Object.entries(dataMap).forEach(([fips, c]) => {
+        const prefix = fips.padStart(5, "0").substring(0, 2);
+        const FIPS_PREFIX_MAP: Record<string, string> = {
+          "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL",
+          "13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME",
+          "24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH",
+          "34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
+          "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"
+        };
+        if (FIPS_PREFIX_MAP[prefix] === targetStateCode) {
+          out[fips] = c;
+        }
+      });
+      filteredMap = out;
+    }
+  }
+
   let projectedLivesSaved = 0;
   let preventedCopdCases = 0;
   let preventedAsthmaCases = 0;
@@ -208,7 +259,7 @@ export function runCounterfactualSimulation(
     riskScore: number;
   }[] = [];
 
-  Object.entries(dataMap).forEach(([fips, county]) => {
+  Object.entries(filteredMap).forEach(([fips, county]) => {
     const pop = county.population || 0;
     const pm25 = county.pm25Avg || 0;
     const mortalityRate = county.mortalityRate || 0;
@@ -247,7 +298,7 @@ export function runCounterfactualSimulation(
       preventedCopdCases += copdPrevented;
       preventedAsthmaCases += asthmaPrevented;
 
-      if (livesSavedInCounty > 0.05) {
+      if (livesSavedInCounty > 0.01) {
         countyImpacts.push({
           fips,
           name: county.County_Name || `FIPS ${fips}`,
@@ -263,9 +314,28 @@ export function runCounterfactualSimulation(
   // Sort priority counties by lives saved descending
   countyImpacts.sort((a, b) => b.livesSaved - a.livesSaved);
 
-  // Healthcare cost savings estimation: ~$150,000 saved per prevented mortality/exacerbation
-  const estimatedCostSavingsMillions =
-    (projectedLivesSaved * 180000 + preventedCopdCases * 4500 + preventedAsthmaCases * 1200) / 1000000;
+  // EPA Standard Value of Statistical Life (VSL): $11.0 Million per avoided mortality (2024 USD)
+  const EPA_VSL_PER_LIFE = 11.0; // $11.0M
+  const epaVslSavingsMillions = +(projectedLivesSaved * EPA_VSL_PER_LIFE).toFixed(1);
+
+  // Direct clinical cost savings: ~$180k per premature death avoided + ER/hospitalization costs ($4,500/COPD, $1,200/Asthma)
+  const clinicalCostSavingsMillions = +(
+    (projectedLivesSaved * 0.18 + preventedCopdCases * 0.0045 + preventedAsthmaCases * 0.0012)
+  ).toFixed(1);
+
+  const totalEconomicSavingsMillions = +(epaVslSavingsMillions + clinicalCostSavingsMillions).toFixed(1);
+
+  // Estimated asthma & respiratory ER visits prevented (~85% of asthma cases + 45% of COPD flare-ups lead to ER visits)
+  const asthmaErVisitsPrevented = Math.round(preventedAsthmaCases * 0.85 + preventedCopdCases * 0.45);
+
+  const scope = scopeFilter?.scope || "national";
+  let scopeLabel = "National (All US Counties)";
+  if (scope === "county") {
+    const fips = scopeFilter?.selectedFips;
+    scopeLabel = fips && dataMap[fips]?.County_Name ? dataMap[fips].County_Name! : "Single County";
+  } else if (scope === "state") {
+    scopeLabel = scopeFilter?.selectedState ? `State (${scopeFilter.selectedState})` : "Statewide";
+  }
 
   return {
     targetPm25Cap,
@@ -274,8 +344,14 @@ export function runCounterfactualSimulation(
     projectedLivesSaved: Math.round(projectedLivesSaved),
     preventedCopdCases: Math.round(preventedCopdCases),
     preventedAsthmaCases: Math.round(preventedAsthmaCases),
-    estimatedCostSavingsMillions: +estimatedCostSavingsMillions.toFixed(1),
+    asthmaErVisitsPrevented,
+    epaVslSavingsMillions,
+    clinicalCostSavingsMillions,
+    totalEconomicSavingsMillions,
+    estimatedCostSavingsMillions: totalEconomicSavingsMillions,
     affectedCountyCount,
+    scope,
+    scopeLabel,
     priorityCounties: countyImpacts.slice(0, 10),
   };
 }

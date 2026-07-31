@@ -58,7 +58,13 @@ import {
   Maximize2,
   BookOpen,
   Microscope,
+  Landmark,
+  Mail,
+  Copy,
+  Check,
+  ExternalLink,
 } from "lucide-react";
+import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "@/app/_components/ui/dialog";
 
 interface AnalysisViewProps {
   data: CountyDataMap;
@@ -197,6 +203,37 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
   const [targetPm25Cap, setTargetPm25Cap] = useState<number>(9.0);
   const [targetToxicCap, setTargetToxicCap] = useState<number>(50000);
   const [mdDensityBoostPct, setMdDensityBoostPct] = useState<number>(15);
+  const [simScope, setSimScope] = useState<"county" | "state" | "national">("national");
+  const [simState, setSimState] = useState<string>("MS");
+  const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
+  const [copiedBriefText, setCopiedBriefText] = useState(false);
+
+  /* Selected county object helper */
+  const selectedCounty = useMemo(() => {
+    if (!selectedFips || !data) return null;
+    return data[selectedFips] || data[selectedFips.padStart(5, "0")] || null;
+  }, [selectedFips, data]);
+
+  /* Derive 2-letter state code from selected FIPS */
+  const selectedStateAbbr = useMemo(() => {
+    if (!selectedFips) return null;
+    const prefix = selectedFips.padStart(5, "0").substring(0, 2);
+    const FIPS_PREFIX_MAP: Record<string, string> = {
+      "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL",
+      "13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME",
+      "24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH",
+      "34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
+      "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"
+    };
+    return FIPS_PREFIX_MAP[prefix] || null;
+  }, [selectedFips]);
+
+  /* Auto-sync state scope state when selected county changes */
+  React.useEffect(() => {
+    if (selectedStateAbbr) {
+      setSimState(selectedStateAbbr);
+    }
+  }, [selectedStateAbbr]);
 
   /* ── Derived analytics ─────────────────────────────────────── */
 
@@ -224,8 +261,13 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
   const attributableRisk = useMemo(() => calculateAttributableRisk(data, 5.0), [data]);
 
   const simResult = useMemo(
-    () => runCounterfactualSimulation(data, targetPm25Cap, targetToxicCap, mdDensityBoostPct),
-    [data, targetPm25Cap, targetToxicCap, mdDensityBoostPct]
+    () =>
+      runCounterfactualSimulation(data, targetPm25Cap, targetToxicCap, mdDensityBoostPct, {
+        scope: simScope,
+        selectedFips: selectedFips || undefined,
+        selectedState: simState,
+      }),
+    [data, targetPm25Cap, targetToxicCap, mdDensityBoostPct, simScope, selectedFips, simState]
   );
 
   /* Baseline simulation at EPA 9.0, 50k toxic cap, 15% MD boost */
@@ -327,7 +369,99 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
 
   /* Resolved export FIPS: prefer the map-selected county, fall back to highest-risk */
   const exportFips = selectedFips ?? topRiskFips;
-  const exportCountyName = data[exportFips]?.County_Name ?? exportFips;;
+  const exportCountyName = data[exportFips]?.County_Name ?? exportFips;
+
+  /* Helper to render tab scope banner */
+  const renderScopeHeader = (tabKey: "impact" | "lab" | "simulator" | "equity" | "findings") => {
+    if (tabKey === "simulator") {
+      // Policy Simulator is the ONLY tab that actively filters calculations by scope
+      if (simScope === "county" && selectedCounty) {
+        return (
+          <div className="p-3 px-4 rounded-xl border border-amber-500/30 bg-amber-500/10 backdrop-blur-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-4 shadow-2xs">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Badge className="bg-amber-500 text-black font-extrabold text-[10px] tracking-wide uppercase px-2 py-0.5 shadow-2xs">
+                🎯 LOCAL COUNTY SIMULATION
+              </Badge>
+              <span className="text-xs sm:text-sm font-bold text-foreground">
+                {selectedCounty.County_Name}
+              </span>
+              <span className="text-xs font-mono text-muted-foreground">
+                (FIPS {selectedFips})
+              </span>
+            </div>
+            <div className="text-[11px] font-medium text-amber-300">
+              Policy simulation parameters filtered <strong>strictly to {selectedCounty.County_Name?.split(",")[0] ?? "Selected County"}</strong>.
+            </div>
+          </div>
+        );
+      }
+      if (simScope === "state") {
+        return (
+          <div className="p-3 px-4 rounded-xl border border-purple-500/30 bg-purple-500/10 backdrop-blur-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 mb-4 shadow-2xs">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <Badge className="bg-purple-500 text-white font-extrabold text-[10px] tracking-wide uppercase px-2 py-0.5 shadow-2xs">
+                🏛️ STATEWIDE SIMULATION
+              </Badge>
+              <span className="text-xs sm:text-sm font-bold text-foreground">
+                {simState} Statewide Scope
+              </span>
+            </div>
+            <div className="text-[11px] font-medium text-purple-300">
+              Policy simulation parameters applied across <strong>all counties in {simState}</strong>.
+            </div>
+          </div>
+        );
+      }
+      return (
+        <div className="p-2.5 px-4 rounded-xl border border-sky-500/30 bg-sky-500/10 backdrop-blur-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Badge variant="outline" className="border-sky-500/40 bg-sky-500/20 text-sky-300 font-bold text-[10px] tracking-wide uppercase px-2 py-0.5">
+              🌐 NATIONAL SIMULATION
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Policy simulation parameters applied across <strong>all {totalCounties.toLocaleString()} U.S. counties</strong>.
+            </span>
+          </div>
+          <div className="text-[11px] text-sky-400 font-medium">
+            Use scope toggle below to simulate a specific County or State.
+          </div>
+        </div>
+      );
+    }
+
+    // For all other tabs (Impact, Lab, Equity, Findings), calculations are NATIONAL dataset level
+    const tabTitles: Record<string, string> = {
+      impact: isSimpleMode ? "Measurable Impact" : "Nationwide Health Impact",
+      lab: isSimpleMode ? "Research Lab" : "National OLS Regression Studio",
+      equity: isSimpleMode ? "Equity & Clusters" : "National Health Desert Matrix",
+      findings: isSimpleMode ? "Key Findings" : "National Empirical Findings",
+    };
+
+    return (
+      <div className="p-2.5 px-4 rounded-xl border border-border/70 bg-card/40 backdrop-blur-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          <Badge variant="outline" className="border-sky-500/40 bg-sky-500/10 text-sky-400 font-bold text-[10px] tracking-wide uppercase px-2 py-0.5">
+            🌐 NATIONAL DATASET
+          </Badge>
+          <span className="text-xs text-muted-foreground">
+            <strong>{tabTitles[tabKey]}</strong> computes stats across all <strong>{totalCounties.toLocaleString()} U.S. counties</strong>.
+          </span>
+        </div>
+
+        {selectedCounty ? (
+          <div className="flex items-center gap-1.5 text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-lg shrink-0">
+            <span className="font-bold text-[10px] uppercase tracking-wider text-amber-400">Map Focus:</span>
+            <span className="font-semibold">{selectedCounty.County_Name?.split(",")[0]}</span>
+            <span className="text-[10px] text-muted-foreground font-mono">({selectedFips})</span>
+          </div>
+        ) : (
+          <div className="text-[11px] text-muted-foreground font-medium shrink-0">
+            Select a county on the map to highlight its values.
+          </div>
+        )}
+      </div>
+    );
+  };
 
   /* ── Render ──────────────────────────────────────────────────── */
   return (
@@ -401,6 +535,60 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
           </div>
         </div>
       </div>
+
+      {/* ── Active Selection Banner on Analysis Tab ─────────────────── */}
+      {selectedCounty ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3.5 sm:p-4 backdrop-blur-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
+              <Map className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider">Active Map Selection</span>
+                <Badge variant="outline" className="text-[10px] font-mono border-amber-500/40 text-amber-300 px-1.5 py-0">
+                  FIPS {selectedFips}
+                </Badge>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-foreground tracking-tight">
+                {selectedCounty.County_Name}
+              </h2>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                <span>Pop: <strong className="text-foreground">{selectedCounty.population?.toLocaleString() ?? "N/A"}</strong></span>
+                <span>•</span>
+                <span>PM₂.₅: <strong className="text-amber-300">{selectedCounty.pm25Avg ? `${selectedCounty.pm25Avg} µg/m³` : "N/A"}</strong></span>
+                <span>•</span>
+                <span>Mortality: <strong className="text-rose-300">{selectedCounty.mortalityRate ? `${selectedCounty.mortalityRate} / 100k` : "N/A"}</strong></span>
+                {selectedCounty.overallRisk !== undefined && (
+                  <>
+                    <span>•</span>
+                    <span>Risk Index: <strong className="text-violet-300">{selectedCounty.overallRisk}/100</strong></span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end md:self-center shrink-0">
+            <button
+              onClick={() => {
+                setActiveTab("simulator");
+                setSimScope("county");
+              }}
+              className="cursor-pointer px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Simulate Policy for {selectedCounty.County_Name?.split(",")[0] ?? "County"}</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border/60 bg-card/40 px-3.5 py-2.5 text-xs text-muted-foreground flex items-center justify-between">
+          <span className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-sky-400 shrink-0" />
+            <span>No specific county selected on map — showing national aggregate data ({totalCounties.toLocaleString()} counties). Select any county on the map to filter analytics.</span>
+          </span>
+        </div>
+      )}
 
       {/* ── 4-Item Menu on Phone Screens (sm:hidden) ────────────────── */}
       <div className="sm:hidden p-4 space-y-3.5 border-b border-border bg-card/50">
@@ -566,6 +754,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 TAB 1 — MEASURABLE IMPACT DASHBOARD (hero tab)
             ═══════════════════════════════════════════════════════════ */}
           <TabsContent value="impact" className="space-y-5 outline-none">
+            {renderScopeHeader("impact")}
             {isSimpleMode && (
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 leading-relaxed">
                 <span className="font-bold">📊 What this shows:</span> If the government set stricter limits on air pollution, here&apos;s how many lives could be saved each year.
@@ -841,6 +1030,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 TAB 2 — EPIDEMIOLOGICAL RESEARCH LAB
             ═══════════════════════════════════════════════════════════ */}
           <TabsContent value="lab" className="space-y-4 outline-none">
+            {renderScopeHeader("lab")}
             {isSimpleMode && (
               <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground leading-relaxed">
                 <span className="font-bold">🔍 What this shows:</span> Pick two health factors and see how they relate across all U.S. counties. Each dot is one county.
@@ -983,6 +1173,25 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                       </div>
                     )}
 
+                    {selectedCounty && (
+                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5">
+                        <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+                          <span>🎯 {selectedCounty.County_Name}</span>
+                          <Badge variant="outline" className="text-[9px] font-mono border-amber-500/40 text-amber-300">Selected</Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                          <div>
+                            <span className="text-muted-foreground block text-[10px] uppercase">{xMeta.shortLabel}</span>
+                            <span className="font-bold text-foreground">{fmt(selectedCounty[xAxisKey] as number | undefined, 2)} {xMeta.unit}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground block text-[10px] uppercase">{yMeta.shortLabel}</span>
+                            <span className="font-bold text-foreground">{fmt(selectedCounty[yAxisKey] as number | undefined, 2)} {yMeta.unit}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {isSimpleMode && (
                       <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-2">
                         <p className="font-semibold flex items-center gap-1.5 text-blue-400">
@@ -1066,6 +1275,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 TAB 3 — COUNTERFACTUAL POLICY SIMULATOR
             ═══════════════════════════════════════════════════════════ */}
           <TabsContent value="simulator" className="space-y-4 outline-none">
+            {renderScopeHeader("simulator")}
             {isSimpleMode && (
               <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-foreground leading-relaxed">
                 <span className="font-bold">🎛️ What this shows:</span> Drag the sliders to see how different government policies could save lives. The numbers update instantly.
@@ -1085,6 +1295,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                         setTargetPm25Cap(9.0);
                         setTargetToxicCap(50000);
                         setMdDensityBoostPct(15);
+                        setSimScope("national");
                       }}
                       className="text-[10px] font-medium text-muted-foreground hover:text-foreground underline decoration-dotted transition-colors cursor-pointer"
                     >
@@ -1093,11 +1304,73 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                   </div>
                   <CardDescription className="text-xs">
                     {isSimpleMode
-                      ? "Move the sliders to see how cleaner air and more doctors could save lives."
-                      : "Drag sliders or pick a scenario to model national-scale environmental & healthcare interventions."}
+                      ? "Move the sliders or select a scope to see how cleaner air and more doctors save lives."
+                      : "Set geographic scope, target pollution caps, and healthcare expansion parameters."}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-5 flex-1 flex flex-col justify-between pt-0">
+                <CardContent className="space-y-4 flex-1 flex flex-col justify-between pt-0">
+                  {/* Geographic Scope Dropdown / Segmented Toggle */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <span>Geographic Scope</span>
+                      <span className="text-amber-500 font-mono font-bold">
+                        {simScope === "county" 
+                          ? `Selected County: ${selectedCounty ? selectedCounty.County_Name : "None (Select on Map)"}` 
+                          : simScope === "state" ? `${simState} Statewide` : "National (3,142 Counties)"}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1 bg-muted/50 p-1 rounded-xl border border-border">
+                      <button
+                        type="button"
+                        onClick={() => setSimScope("national")}
+                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${simScope === "national"
+                            ? "bg-violet-600 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          }`}
+                      >
+                        National
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSimScope("state")}
+                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${simScope === "state"
+                            ? "bg-violet-600 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          }`}
+                      >
+                        State
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSimScope("county")}
+                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${simScope === "county"
+                            ? "bg-violet-600 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          }`}
+                      >
+                        County
+                      </button>
+                    </div>
+
+                    {/* State selector dropdown if state scope is selected */}
+                    {simScope === "state" && (
+                      <div className="pt-1 flex items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground shrink-0">Select State:</span>
+                        <select
+                          value={simState}
+                          onChange={(e) => setSimState(e.target.value)}
+                          className="flex-1 bg-background border border-border text-foreground text-xs rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-violet-500 font-mono"
+                        >
+                          {["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY"].map((st) => (
+                            <option key={st} value={st}>
+                              {st}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Quick Preset Buttons */}
                   <div className="space-y-1.5">
                     <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider block">
@@ -1112,8 +1385,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                           setMdDensityBoostPct(15);
                         }}
                         className={`px-2 py-1.5 text-[11px] font-medium rounded-lg border transition-all text-left flex flex-col cursor-pointer ${targetPm25Cap === 9.0 && targetToxicCap === 50000 && mdDensityBoostPct === 15
-                            ? "bg-amber-500/15 border-amber-500/40 text-amber-400 font-semibold"
-                            : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
+                          ? "bg-amber-500/15 border-amber-500/40 text-amber-400 font-semibold"
+                          : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
                           }`}
                       >
                         <span>EPA 2024</span>
@@ -1128,8 +1401,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                           setMdDensityBoostPct(25);
                         }}
                         className={`px-2 py-1.5 text-[11px] font-medium rounded-lg border transition-all text-left flex flex-col cursor-pointer ${targetPm25Cap === 5.0 && targetToxicCap === 25000 && mdDensityBoostPct === 25
-                            ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-semibold"
-                            : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
+                          ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-400 font-semibold"
+                          : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
                           }`}
                       >
                         <span>WHO Clean</span>
@@ -1144,8 +1417,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                           setMdDensityBoostPct(50);
                         }}
                         className={`px-2 py-1.5 text-[11px] font-medium rounded-lg border transition-all text-left flex flex-col cursor-pointer ${mdDensityBoostPct === 50
-                            ? "bg-purple-500/15 border-purple-500/40 text-purple-400 font-semibold"
-                            : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
+                          ? "bg-purple-500/15 border-purple-500/40 text-purple-400 font-semibold"
+                          : "bg-muted/30 border-border text-muted-foreground hover:bg-muted/60"
                           }`}
                       >
                         <span>Max Health</span>
@@ -1206,20 +1479,17 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                     />
                   </div>
 
-                  {/* Simulation Model Details — hide in simple mode */}
-                  {!isSimpleMode && (
-                    <div className="p-3 rounded-xl bg-muted/40 border border-border text-xs space-y-1.5 mt-auto">
-                      <div className="flex items-center justify-between">
-                        <p className="font-bold text-foreground flex items-center gap-1.5">
-                          <Activity className="w-3.5 h-3.5 text-primary" /> Simulation Model
-                        </p>
-                        <span className="text-[10px] font-mono text-muted-foreground">RR = e^(0.0058×ΔPM)</span>
-                      </div>
-                      <p className="text-[11px] text-muted-foreground leading-relaxed">
-                        Calculates log-linear hazard reduction per county based on exposure thresholds and healthcare buffer parameters.
-                      </p>
-                    </div>
-                  )}
+                  {/* Contact Representative Action */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsBriefingModalOpen(true)}
+                      className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                    >
+                      <Landmark className="w-4 h-4 shrink-0" />
+                      <span>Contact Your Representative</span>
+                    </button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1254,19 +1524,19 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                       <div className="flex items-center justify-between gap-1 mb-2">
                         <p className="text-[11px] font-bold text-blue-400 uppercase tracking-wide flex items-center gap-1.5">
                           <Stethoscope className="w-3.5 h-3.5" />
-                          {isSimpleMode ? "Disease Attacks Avoided" : "Cases Prevented"}
+                          {isSimpleMode ? "Asthma ER Visits Avoided" : "Asthma ER Visits Prevented"}
                         </p>
                         <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                          {isSimpleMode ? "per year" : "COPD + Asthma"}
+                          Annual
                         </span>
                       </div>
                       <p className="text-3xl font-black text-blue-400 font-mono tracking-tight">
-                        {(simResult.preventedCopdCases + simResult.preventedAsthmaCases).toLocaleString()}
+                        {simResult.asthmaErVisitsPrevented.toLocaleString()}
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-1.5">
                         {isSimpleMode
-                          ? "Asthma & lung disease flare-ups that wouldn't happen"
-                          : "Annual hospital & ER exacerbations prevented"}
+                          ? "Asthma attacks and ER visits prevented each year"
+                          : "Avoided respiratory emergency room visits"}
                       </p>
                     </CardContent>
                   </Card>
@@ -1276,19 +1546,19 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                       <div className="flex items-center justify-between gap-1 mb-2">
                         <p className="text-[11px] font-bold text-purple-400 uppercase tracking-wide flex items-center gap-1.5">
                           <Award className="w-3.5 h-3.5" />
-                          {isSimpleMode ? "Hospital Bill Savings" : "Healthcare Savings"}
+                          {isSimpleMode ? "Economic & Health Savings" : "Healthcare & VSL Savings"}
                         </p>
                         <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                          Annual
+                          EPA VSL ($11M)
                         </span>
                       </div>
                       <p className="text-3xl font-black text-purple-400 font-mono tracking-tight">
-                        ${simResult.estimatedCostSavingsMillions.toLocaleString()}M
+                        ${simResult.totalEconomicSavingsMillions.toLocaleString()}M
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-1.5">
                         {isSimpleMode
-                          ? "Money saved on hospital visits nationwide per year"
-                          : "Direct clinical cost reduction nationwide"}
+                          ? "Value of lives saved and medical bills avoided"
+                          : `EPA VSL ($11.0M/life) + clinical savings`}
                       </p>
                     </CardContent>
                   </Card>
@@ -1306,12 +1576,22 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                         <CardDescription className="text-xs">
                           {isSimpleMode
                             ? "These counties would see the biggest health improvements with these policies."
-                            : "Counties seeing maximum projected health gains under current scenario settings."}
+                            : `Counties seeing maximum projected health gains under ${simResult.scopeLabel || "current scope"}.`}
                         </CardDescription>
                       </div>
-                      <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5">
-                        Top {simResult.priorityCounties.length} High-Impact
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] font-mono px-2 py-0.5">
+                          Top {simResult.priorityCounties.length} High-Impact
+                        </Badge>
+                        <button
+                          type="button"
+                          onClick={() => setIsBriefingModalOpen(true)}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 text-amber-400 font-bold text-[11px] flex items-center gap-1.5 transition-colors cursor-pointer"
+                        >
+                          <Landmark className="w-3 h-3" />
+                          Congressional Brief
+                        </button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0 flex-1 flex flex-col justify-between">
@@ -1355,16 +1635,125 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                         </tbody>
                       </table>
                     </div>
+
+                    {/* Regulatory & Legislative Citation Banner */}
+                    <div className="p-3 bg-muted/40 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[9px] font-mono border-amber-500/40 text-amber-400 bg-amber-500/5">
+                          EPA NAAQS 2024 (40 CFR Part 50)
+                        </Badge>
+                        <span className="text-[11px]">
+                          Models compliance with the EPA&apos;s revised PM₂.₅ annual limit of <strong>9.0 μg/m³</strong>. Valued via EPA VSL standard ($11.0M/life).
+                        </span>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
             </div>
+
+            {/* Congressional Policy Briefing Modal */}
+            <Dialog open={isBriefingModalOpen} onOpenChange={setIsBriefingModalOpen}>
+              <div className="space-y-4 p-1">
+                <DialogHeader>
+                  <DialogTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
+                    <Landmark className="h-5 w-5 text-amber-500" />
+                    Congressional Policy Briefing Memo
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-muted-foreground">
+                    Pre-formatted legislative document based on current Policy Simulator settings ({simResult.scopeLabel || "National"}).
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="p-4 rounded-xl bg-muted/60 border border-border font-mono text-xs leading-relaxed text-foreground space-y-3 max-h-[300px] overflow-y-auto">
+                  <div className="text-amber-500 font-bold text-xs uppercase border-b border-border pb-1.5 flex items-center justify-between">
+                    <span>TO: CONGRESSIONAL DELEGATION & LEGISLATIVE STAFF</span>
+                    <span>SCOPE: {simResult.scopeLabel?.toUpperCase()}</span>
+                  </div>
+                  <pre className="whitespace-pre-wrap font-sans text-xs">
+                    {`CONGRESSIONAL POLICY BRIEFING MEMORANDUM
+SUBJECT: Public Health & Economic Impact Analysis for ${simResult.scopeLabel}
+REGULATORY BENCHMARK: EPA Revised PM2.5 Annual Standard of 9.0 μg/m³ (40 CFR Part 50)
+
+KEY SIMULATED OUTCOMES:
+• Projected Annual Lives Saved: ${simResult.projectedLivesSaved.toLocaleString()} avoided premature respiratory deaths
+• Asthma ER Visits Prevented: ${simResult.asthmaErVisitsPrevented.toLocaleString()} visits / year
+• EPA Value of Statistical Life (VSL @ $11.0M/life): $${simResult.epaVslSavingsMillions.toLocaleString()} Million / year
+• Total Healthcare & Economic Benefit: $${simResult.totalEconomicSavingsMillions.toLocaleString()} Million / year
+
+METHODOLOGY & CAUSAL INFERENCE:
+US-SEER Policy Simulator applies Double Machine Learning (DML; Chernozhukov et al. 2018) residualizing PM2.5 exposure and mortality rates against 6 socioeconomic & clinical confounders across US counties.`}
+                  </pre>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <a
+                    href={`mailto:?subject=${encodeURIComponent(`Congressional Policy Brief: Air Quality & Health Impact for ${simResult.scopeLabel}`)}&body=${encodeURIComponent(
+                      `DEAR CONGRESSIONAL DELEGATION / LEGISLATIVE STAFF,
+
+I am writing to submit a quantitative Policy Briefing Memo regarding air quality compliance and public health outcomes for ${simResult.scopeLabel}.
+
+SUMMARY OF SIMULATED HEALTH & ECONOMIC IMPACTS:
+- Target Standard: EPA Revised PM2.5 Annual Limit of 9.0 μg/m³ (40 CFR Part 50)
+- Projected Annual Lives Saved: ${simResult.projectedLivesSaved.toLocaleString()} premature deaths avoided per year
+- Asthma ER Visits Prevented: ${simResult.asthmaErVisitsPrevented.toLocaleString()} emergency visits avoided per year
+- Healthcare & Economic Value: $${simResult.totalEconomicSavingsMillions.toLocaleString()} Million / year (using EPA standard VSL of $11.0M per avoided mortality)
+
+These findings demonstrate that targeted environmental protection and healthcare access investments deliver substantial lives saved and economic savings.
+
+Respectfully submitted,
+Constituent & Public Health Advocate`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    <Mail className="h-4 w-4" />
+                    Send Email
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `CONGRESSIONAL POLICY BRIEFING MEMORANDUM
+SUBJECT: Public Health & Economic Impact Analysis for ${simResult.scopeLabel}
+REGULATORY BENCHMARK: EPA Revised PM2.5 Annual Standard of 9.0 μg/m³ (40 CFR Part 50)
+
+KEY SIMULATED OUTCOMES:
+• Projected Annual Lives Saved: ${simResult.projectedLivesSaved.toLocaleString()}
+• Asthma ER Visits Prevented: ${simResult.asthmaErVisitsPrevented.toLocaleString()}
+• EPA Value of Statistical Life (VSL @ $11.0M/life): $${simResult.epaVslSavingsMillions.toLocaleString()}M / yr
+• Total Healthcare & Economic Benefit: $${simResult.totalEconomicSavingsMillions.toLocaleString()}M / yr`
+                      );
+                      setCopiedBriefText(true);
+                      setTimeout(() => setCopiedBriefText(false), 2500);
+                    }}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-border bg-card hover:bg-muted font-semibold text-xs transition-colors cursor-pointer"
+                  >
+                    {copiedBriefText ? <Check className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4 text-muted-foreground" />}
+                    {copiedBriefText ? "Copied to Clipboard!" : "Copy Policy Brief"}
+                  </button>
+
+                  <a
+                    href="https://www.house.gov/representatives/find-your-representative"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 font-bold text-xs transition-colors cursor-pointer text-center"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Find Rep Portal
+                  </a>
+                </div>
+              </div>
+            </Dialog>
           </TabsContent>
 
           {/* ═══════════════════════════════════════════════════════════
                 TAB 4 — SPATIAL EQUITY & CLUSTERS
             ═══════════════════════════════════════════════════════════ */}
           <TabsContent value="equity" className="space-y-4 outline-none">
+            {renderScopeHeader("equity")}
             {isSimpleMode && (
               <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-foreground leading-relaxed">
                 <span className="font-bold">⚠️ What this shows:</span> Which counties have the worst combination of bad air AND few doctors — and which groups of people are most affected.
@@ -1552,6 +1941,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 TAB 5 — KEY FINDINGS (empirical results from FINDINGS.md)
             ═══════════════════════════════════════════════════════════ */}
           <TabsContent value="findings" className="space-y-5 outline-none">
+            {renderScopeHeader("findings")}
             {isSimpleMode && (
               <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-200 leading-relaxed">
                 <span className="font-bold">🔬 What this shows:</span> The actual discoveries US-SEER made by analyzing air quality, poverty, and health outcomes across all 3,142 U.S. counties.
@@ -1787,8 +2177,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                     setActiveTab(m.id as typeof activeTab);
                   }}
                   className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold shrink-0 cursor-pointer transition-all ${mobileModalTab === m.id
-                      ? "bg-primary text-primary-foreground shadow-xs"
-                      : "bg-background/80 text-muted-foreground border border-border/60 hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-xs"
+                    : "bg-background/80 text-muted-foreground border border-border/60 hover:text-foreground"
                     }`}
                 >
                   {m.icon}
