@@ -12,6 +12,7 @@ import ReportExporter, { ReportMode } from "@/app/_components/ui/ReportExporter"
 import DataSourcesView from "@/app/_components/sources/DataSourcesView";
 import Toast from "@/app/_components/ui/Toast";
 import MyDistrictPanel from "@/app/_components/ui/MyDistrictPanel";
+import AppLoadingScreen from "@/app/_components/ui/AppLoadingScreen";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
@@ -54,6 +55,7 @@ function USSEERMain() {
   const [mapMetric, setMapMetric] = useState<MapMetric>("overallRisk");
   const [selectedYear, setSelectedYear] = useState<TemporalYear>(2024);
   const [isLoading, setIsLoading] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
@@ -327,8 +329,33 @@ function USSEERMain() {
     setSelectedFips(MY_DISTRICT.homeCountyFips);
   };
 
+  const handleResetApp = useCallback(() => {
+    setIsResetting(true);
+    setSelectedFips(null);
+    setMapMetric("overallRisk");
+    setSelectedYear(2024);
+    setActiveView("map");
+    setMapTarget(null);
+    setIsMobileDrawerOpen(false);
+
+    if (typeof window !== "undefined") {
+      const currentBasePath = pathname === "/map" ? "/map" : "/";
+      window.history.replaceState(null, "", currentBasePath);
+    }
+
+    setTimeout(() => {
+      setIsResetting(false);
+      setToastTitle("Workspace Reset");
+      setToastMessage("Restored default map view, metrics, and parameters.");
+      setToastOpen(true);
+    }, 750);
+  }, [pathname]);
+
   return (
     <div className="flex flex-col h-[100dvh] w-full bg-background text-foreground p-3.5 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden pt-4 sm:pt-6 pb-4 sm:pb-5">
+      {/* Fullscreen Overlay Loading Screen (Pre-loads App in Background) */}
+      <AppLoadingScreen isLoading={isLoading} isResetting={isResetting} />
+
       {/* Top Navigation & Control Header */}
       <Header
         isDarkMode={isDarkMode}
@@ -346,15 +373,7 @@ function USSEERMain() {
 
       {/* Main Container */}
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
-        {isLoading ? (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-card border border-border rounded-xl shadow-xs gap-3 animate-in fade-in duration-300">
-            <Loader2 className="h-7 w-7 text-primary animate-spin" />
-            <div className="text-center">
-              <p className="text-xs font-semibold text-foreground">Loading Geospatial Data</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">Fetching county health metrics…</p>
-            </div>
-          </div>
-        ) : activeView === "map" ? (
+        {activeView === "map" ? (
           <div className="flex-1 flex flex-col md:flex-row gap-3 sm:gap-3.5 min-h-0 relative animate-in fade-in-50 zoom-in-98 duration-400">
             {/* Map Section */}
             <section className="flex-1 h-full min-h-0 flex flex-col">

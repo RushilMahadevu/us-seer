@@ -38,16 +38,18 @@ import {
   Activity,
   Stethoscope,
   Wind,
-  ShieldAlert,
+  Group,
   Sliders,
+  Replace,
   Sparkles,
   Award,
   Users,
   FileText,
   CheckCircle2,
   AlertTriangle,
-  TrendingUp,
+  Rocket,
   HeartPulse,
+  ChartLine,
   Factory,
   Info,
   Heart,
@@ -56,7 +58,7 @@ import {
   X,
   ChevronRight,
   Maximize2,
-  BookOpen,
+  ScanSearch,
   Microscope,
   Landmark,
   Mail,
@@ -191,6 +193,7 @@ function PolicySlider({
 /* ── Main AnalysisView ───────────────────────────────────────── */
 export default function AnalysisView({ data, onOpenExporter, selectedFips }: AnalysisViewProps) {
   const [activeTab, setActiveTab] = useState<"impact" | "lab" | "simulator" | "equity" | "findings">("impact");
+  const [labSubTab, setLabSubTab] = useState<"regression" | "rucc" | "diagnostics">("regression");
   const [mobileModalTab, setMobileModalTab] = useState<"impact" | "lab" | "simulator" | "equity" | "findings" | null>(null);
   const { isSimpleMode } = useSimpleMode();
 
@@ -219,11 +222,11 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
     if (!selectedFips) return null;
     const prefix = selectedFips.padStart(5, "0").substring(0, 2);
     const FIPS_PREFIX_MAP: Record<string, string> = {
-      "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL",
-      "13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME",
-      "24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH",
-      "34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
-      "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"
+      "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL",
+      "13": "GA", "15": "HI", "16": "ID", "17": "IL", "18": "IN", "19": "IA", "20": "KS", "21": "KY", "22": "LA", "23": "ME",
+      "24": "MD", "25": "MA", "26": "MI", "27": "MN", "28": "MS", "29": "MO", "30": "MT", "31": "NE", "32": "NV", "33": "NH",
+      "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND", "39": "OH", "40": "OK", "41": "OR", "42": "PA", "44": "RI",
+      "45": "SC", "46": "SD", "47": "TN", "48": "TX", "49": "UT", "50": "VT", "51": "VA", "53": "WA", "54": "WV", "55": "WI", "56": "WY"
     };
     return FIPS_PREFIX_MAP[prefix] || null;
   }, [selectedFips]);
@@ -576,7 +579,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
               }}
               className="cursor-pointer px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-black font-bold text-xs transition-all flex items-center gap-1.5 shadow-2xs"
             >
-              <Sliders className="w-3.5 h-3.5" />
+              <Replace className="w-3.5 h-3.5" />
               <span>Simulate Policy for {selectedCounty.County_Name?.split(",")[0] ?? "County"}</span>
             </button>
           </div>
@@ -616,7 +619,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 ? "Key health findings & lives saved per year"
                 : "Baseline EPA standard & attributable risk",
               badge: `${baselineSimResult.projectedLivesSaved.toLocaleString()} Saved/yr`,
-              icon: <TrendingUp className="w-5 h-5 text-emerald-400" />,
+              icon: <Rocket className="w-5 h-5 text-emerald-400" />,
               border: "border-emerald-500/30",
               bg: "bg-gradient-to-br from-emerald-500/10 via-card to-card",
               badgeColor: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -628,7 +631,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 ? "Compare health & pollution factors across counties"
                 : "Bivariate OLS regression engine & diagnostics",
               badge: `r = ${defaultOls.correlation.toFixed(2)} Correlation`,
-              icon: <Activity className="w-5 h-5 text-blue-400" />,
+              icon: <ChartLine className="w-5 h-5 text-blue-400" />,
               border: "border-blue-500/30",
               bg: "bg-gradient-to-br from-blue-500/10 via-card to-card",
               badgeColor: "bg-blue-500/15 text-blue-400 border-blue-500/30",
@@ -640,7 +643,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 ? "Test clean air limits & doctor expansion policies"
                 : "Counterfactual scenario & cap modeling",
               badge: `${simResult.projectedLivesSaved.toLocaleString()} Saved`,
-              icon: <Sliders className="w-5 h-5 text-purple-400" />,
+              icon: <Replace className="w-5 h-5 text-purple-400" />,
               border: "border-purple-500/30",
               bg: "bg-gradient-to-br from-purple-500/10 via-card to-card",
               badgeColor: "bg-purple-500/15 text-purple-400 border-purple-500/30",
@@ -652,7 +655,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 ? "High-risk counties & doctor shortage areas"
                 : "Health desert matrix & RUCC stratification",
               badge: `${clusterCounts.doubleBurden} Deserts`,
-              icon: <ShieldAlert className="w-5 h-5 text-rose-400" />,
+              icon: <Group className="w-5 h-5 text-rose-400" />,
               border: "border-rose-500/30",
               bg: "bg-gradient-to-br from-rose-500/10 via-card to-card",
               badgeColor: "bg-rose-500/15 text-rose-400 border-rose-500/30",
@@ -664,7 +667,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 ? "The discoveries US-SEER uncovered from federal data"
                 : "Quantified empirical results across 2,953 counties",
               badge: "74 EJ Hotspots",
-              icon: <BookOpen className="w-5 h-5 text-amber-400" />,
+              icon: <ScanSearch className="w-5 h-5 text-amber-400" />,
               border: "border-amber-500/30",
               bg: "bg-gradient-to-br from-amber-500/10 via-card to-card",
               badgeColor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
@@ -714,35 +717,35 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
               value="impact"
               className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 whitespace-nowrap"
             >
-              <TrendingUp className="w-3.5 h-3.5" />
+              <Rocket className="w-3.5 h-3.5" />
               {isSimpleMode ? "Big Picture" : "Measurable Impact"}
             </TabsTrigger>
             <TabsTrigger
               value="lab"
               className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 whitespace-nowrap"
             >
-              <Activity className="w-3.5 h-3.5" />
+              <ChartLine className="w-3.5 h-3.5" />
               {isSimpleMode ? "Explorer" : "Research Lab"}
             </TabsTrigger>
             <TabsTrigger
               value="simulator"
               className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 whitespace-nowrap"
             >
-              <Sliders className="w-3.5 h-3.5" />
+              <Replace className="w-3.5 h-3.5" />
               {isSimpleMode ? "What If?" : "Policy Simulator"}
             </TabsTrigger>
             <TabsTrigger
               value="equity"
               className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 whitespace-nowrap"
             >
-              <ShieldAlert className="w-3.5 h-3.5" />
+              <Group className="w-3.5 h-3.5" />
               {isSimpleMode ? "Who's at Risk?" : "Equity & Clusters"}
             </TabsTrigger>
             <TabsTrigger
               value="findings"
               className="cursor-pointer flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg shrink-0 whitespace-nowrap"
             >
-              <BookOpen className="w-3.5 h-3.5" />
+              <ScanSearch className="w-3.5 h-3.5" />
               {isSimpleMode ? "What We Found" : "Key Findings"}
             </TabsTrigger>
           </TabsList>
@@ -1027,248 +1030,521 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
           </TabsContent>
 
           {/* ═══════════════════════════════════════════════════════════
-                TAB 2 — EPIDEMIOLOGICAL RESEARCH LAB
+                TAB 2 — EPIDEMIOLOGICAL RESEARCH LAB (sub-tabbed)
             ═══════════════════════════════════════════════════════════ */}
           <TabsContent value="lab" className="space-y-4 outline-none">
             {renderScopeHeader("lab")}
-            {isSimpleMode && (
-              <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground leading-relaxed">
-                <span className="font-bold">🔍 What this shows:</span> Pick two health factors and see how they relate across all U.S. counties. Each dot is one county.
-              </div>
-            )}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Scatterplot */}
-              <Card className="lg:col-span-2 border-border shadow-xs">
-                <CardHeader className="pb-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <CardTitle className="text-sm font-bold flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-primary" />
-                        {isSimpleMode ? "Compare Two Factors" : "OLS Regression Studio"}
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        {isSimpleMode
-                          ? `How does ${xMeta.shortLabel} relate to ${yMeta.shortLabel} across ${olsResult.n.toLocaleString()} counties?`
-                          : `${xMeta.shortLabel} vs ${yMeta.shortLabel} across ${olsResult.n.toLocaleString()} counties${selectedRuccFilter !== "all" ? ` (RUCC ${selectedRuccFilter})` : ""}`}
-                      </CardDescription>
-                    </div>
-                    {!isSimpleMode && (
-                      <div className="flex gap-1.5">
-                        <Badge variant="outline" className="font-mono text-[10px]">r = {olsResult.correlation.toFixed(3)}</Badge>
-                        <Badge variant="outline" className="font-mono text-[10px]">R² = {olsResult.r2.toFixed(3)}</Badge>
-                        <Badge variant="outline" className="font-mono text-[10px]">
-                          p {olsResult.pValue < 0.001 ? "< 0.001" : `= ${olsResult.pValue.toFixed(3)}`}
-                        </Badge>
-                      </div>
-                    )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {/* Metric selectors */}
-                  <div className="grid grid-cols-2 gap-2 mb-3 p-2.5 bg-muted/40 rounded-xl border border-border">
-                    <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">X · Exposure</label>
-                      <select
-                        value={xAxisKey}
-                        onChange={(e) => setXAxisKey(e.target.value as keyof CountyData)}
-                        className="cursor-pointer w-full text-xs bg-background border border-border rounded-lg px-2 py-1.5 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        {METRIC_OPTIONS.map((m) => (
-                          <option key={`x-${m.key}`} value={m.key}>{m.label} ({m.unit})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-semibold text-muted-foreground uppercase block mb-1">Y · Health Outcome</label>
-                      <select
-                        value={yAxisKey}
-                        onChange={(e) => setYAxisKey(e.target.value as keyof CountyData)}
-                        className="cursor-pointer w-full text-xs bg-background border border-border rounded-lg px-2 py-1.5 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                      >
-                        {METRIC_OPTIONS.map((m) => (
-                          <option key={`y-${m.key}`} value={m.key}>{m.label} ({m.unit})</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
 
-                  {/* Scatter chart */}
-                  <div className="h-[280px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <ScatterChart margin={{ top: 10, right: 10, bottom: 25, left: 10 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.12} />
-                        <XAxis
-                          type="number"
-                          dataKey="x"
-                          name={xMeta.shortLabel}
-                          tick={{ fontSize: 9 }}
-                          tickLine={false}
-                          axisLine={false}
-                          label={{ value: `${xMeta.shortLabel} (${xMeta.unit})`, position: "insideBottom", offset: -15, fontSize: 10 }}
-                        />
-                        <YAxis
-                          type="number"
-                          dataKey="y"
-                          name={yMeta.shortLabel}
-                          tick={{ fontSize: 9 }}
-                          tickLine={false}
-                          axisLine={false}
-                          label={{ value: `${yMeta.shortLabel} (${yMeta.unit})`, angle: -90, position: "insideLeft", offset: 15, fontSize: 10 }}
-                        />
-                        <RechartsTooltip
-                          cursor={{ strokeDasharray: "3 3" }}
-                          contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 11 }}
-                          content={({ active, payload }) => {
-                            if (!active || !payload?.length) return null;
-                            const d = payload[0].payload;
-                            return (
-                              <div className="bg-popover border border-border rounded-lg p-2.5 text-xs shadow-lg">
-                                <p className="font-bold text-foreground mb-1">{d.name}</p>
-                                <p className="text-muted-foreground">{xMeta.shortLabel}: <span className="font-semibold text-foreground">{fmt(d.x, 2)} {xMeta.unit}</span></p>
-                                <p className="text-muted-foreground">{yMeta.shortLabel}: <span className="font-semibold text-foreground">{fmt(d.y, 2)} {yMeta.unit}</span></p>
-                              </div>
-                            );
-                          }}
-                        />
-                        {/* Scatter points */}
-                        <Scatter data={scatterPoints} fill="#3b82f6" fillOpacity={0.4} r={2} />
-                        {/* Regression trendline as second scatter with line */}
-                        <Scatter
-                          data={trendData}
-                          fill="none"
-                          line={{ stroke: "#ef4444", strokeWidth: 2 }}
-                          shape={() => null as any}
-                          legendType="none"
-                        />
-                      </ScatterChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* ── Lab Sub-Tab Navigation ────────────────────────────── */}
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl border border-border w-full overflow-x-auto scrollbar-none">
+              {([
+                { id: "regression", icon: <ChartLine className="w-3.5 h-3.5" />, label: isSimpleMode ? "Compare Factors" : "Regression Studio" },
+                { id: "rucc", icon: <Map className="w-3.5 h-3.5" />, label: isSimpleMode ? "Rural vs Urban" : "RUCC Analysis" },
+                { id: "diagnostics", icon: <Microscope className="w-3.5 h-3.5" />, label: isSimpleMode ? "Stats Details" : "Diagnostics" },
+              ] as const).map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setLabSubTab(tab.id)}
+                  className={`cursor-pointer flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 ${labSubTab === tab.id
+                    ? "bg-background text-foreground shadow-sm border border-border"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                    }`}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-              {/* Diagnostics sidebar */}
+            {/* ── Sub-Tab 1: Regression Studio ─────────────────────── */}
+            {labSubTab === "regression" && (
               <div className="space-y-4">
+                {isSimpleMode && (
+                  <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-xs text-foreground leading-relaxed">
+                    <span className="font-bold">🔍 What this shows:</span> Pick two health factors and see how they relate across all U.S. counties. Each dot is one county.
+                  </div>
+                )}
+
                 <Card className="border-border shadow-xs">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-bold flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-emerald-500" />
-                      {isSimpleMode ? "What the Chart Means" : "Statistical Diagnostics"}
-                    </CardTitle>
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <ChartLine className="w-4 h-4 text-primary" />
+                          {isSimpleMode ? "Compare Two Factors" : "OLS Regression Studio"}
+                        </CardTitle>
+                        <CardDescription className="text-xs mt-0.5">
+                          {isSimpleMode
+                            ? `How does ${xMeta.shortLabel} relate to ${yMeta.shortLabel} across ${olsResult.n.toLocaleString()} counties?`
+                            : `${xMeta.shortLabel} vs ${yMeta.shortLabel} · ${olsResult.n.toLocaleString()} counties${selectedRuccFilter !== "all" ? ` · RUCC ${selectedRuccFilter} only` : ""}`}
+                        </CardDescription>
+                      </div>
+                      {!isSimpleMode && (
+                        <div className="flex gap-1.5 flex-wrap shrink-0">
+                          <Badge variant="outline" className="font-mono text-[10px]">r = {olsResult.correlation.toFixed(3)}</Badge>
+                          <Badge variant="outline" className="font-mono text-[10px]">R² = {olsResult.r2.toFixed(3)}</Badge>
+                          <Badge variant="outline" className="font-mono text-[10px]">
+                            p {olsResult.pValue < 0.001 ? "< 0.001" : `= ${olsResult.pValue.toFixed(3)}`}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {!isSimpleMode && (
-                      <div className="space-y-2 p-3 bg-muted/40 rounded-xl border border-border">
-                        {[
-                          { label: "Regression Equation", val: `Y = ${olsResult.slope.toFixed(3)}X + ${olsResult.intercept.toFixed(1)}`, mono: true },
-                          { label: "Pearson r", val: olsResult.correlation.toFixed(3), mono: true },
-                          { label: "R² (variance explained)", val: `${(olsResult.r2 * 100).toFixed(1)}%`, mono: true },
-                          { label: "p-value", val: olsResult.pValue < 0.001 ? "< 0.001" : olsResult.pValue.toFixed(3), mono: true },
-                          { label: "Sample size N", val: `${olsResult.n.toLocaleString()} counties`, mono: false },
-                        ].map((row) => (
-                          <div key={row.label} className="flex justify-between items-center gap-2 text-xs">
-                            <span className="text-muted-foreground shrink-0">{row.label}</span>
-                            <span className={`font-semibold text-foreground ${row.mono ? "font-mono" : ""} text-right`}>{row.val}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {selectedCounty && (
-                      <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1.5">
-                        <div className="flex items-center justify-between text-xs font-bold text-amber-300">
-                          <span>🎯 {selectedCounty.County_Name}</span>
-                          <Badge variant="outline" className="text-[9px] font-mono border-amber-500/40 text-amber-300">Selected</Badge>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                          <div>
-                            <span className="text-muted-foreground block text-[10px] uppercase">{xMeta.shortLabel}</span>
-                            <span className="font-bold text-foreground">{fmt(selectedCounty[xAxisKey] as number | undefined, 2)} {xMeta.unit}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground block text-[10px] uppercase">{yMeta.shortLabel}</span>
-                            <span className="font-bold text-foreground">{fmt(selectedCounty[yAxisKey] as number | undefined, 2)} {yMeta.unit}</span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {isSimpleMode && (
-                      <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-2">
-                        <p className="font-semibold flex items-center gap-1.5 text-blue-400">
-                          <Info className="w-3.5 h-3.5" /> Plain English Summary
-                        </p>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          When <span className="font-semibold text-foreground">{xMeta.shortLabel}</span> goes up,{" "}
-                          <span className="font-semibold text-foreground">{yMeta.shortLabel}</span>{" "}
-                          tends to go{" "}
-                          <span className="font-semibold text-foreground">{olsResult.slope >= 0 ? "up too" : "down"}</span>.{" "}
-                          {Math.abs(olsResult.correlation) > 0.4 ? "This is a strong link." : Math.abs(olsResult.correlation) > 0.2 ? "This is a moderate link." : "The link is weak."}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Based on data from <span className="font-semibold text-foreground">{olsResult.n.toLocaleString()} counties</span>.
-                        </p>
-                      </div>
-                    )}
-
-                    {/* RUCC filter — hidden in simple mode */}
-                    {!isSimpleMode && (
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
-                          <Users className="w-3.5 h-3.5 text-indigo-400" /> Stratify by Urbanicity
-                        </label>
+                  <CardContent className="space-y-4">
+                    {/* Metric selectors */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-muted/40 rounded-xl border border-border">
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">X Axis · Exposure Factor</label>
                         <select
-                          value={selectedRuccFilter}
-                          onChange={(e) => setSelectedRuccFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
-                          className="cursor-pointer w-full text-xs bg-background border border-border rounded-lg px-2 py-1.5 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                          value={xAxisKey}
+                          onChange={(e) => setXAxisKey(e.target.value as keyof CountyData)}
+                          className="cursor-pointer w-full text-xs bg-background border border-border rounded-lg px-2.5 py-2 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                         >
-                          <option value="all">All Counties (RUCC 1–9)</option>
-                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => (
-                            <option key={r} value={r}>RUCC {r}</option>
+                          {METRIC_OPTIONS.map((m) => (
+                            <option key={`x-${m.key}`} value={m.key}>{m.label} ({m.unit})</option>
                           ))}
                         </select>
                       </div>
-                    )}
+                      <div>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide block mb-1.5">Y Axis · Health Outcome</label>
+                        <select
+                          value={yAxisKey}
+                          onChange={(e) => setYAxisKey(e.target.value as keyof CountyData)}
+                          className="cursor-pointer w-full text-xs bg-background border border-border rounded-lg px-2.5 py-2 font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        >
+                          {METRIC_OPTIONS.map((m) => (
+                            <option key={`y-${m.key}`} value={m.key}>{m.label} ({m.unit})</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
 
+                    {/* RUCC filter — hidden in simple mode */}
                     {!isSimpleMode && (
-                      <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-1">
-                        <p className="font-semibold flex items-center gap-1.5 text-blue-400">
-                          <Info className="w-3.5 h-3.5" /> Interpretation
-                        </p>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Slope of <span className="font-mono font-semibold text-foreground">{olsResult.slope.toFixed(3)}</span>: a 1-unit increase in{" "}
-                          {xMeta.shortLabel} is associated with a{" "}
-                          <span className="font-semibold text-foreground">{Math.abs(olsResult.slope).toFixed(3)}</span> {olsResult.slope >= 0 ? "increase" : "decrease"} in {yMeta.shortLabel}.
-                        </p>
+                      <div className="flex items-center gap-3 px-1">
+                        <label className="text-[11px] font-semibold text-muted-foreground flex items-center gap-1.5 shrink-0">
+                          <Users className="w-3.5 h-3.5 text-indigo-400" /> Stratify by Urbanicity:
+                        </label>
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <button
+                            onClick={() => setSelectedRuccFilter("all")}
+                            className={`cursor-pointer px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all border ${selectedRuccFilter === "all"
+                              ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
+                              : "border-border text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            All
+                          </button>
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((r) => (
+                            <button
+                              key={r}
+                              onClick={() => setSelectedRuccFilter(r)}
+                              className={`cursor-pointer px-2 py-1 rounded-lg text-[10px] font-bold transition-all border ${selectedRuccFilter === r
+                                ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-300"
+                                : "border-border text-muted-foreground hover:text-foreground"
+                                }`}
+                            >
+                              R{r}
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
-                  </CardContent>
-                </Card>
 
-                {/* RUCC bar in lab too */}
-                <Card className="border-border shadow-xs">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-xs font-bold text-foreground">Mortality by RUCC Code</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-[160px] pt-0">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={ruccChartData} margin={{ top: 5, right: 5, bottom: 5, left: -20 }}>
-                        <XAxis dataKey="label" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
-                        <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
-                        <RechartsTooltip
-                          contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 11 }}
-                          formatter={(v) => [`${v}/100k`, "Avg Mortality"]}
-                        />
-                        <Bar dataKey="avgMortality" radius={[4, 4, 0, 0]}>
-                          {ruccChartData.map((entry) => (
-                            <Cell key={entry.code} fill={entry.code >= 7 ? "#f59e0b" : "#3b82f6"} fillOpacity={0.8} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                    {/* Scatter chart — full width, tall */}
+                    <div className="h-[360px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <ScatterChart margin={{ top: 10, right: 20, bottom: 30, left: 15 }}>
+                          <CartesianGrid strokeDasharray="3 3" opacity={0.12} />
+                          <XAxis
+                            type="number"
+                            dataKey="x"
+                            name={xMeta.shortLabel}
+                            tick={{ fontSize: 10 }}
+                            tickLine={false}
+                            axisLine={false}
+                            label={{ value: `${xMeta.shortLabel} (${xMeta.unit})`, position: "insideBottom", offset: -18, fontSize: 11 }}
+                          />
+                          <YAxis
+                            type="number"
+                            dataKey="y"
+                            name={yMeta.shortLabel}
+                            tick={{ fontSize: 10 }}
+                            tickLine={false}
+                            axisLine={false}
+                            label={{ value: `${yMeta.shortLabel} (${yMeta.unit})`, angle: -90, position: "insideLeft", offset: 18, fontSize: 11 }}
+                          />
+                          <RechartsTooltip
+                            cursor={{ strokeDasharray: "3 3" }}
+                            contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 11 }}
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-popover border border-border rounded-lg p-2.5 text-xs shadow-lg">
+                                  <p className="font-bold text-foreground mb-1">{d.name}</p>
+                                  <p className="text-muted-foreground">{xMeta.shortLabel}: <span className="font-semibold text-foreground">{fmt(d.x, 2)} {xMeta.unit}</span></p>
+                                  <p className="text-muted-foreground">{yMeta.shortLabel}: <span className="font-semibold text-foreground">{fmt(d.y, 2)} {yMeta.unit}</span></p>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Scatter data={scatterPoints} fill="#3b82f6" fillOpacity={0.4} r={2.5} />
+                          <Scatter
+                            data={trendData}
+                            fill="none"
+                            line={{ stroke: "#ef4444", strokeWidth: 2 }}
+                            shape={() => null as any}
+                            legendType="none"
+                          />
+                        </ScatterChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Bottom row: interpretation + selected county */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {isSimpleMode ? (
+                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-2">
+                          <p className="font-semibold flex items-center gap-1.5 text-blue-400">
+                            <Info className="w-3.5 h-3.5" /> Plain English
+                          </p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            When <span className="font-semibold text-foreground">{xMeta.shortLabel}</span> goes up,{" "}
+                            <span className="font-semibold text-foreground">{yMeta.shortLabel}</span>{" "}
+                            tends to go{" "}
+                            <span className="font-semibold text-foreground">{olsResult.slope >= 0 ? "up too" : "down"}</span>.{" "}
+                            {Math.abs(olsResult.correlation) > 0.4 ? "This is a strong link." : Math.abs(olsResult.correlation) > 0.2 ? "This is a moderate link." : "The link is weak."}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">Based on <span className="font-semibold text-foreground">{olsResult.n.toLocaleString()} counties</span>.</p>
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-xs space-y-1.5">
+                          <p className="font-semibold flex items-center gap-1.5 text-blue-400">
+                            <Info className="w-3.5 h-3.5" /> Interpretation
+                          </p>
+                          <p className="text-[11px] text-muted-foreground leading-relaxed">
+                            Slope = <span className="font-mono font-semibold text-foreground">{olsResult.slope.toFixed(3)}</span>: a 1-unit increase in {xMeta.shortLabel} is associated with a{" "}
+                            <span className="font-semibold text-foreground">{Math.abs(olsResult.slope).toFixed(3)}</span>{" "}
+                            {olsResult.slope >= 0 ? "increase" : "decrease"} in {yMeta.shortLabel}.
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">Switch to the <span className="font-semibold text-foreground">Diagnostics</span> sub-tab for full stats.</p>
+                        </div>
+                      )}
+
+                      {selectedCounty ? (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-2">
+                          <div className="flex items-center justify-between text-xs font-bold text-amber-300">
+                            <span className="flex items-center gap-1.5">🎯 {selectedCounty.County_Name?.split(",")[0]}</span>
+                            <Badge variant="outline" className="text-[9px] font-mono border-amber-500/40 text-amber-300">Map Selection</Badge>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-[11px]">
+                            <div>
+                              <span className="text-muted-foreground block text-[10px] uppercase">{xMeta.shortLabel}</span>
+                              <span className="font-bold text-foreground">{fmt(selectedCounty[xAxisKey] as number | undefined, 2)} {xMeta.unit}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground block text-[10px] uppercase">{yMeta.shortLabel}</span>
+                              <span className="font-bold text-foreground">{fmt(selectedCounty[yAxisKey] as number | undefined, 2)} {yMeta.unit}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 rounded-xl border border-border/60 bg-card/40 text-xs text-muted-foreground flex items-center gap-2">
+                          <Info className="w-4 h-4 text-sky-400 shrink-0" />
+                          Select a county on the map to highlight its values on the chart.
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               </div>
-            </div>
+            )}
+
+            {/* ── Sub-Tab 2: RUCC Analysis ──────────────────────────── */}
+            {labSubTab === "rucc" && (
+              <div className="space-y-4">
+                {isSimpleMode && (
+                  <div className="p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-foreground leading-relaxed">
+                    <span className="font-bold">🏙️ What this shows:</span> Counties are ranked from most urban (R1) to most rural (R9). Rural counties tend to have higher lung disease death rates even though they often have less pollution — because it&apos;s harder to see a doctor.
+                  </div>
+                )}
+
+                <Card className="border-border shadow-xs">
+                  <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                      <div>
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <Map className="w-4 h-4 text-indigo-400" />
+                          {isSimpleMode ? "Rural vs Urban Health Gap" : "Rural-Urban Continuum Code (RUCC) Mortality"}
+                        </CardTitle>
+                        <CardDescription className="text-xs mt-0.5">
+                          {isSimpleMode
+                            ? "Average lung disease deaths per 100k people, grouped by how urban or rural the county is."
+                            : "Average respiratory mortality rate (deaths/100k) stratified by USDA RUCC classification (1=metro ≥1M pop, 9=completely rural)."}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline" className="text-[10px] font-mono border-indigo-500/40 text-indigo-400 shrink-0">{totalCounties.toLocaleString()} counties</Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    {/* Full-width tall RUCC chart */}
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={ruccChartData} margin={{ top: 10, right: 20, bottom: 25, left: 0 }}>
+                          <CartesianGrid strokeDasharray="3 3" opacity={0.12} vertical={false} />
+                          <XAxis
+                            dataKey="label"
+                            tick={{ fontSize: 11 }}
+                            tickLine={false}
+                            axisLine={false}
+                            label={{ value: "RUCC Code", position: "insideBottom", offset: -14, fontSize: 11 }}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10 }}
+                            tickLine={false}
+                            axisLine={false}
+                            label={{ value: "Avg Mortality /100k", angle: -90, position: "insideLeft", offset: 12, fontSize: 10 }}
+                          />
+                          <RechartsTooltip
+                            contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: "8px", fontSize: 11 }}
+                            content={({ active, payload, label: lbl }) => {
+                              if (!active || !payload?.length) return null;
+                              const ruccDescriptions: Record<string, string> = {
+                                R1: "Metro ≥1M pop", R2: "Metro 250k–1M", R3: "Metro <250k",
+                                R4: "Urban ≥20k (adj metro)", R5: "Urban ≥20k (non-adj)",
+                                R6: "Urban 2.5k–20k (adj)", R7: "Urban 2.5k–20k (non-adj)",
+                                R8: "Rural (adj metro)", R9: "Rural (non-adj)",
+                              };
+                              return (
+                                <div className="bg-popover border border-border rounded-lg p-2.5 text-xs shadow-lg">
+                                  <p className="font-bold text-foreground">{lbl} — {ruccDescriptions[lbl as string] ?? ""}</p>
+                                  <p className="text-muted-foreground mt-1">Avg Mortality: <span className="font-semibold text-foreground">{payload[0].value}/100k</span></p>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Bar dataKey="avgMortality" radius={[5, 5, 0, 0]}>
+                            {ruccChartData.map((entry) => (
+                              <Cell
+                                key={entry.code}
+                                fill={entry.code >= 7 ? "#f59e0b" : entry.code >= 4 ? "#6366f1" : "#3b82f6"}
+                                fillOpacity={0.85}
+                              />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Color legend */}
+                    <div className="flex items-center gap-4 flex-wrap text-[11px] text-muted-foreground px-1">
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-500 opacity-85 shrink-0" />Metro / Urban (R1–R3)</div>
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-indigo-500 opacity-85 shrink-0" />Small city (R4–R6)</div>
+                      <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-amber-500 opacity-85 shrink-0" />Rural (R7–R9) — highest mortality</div>
+                    </div>
+
+                    {/* RUCC code explainer grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        { code: "R1–R3", label: "Metropolitan", color: "border-blue-500/30 bg-blue-500/5", text: "text-blue-400", desc: isSimpleMode ? "Large cities with 1M+ people — best access to doctors and hospitals." : "Metro counties (≥250k pop). Highest physician density and hospital access." },
+                        { code: "R4–R6", label: "Micropolitan", color: "border-indigo-500/30 bg-indigo-500/5", text: "text-indigo-400", desc: isSimpleMode ? "Small cities and towns — moderate access to care." : "Adjacent urban and small-city counties (2.5k–20k population centers)." },
+                        { code: "R7–R9", label: "Rural / Frontier", color: "border-amber-500/30 bg-amber-500/5", text: "text-amber-400", desc: isSimpleMode ? "Very rural areas — fewest doctors and highest death rates from lung disease." : "Completely rural counties. Below-median physician density, highest respiratory mortality." },
+                      ].map((g) => (
+                        <div key={g.code} className={`p-3 rounded-xl border ${g.color}`}>
+                          <div className={`text-xs font-extrabold ${g.text} mb-0.5`}>{g.code} — {g.label}</div>
+                          <p className="text-[11px] text-muted-foreground leading-snug">{g.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Key finding callout */}
+                    <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex gap-3">
+                      <div className="text-amber-400 pt-0.5 shrink-0"><AlertTriangle className="w-4 h-4" /></div>
+                      <div>
+                        <p className="text-xs font-bold text-amber-300">{isSimpleMode ? "Key Finding: Rural counties are hit hardest" : "Epidemiological Finding: Rural Mortality Paradox"}</p>
+                        <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
+                          {isSimpleMode
+                            ? `Rural counties (R7–R9) have the highest lung disease death rates — not because of worse air, but because people live far from doctors and hospitals. This is the healthcare access crisis hiding in the data.`
+                            : `RUCC 7–9 counties show systematically elevated respiratory mortality despite lower population density and often lower pollution levels. This suggests healthcare access (physician density, hospital proximity) amplifies pollution-attributable mortality — a compounded vulnerability not captured by pollution metrics alone.`}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ── Sub-Tab 3: Diagnostics ────────────────────────────── */}
+            {labSubTab === "diagnostics" && (
+              <div className="space-y-4">
+                {isSimpleMode && (
+                  <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-xs text-foreground leading-relaxed">
+                    <span className="font-bold">📋 What this shows:</span> The math behind the chart — how strong the link is between the two factors you picked, and what it means.
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Stat table */}
+                  <Card className="border-border shadow-xs">
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-bold flex items-center gap-2">
+                        <FileText className="w-4 h-4 text-emerald-500" />
+                        {isSimpleMode ? "The Numbers" : "Regression Diagnostics"}
+                      </CardTitle>
+                      <CardDescription className="text-xs">
+                        {isSimpleMode
+                          ? `For: ${xMeta.label} vs ${yMeta.label}`
+                          : `OLS fit · ${xMeta.shortLabel} → ${yMeta.shortLabel}`}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {/* Stat pills */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { label: isSimpleMode ? "Correlation (r)" : "Pearson r", val: olsResult.correlation.toFixed(3), color: Math.abs(olsResult.correlation) > 0.4 ? "text-emerald-400" : Math.abs(olsResult.correlation) > 0.2 ? "text-amber-400" : "text-muted-foreground" },
+                          { label: isSimpleMode ? "Variance Explained" : "R² (fit quality)", val: `${(olsResult.r2 * 100).toFixed(1)}%`, color: "text-sky-400" },
+                          { label: isSimpleMode ? "Statistical Certainty" : "p-value", val: olsResult.pValue < 0.001 ? "< 0.001" : olsResult.pValue.toFixed(3), color: olsResult.pValue < 0.05 ? "text-emerald-400" : "text-rose-400" },
+                          { label: isSimpleMode ? "Counties Analyzed" : "Sample N", val: `${olsResult.n.toLocaleString()}`, color: "text-foreground" },
+                        ].map((stat) => (
+                          <div key={stat.label} className="p-3 rounded-xl bg-muted/40 border border-border">
+                            <div className="text-[10px] text-muted-foreground font-medium uppercase tracking-wide mb-1">{stat.label}</div>
+                            <div className={`text-xl font-black font-mono ${stat.color}`}>{stat.val}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Regression equation */}
+                      <div className="p-3 rounded-xl bg-muted/50 border border-border">
+                        <div className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">Regression Equation</div>
+                        <div className="font-mono text-sm font-bold text-foreground text-center py-2 bg-background rounded-lg border border-border">
+                          Y = {olsResult.slope.toFixed(3)}X {olsResult.intercept >= 0 ? "+" : "−"} {Math.abs(olsResult.intercept).toFixed(1)}
+                        </div>
+                        <div className="flex justify-between text-[10px] text-muted-foreground mt-2">
+                          <span>X = {xMeta.shortLabel} ({xMeta.unit})</span>
+                          <span>Y = {yMeta.shortLabel} ({yMeta.unit})</span>
+                        </div>
+                      </div>
+
+                      {/* Full stat table */}
+                      {!isSimpleMode && (
+                        <div className="space-y-1.5 p-3 bg-muted/30 rounded-xl border border-border">
+                          {[
+                            { label: "Slope (β)", val: olsResult.slope.toFixed(4), mono: true },
+                            { label: "Intercept (α)", val: olsResult.intercept.toFixed(3), mono: true },
+                            { label: "Pearson r", val: olsResult.correlation.toFixed(4), mono: true },
+                            { label: "R² (variance explained)", val: `${(olsResult.r2 * 100).toFixed(2)}%`, mono: true },
+                            { label: "p-value", val: olsResult.pValue < 0.001 ? "< 0.001" : olsResult.pValue.toFixed(4), mono: true },
+                            { label: "Sample N", val: `${olsResult.n.toLocaleString()} counties`, mono: false },
+                          ].map((row) => (
+                            <div key={row.label} className="flex justify-between items-center gap-3 text-xs py-1 border-b border-border/50 last:border-0">
+                              <span className="text-muted-foreground">{row.label}</span>
+                              <span className={`font-semibold text-foreground ${row.mono ? "font-mono" : ""}`}>{row.val}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Interpretation guide + county spotlight */}
+                  <div className="space-y-4">
+                    <Card className="border-border shadow-xs">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-bold flex items-center gap-2">
+                          <Info className="w-4 h-4 text-blue-400" />
+                          {isSimpleMode ? "How to Read This" : "Interpretation Guide"}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {[
+                          {
+                            term: isSimpleMode ? "Correlation (r)" : "Pearson r",
+                            meaning: isSimpleMode
+                              ? "How closely the two factors move together. Closer to 1 = strong link, closer to 0 = weak link."
+                              : "Measures the linear association strength. |r| > 0.4 = moderate/strong; < 0.2 = weak.",
+                          },
+                          {
+                            term: isSimpleMode ? "Variance Explained" : "R² (Coefficient of Determination)",
+                            meaning: isSimpleMode
+                              ? "What % of differences in the health outcome can be explained by the exposure factor you picked."
+                              : "Proportion of variance in Y explained by X. R² = 0.25 means 25% of variation in Y is explained by X.",
+                          },
+                          {
+                            term: isSimpleMode ? "Statistical Certainty" : "p-value",
+                            meaning: isSimpleMode
+                              ? "How confident we are the link is real and not random. Below 0.05 means it is very likely real."
+                              : "Probability the observed relationship arose by chance. p < 0.001 indicates extremely high confidence.",
+                          },
+                          {
+                            term: isSimpleMode ? "Slope" : "Slope (β)",
+                            meaning: isSimpleMode
+                              ? "For every 1-unit increase in the exposure factor, the health outcome changes by this amount."
+                              : "Unit change in Y per unit change in X. The sign indicates direction (positive = both rise together).",
+                          },
+                        ].map((item) => (
+                          <div key={item.term} className="space-y-0.5">
+                            <p className="text-[11px] font-bold text-foreground">{item.term}</p>
+                            <p className="text-[11px] text-muted-foreground leading-snug">{item.meaning}</p>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    {/* County spotlight card */}
+                    {selectedCounty ? (
+                      <Card className="border-amber-500/30 bg-amber-500/5 shadow-xs">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-300">
+                            🎯 {selectedCounty.County_Name?.split(",")[0]} — County Spotlight
+                          </CardTitle>
+                          <CardDescription className="text-xs">How this county sits on the regression for the current metric pair.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="p-2.5 rounded-xl bg-background border border-border text-center">
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{xMeta.shortLabel}</div>
+                              <div className="text-lg font-black text-foreground font-mono">{fmt(selectedCounty[xAxisKey] as number | undefined, 2)}</div>
+                              <div className="text-[10px] text-muted-foreground">{xMeta.unit}</div>
+                            </div>
+                            <div className="p-2.5 rounded-xl bg-background border border-border text-center">
+                              <div className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1">{yMeta.shortLabel}</div>
+                              <div className="text-lg font-black text-foreground font-mono">{fmt(selectedCounty[yAxisKey] as number | undefined, 2)}</div>
+                              <div className="text-[10px] text-muted-foreground">{yMeta.unit}</div>
+                            </div>
+                          </div>
+                          {(() => {
+                            const xVal = selectedCounty[xAxisKey] as number | undefined;
+                            const yVal = selectedCounty[yAxisKey] as number | undefined;
+                            if (xVal == null || yVal == null) return null;
+                            const predicted = olsResult.slope * xVal + olsResult.intercept;
+                            const residual = yVal - predicted;
+                            return (
+                              <div className="p-2.5 rounded-xl bg-muted/40 border border-border text-xs">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-muted-foreground">Predicted {yMeta.shortLabel}</span>
+                                  <span className="font-mono font-bold text-foreground">{fmt(predicted, 2)} {yMeta.unit}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground">Residual (actual − predicted)</span>
+                                  <span className={`font-mono font-bold ${residual > 0 ? "text-rose-400" : "text-emerald-400"}`}>
+                                    {residual > 0 ? "+" : ""}{fmt(residual, 2)}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    ) : (
+                      <div className="p-4 rounded-xl border border-border/60 bg-card/40 text-xs text-muted-foreground flex items-center gap-3">
+                        <Info className="w-4 h-4 text-sky-400 shrink-0" />
+                        <span>Select a county on the map to see its individual stats and how it compares to the national regression line.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           {/* ═══════════════════════════════════════════════════════════
@@ -1287,7 +1563,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="text-sm font-bold flex items-center gap-2">
-                      <Sliders className="w-4 h-4 text-amber-500" />
+                      <Replace className="w-4 h-4 text-amber-500" />
                       {isSimpleMode ? "Change the Policies" : "Policy Intervention Controls"}
                     </CardTitle>
                     <button
@@ -1314,8 +1590,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                     <div className="flex items-center justify-between text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                       <span>Geographic Scope</span>
                       <span className="text-amber-500 font-mono font-bold">
-                        {simScope === "county" 
-                          ? `Selected County: ${selectedCounty ? selectedCounty.County_Name : "None (Select on Map)"}` 
+                        {simScope === "county"
+                          ? `Selected County: ${selectedCounty ? selectedCounty.County_Name : "None (Select on Map)"}`
                           : simScope === "state" ? `${simState} Statewide` : "National (3,142 Counties)"}
                       </span>
                     </div>
@@ -1324,8 +1600,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                         type="button"
                         onClick={() => setSimScope("national")}
                         className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${simScope === "national"
-                            ? "bg-violet-600 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          ? "bg-violet-600 text-white shadow-xs"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                           }`}
                       >
                         National
@@ -1334,8 +1610,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                         type="button"
                         onClick={() => setSimScope("state")}
                         className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${simScope === "state"
-                            ? "bg-violet-600 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          ? "bg-violet-600 text-white shadow-xs"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                           }`}
                       >
                         State
@@ -1344,8 +1620,8 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                         type="button"
                         onClick={() => setSimScope("county")}
                         className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${simScope === "county"
-                            ? "bg-violet-600 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                          ? "bg-violet-600 text-white shadow-xs"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
                           }`}
                       >
                         County
@@ -1501,7 +1777,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                     <CardContent className="p-5 pt-6 sm:pt-7">
                       <div className="flex items-center justify-between gap-1 mb-2">
                         <p className="text-[11px] font-bold text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
-                          <TrendingUp className="w-3.5 h-3.5" />
+                          <Rocket className="w-3.5 h-3.5" />
                           {isSimpleMode ? "Lives Saved" : "Lives Saved / Yr"}
                         </p>
                         <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
@@ -1570,7 +1846,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
                     <div className="flex items-center justify-between">
                       <div>
                         <CardTitle className="text-sm font-bold flex items-center gap-2">
-                          <ShieldAlert className="w-4 h-4 text-rose-500" />
+                          <Group className="w-4 h-4 text-rose-500" />
                           {isSimpleMode ? "Counties That Would Benefit Most" : "Priority Intervention Counties"}
                         </CardTitle>
                         <CardDescription className="text-xs">
@@ -1764,7 +2040,7 @@ KEY SIMULATED OUTCOMES:
               <Card className="lg:col-span-2 border-border shadow-xs">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-sm font-bold flex items-center gap-2">
-                    <ShieldAlert className="w-4 h-4 text-rose-500" />
+                    <Group className="w-4 h-4 text-rose-500" />
                     {isSimpleMode ? "County Risk Groups" : "Environmental Hazard × Healthcare Access Matrix"}
                   </CardTitle>
                   <CardDescription className="text-xs">
@@ -1969,7 +2245,7 @@ KEY SIMULATED OUTCOMES:
                   value: "74",
                   sub: isSimpleMode ? "High pollution + high mortality + low income" : "Top-quartile PM₂.₅ + mortality + bottom-quartile income",
                   color: "text-amber-400", border: "border-amber-500/25", bg: "bg-amber-500/5",
-                  icon: <ShieldAlert className="w-3.5 h-3.5" />,
+                  icon: <Group className="w-3.5 h-3.5" />,
                 },
                 {
                   label: isSimpleMode ? "Extra Deaths in Those Areas" : "Excess Mortality vs. National Avg",
@@ -2134,11 +2410,11 @@ KEY SIMULATED OUTCOMES:
             <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary shrink-0">
-                  {mobileModalTab === "impact" && <TrendingUp className="w-5 h-5 text-emerald-400" />}
+                  {mobileModalTab === "impact" && <Rocket className="w-5 h-5 text-emerald-400" />}
                   {mobileModalTab === "lab" && <Activity className="w-5 h-5 text-blue-400" />}
-                  {mobileModalTab === "simulator" && <Sliders className="w-5 h-5 text-purple-400" />}
-                  {mobileModalTab === "equity" && <ShieldAlert className="w-5 h-5 text-rose-400" />}
-                  {mobileModalTab === "findings" && <BookOpen className="w-5 h-5 text-amber-400" />}
+                  {mobileModalTab === "simulator" && <Replace className="w-5 h-5 text-purple-400" />}
+                  {mobileModalTab === "equity" && <Group className="w-5 h-5 text-rose-400" />}
+                  {mobileModalTab === "findings" && <ScanSearch className="w-5 h-5 text-amber-400" />}
                 </div>
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-foreground leading-none truncate">
@@ -2164,11 +2440,11 @@ KEY SIMULATED OUTCOMES:
             {/* Quick Switch Pills inside Header */}
             <div className="flex items-center gap-1.5 px-3 py-2 overflow-x-auto scrollbar-none bg-muted/30">
               {[
-                { id: "impact", label: isSimpleMode ? "Big Picture" : "Impact", icon: <TrendingUp className="w-3 h-3 text-emerald-400" /> },
+                { id: "impact", label: isSimpleMode ? "Big Picture" : "Impact", icon: <Rocket className="w-3 h-3 text-emerald-400" /> },
                 { id: "lab", label: isSimpleMode ? "Explorer" : "Lab", icon: <Activity className="w-3 h-3 text-blue-400" /> },
-                { id: "simulator", label: isSimpleMode ? "What If?" : "Simulator", icon: <Sliders className="w-3 h-3 text-purple-400" /> },
-                { id: "equity", label: isSimpleMode ? "Who's at Risk?" : "Equity", icon: <ShieldAlert className="w-3 h-3 text-rose-400" /> },
-                { id: "findings", label: isSimpleMode ? "Found" : "Findings", icon: <BookOpen className="w-3 h-3 text-amber-400" /> },
+                { id: "simulator", label: isSimpleMode ? "What If?" : "Simulator", icon: <Replace className="w-3 h-3 text-purple-400" /> },
+                { id: "equity", label: isSimpleMode ? "Who's at Risk?" : "Equity", icon: <Group className="w-3 h-3 text-rose-400" /> },
+                { id: "findings", label: isSimpleMode ? "Found" : "Findings", icon: <ScanSearch className="w-3 h-3 text-amber-400" /> },
               ].map((m) => (
                 <button
                   key={m.id}
@@ -2393,7 +2669,7 @@ KEY SIMULATED OUTCOMES:
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm font-bold flex items-center gap-2">
-                        <Sliders className="w-4 h-4 text-purple-400" /> Scenario Controls
+                        <Replace className="w-4 h-4 text-purple-400" /> Scenario Controls
                       </CardTitle>
                       <button
                         onClick={() => {
