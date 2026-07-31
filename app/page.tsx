@@ -379,6 +379,7 @@ function USSEERMain() {
               <SidePanel
                 fips={selectedFips}
                 countyData={selectedFips && data ? data[selectedFips] : null}
+                allCountyData={data}
                 onOpenCompare={handleOpenCompare}
                 onOpenExporter={handleOpenExporter}
                 selectedYear={selectedYear}
@@ -428,6 +429,7 @@ function USSEERMain() {
                     <SidePanel
                       fips={selectedFips}
                       countyData={selectedFips && data ? data[selectedFips] : null}
+                      allCountyData={data}
                       onOpenCompare={handleOpenCompare}
                       onOpenExporter={handleOpenExporter}
                       selectedYear={selectedYear}

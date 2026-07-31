@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { CountyData } from "@/app/_lib/types";
+import { CountyData, CountyDataMap } from "@/app/_lib/types";
 import { getCountyTriSummary, getTriFacilitiesByFips } from "@/app/_lib/tri-facilities-data";
+import EquityTab from "@/app/_components/sidebar/EquityTab";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/app/_components/ui/card";
 import { Badge } from "@/app/_components/ui/badge";
 import { Button } from "@/app/_components/ui/button";
@@ -45,6 +46,7 @@ import causalEstimatesRaw from "@/public/data/causal_estimates.json";
 interface SidePanelProps {
   fips: string | null;
   countyData: CountyData | null;
+  allCountyData?: CountyDataMap | null;
   onOpenCompare?: (fipsA?: string) => void;
   onOpenExporter?: (fipsA?: string) => void;
   selectedYear?: TemporalYear;
@@ -382,7 +384,7 @@ function PolicySimulatorContent({ countyData, theta, ciLo, ciHi, isRural, isSimp
 
 /* ── Main Component ───────────────────────────────────────────── */
 
-export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExporter, selectedYear, onYearChange }: SidePanelProps) {
+export default function SidePanel({ fips, countyData, allCountyData, onOpenCompare, onOpenExporter, selectedYear, onYearChange }: SidePanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { isSimpleMode } = useSimpleMode();
   const [trendMetric, setTrendMetric] = useState<"pm25Avg" | "mortalityRate" | "toxicReleases" | "overallRisk">("pm25Avg");
@@ -509,47 +511,47 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
           {/* ── Tabs bar ───────────────────────────────────────── */}
           <div className="px-3 sm:px-4 pt-2.5 pb-2 shrink-0">
             {isSimpleMode ? (
-              /* Simple Mode: 3 big, clear tabs */
-              <TabsList className="flex items-center w-full bg-muted/60 p-1 rounded-xl gap-1">
+              /* Simple Mode: 4 clean, bold tabs */
+              <TabsList className="grid grid-cols-4 w-full bg-muted/60 p-1 rounded-xl gap-1">
                 <TabsTrigger
                   value="overview"
-                  className="flex-1 text-[12px] font-semibold rounded-lg px-2 py-2 cursor-pointer"
+                  className="text-[11px] font-semibold rounded-lg py-1.5 cursor-pointer"
                 >
                   📋 Summary
                 </TabsTrigger>
                 <TabsTrigger
                   value="health"
-                  className="flex-1 text-[12px] font-semibold rounded-lg px-2 py-2 cursor-pointer"
+                  className="text-[11px] font-semibold rounded-lg py-1.5 cursor-pointer"
                 >
                   🩺 Health
                 </TabsTrigger>
                 <TabsTrigger
+                  value="equity"
+                  className="text-[11px] font-semibold rounded-lg py-1.5 cursor-pointer text-violet-400 data-[state=active]:text-violet-600"
+                >
+                  ⚖️ Equity
+                </TabsTrigger>
+                <TabsTrigger
                   value="simulate"
-                  className="flex-1 text-[12px] font-semibold rounded-lg px-2 py-2 cursor-pointer"
+                  className="text-[11px] font-semibold rounded-lg py-1.5 cursor-pointer"
                 >
                   ✨ What If?
                 </TabsTrigger>
               </TabsList>
             ) : (
-              /* Expert Mode: all 6 tabs, compact scrollable chips */
-              <TabsList className="flex items-center w-full bg-muted/60 p-0.5 rounded-lg overflow-x-auto scrollbar-none gap-0.5">
-                <TabsTrigger value="overview" className="flex-1 min-w-[52px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
+              /* Expert Mode: 4 consolidated clean tabs */
+              <TabsList className="grid grid-cols-4 w-full bg-muted/60 p-1 rounded-xl gap-1">
+                <TabsTrigger value="overview" className="text-[11px] font-medium rounded-lg py-1.5 cursor-pointer">
                   Overview
                 </TabsTrigger>
-                <TabsTrigger value="trends" className="flex-1 min-w-[48px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
-                  Trends
+                <TabsTrigger value="health" className="text-[11px] font-medium rounded-lg py-1.5 cursor-pointer">
+                  Health & Trends
                 </TabsTrigger>
-                <TabsTrigger value="demographics" className="flex-1 min-w-[48px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
-                  Census
+                <TabsTrigger value="equity" className="text-[11px] font-medium rounded-lg py-1.5 cursor-pointer text-violet-400 data-[state=active]:text-violet-600">
+                  Equity & Census
                 </TabsTrigger>
-                <TabsTrigger value="health" className="flex-1 min-w-[44px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
-                  Health
-                </TabsTrigger>
-                <TabsTrigger value="care" className="flex-1 min-w-[40px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer">
-                  Infra
-                </TabsTrigger>
-                <TabsTrigger value="simulate" className="flex-1 min-w-[52px] text-[10.5px] font-medium rounded-md px-1.5 py-1 cursor-pointer text-violet-400 data-[state=active]:text-violet-600">
-                  Simulate
+                <TabsTrigger value="simulate" className="text-[11px] font-medium rounded-lg py-1.5 cursor-pointer text-violet-400 data-[state=active]:text-violet-600">
+                  Simulator
                 </TabsTrigger>
               </TabsList>
             )}
@@ -707,16 +709,227 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
               </div>
             </TabsContent>
 
-            {/* ── CENSUS / DEMOGRAPHICS ──────────────────────── */}
-            <TabsContent value="demographics" className="space-y-3">
+            {/* ── HEALTH & TRENDS ────────────────────────────────────── */}
+            <TabsContent value="health" className="space-y-4">
               {isSimpleMode && (
                 <p className="text-[11px] text-muted-foreground leading-relaxed px-0.5">
-                  Here's a snapshot of who lives in this county and their economic situation.
+                  How common are lung diseases, air pollution, and doctor access in this county?
                 </p>
               )}
-              <div className="rounded-xl border border-border bg-background/70 p-3.5 space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <StatCard label="Asthma" icon={<Droplets className="w-3 h-3" />} value={countyData.asthmaPrev ? `${countyData.asthmaPrev}%` : "—"} color="text-fuchsia-500"
+                  isSimple={isSimpleMode} simpleValue={countyData.asthmaPrev ? `${countyData.asthmaPrev}% of adults` : "—"} />
+                <StatCard label="COPD" icon={<Stethoscope className="w-3 h-3" />} value={countyData.copdPrev ? `${countyData.copdPrev}%` : "—"} color="text-teal-500"
+                  isSimple={isSimpleMode} simpleValue={countyData.copdPrev ? `${countyData.copdPrev}% of adults` : "—"} />
+                <StatCard label="Smoking Rate" icon={<Cigarette className="w-3 h-3" />} value={countyData.smokingPrev ? `${countyData.smokingPrev}%` : "—"} color="text-orange-500"
+                  isSimple={isSimpleMode} simpleValue={countyData.smokingPrev ? `${countyData.smokingPrev}% smoke` : "—"} />
+                <StatCard
+                  label="Toxic Releases"
+                  icon={<Factory className="w-3 h-3" />}
+                  value={toxicDisplay}
+                  unit="lbs"
+                  color="text-slate-400"
+                  isSimple={isSimpleMode}
+                  simpleLabel="Chemical Releases"
+                  simpleValue={toxicSimple}
+                />
+              </div>
+              <div className="p-3.5 rounded-xl border border-border bg-background/70">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                  {isSimpleMode ? "Air Pollution Level" : "PM2.5 Exposure Level"}
+                </div>
+                <div className="flex items-end gap-1.5">
+                  <span className="text-2xl font-extrabold text-foreground">{pm25Display}</span>
+                  {!isSimpleMode && <span className="text-xs text-muted-foreground mb-0.5">µg/m³</span>}
+                </div>
+                {isSimpleMode && typeof pm25Display === "number" && (
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {pm25Label(pm25Display)} — {pm25Display < 9 ? "Below" : "Above"} the EPA safe limit of 9 µg/m³
+                  </p>
+                )}
+                {typeof pm25Display === "number" && (
+                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500"
+                      style={{ width: `${Math.min(100, (pm25Display / 15) * 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* 2018–2024 Trends Component */}
+              {(() => {
+                const history = fips && countyData ? getCountyHistory(countyData, fips) : [];
+                const trendDelta = history.length > 0 ? getMetricDelta(history, trendMetric) : null;
+
+                if (!history.length) return null;
+
+                return (
+                  <div className="space-y-3 pt-2 border-t border-border/50">
+                    <div className="flex items-center justify-between gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
+                      <button
+                        onClick={() => setTrendMetric("pm25Avg")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "pm25Avg"
+                            ? "bg-amber-500 text-black shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        PM2.5 Air
+                      </button>
+                      <button
+                        onClick={() => setTrendMetric("mortalityRate")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "mortalityRate"
+                            ? "bg-blue-500 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        Mortality
+                      </button>
+                      <button
+                        onClick={() => setTrendMetric("toxicReleases")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "toxicReleases"
+                            ? "bg-slate-700 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        Toxics
+                      </button>
+                      <button
+                        onClick={() => setTrendMetric("overallRisk")}
+                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "overallRisk"
+                            ? "bg-purple-600 text-white shadow-xs"
+                            : "text-muted-foreground hover:text-foreground"
+                          }`}
+                      >
+                        Risk
+                      </button>
+                    </div>
+
+                    <div className="p-3 rounded-xl border border-border bg-background/80 space-y-2">
+                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                          <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                          <span>2018–2024 Annual Trend</span>
+                        </div>
+                        <Badge variant="outline" className="font-mono text-[9.5px]">
+                          {trendMetric === "pm25Avg"
+                            ? "µg/m³"
+                            : trendMetric === "mortalityRate"
+                              ? "/ 100k"
+                              : trendMetric === "toxicReleases"
+                                ? "lbs/yr"
+                                : "Index"}
+                        </Badge>
+                      </div>
+
+                      <div className="h-40 w-full pt-1">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart
+                            data={history}
+                            onClick={(e) => {
+                              const activePayload = (e as any)?.activePayload;
+                              if (activePayload?.[0] && onYearChange) {
+                                onYearChange(activePayload[0].payload.year as TemporalYear);
+                              }
+                            }}
+                          >
+                            <XAxis dataKey="year" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} width={35} />
+                            <Tooltip
+                              content={({ active, payload }) => {
+                                if (!active || !payload || !payload.length) return null;
+                                const dataPt = payload[0].payload as CountyYearHistoryPoint;
+                                return (
+                                  <div className="p-2 rounded-xl bg-card border border-border shadow-xl text-xs space-y-1">
+                                    <div className="font-mono font-bold text-foreground flex items-center justify-between gap-3">
+                                      <span>Year {dataPt.year}</span>
+                                      {dataPt.eventEmoji && <span>{dataPt.eventEmoji}</span>}
+                                    </div>
+                                    <div className="text-primary font-extrabold">
+                                      {dataPt[trendMetric].toLocaleString()}{" "}
+                                      <span className="text-[9px] text-muted-foreground">
+                                        {trendMetric === "pm25Avg" ? "µg/m³" : trendMetric === "mortalityRate" ? "/100k" : "lbs"}
+                                      </span>
+                                    </div>
+                                    {dataPt.eventTitle && (
+                                      <p className="text-[9.5px] text-amber-500 font-semibold">{dataPt.eventTitle}</p>
+                                    )}
+                                  </div>
+                                );
+                              }}
+                            />
+                            {selectedYear && (
+                              <ReferenceLine
+                                x={selectedYear}
+                                stroke="#f59e0b"
+                                strokeDasharray="3 3"
+                                strokeWidth={1.5}
+                              />
+                            )}
+                            <Line
+                              type="monotone"
+                              dataKey={trendMetric}
+                              stroke={
+                                trendMetric === "pm25Avg"
+                                  ? "#f59e0b"
+                                  : trendMetric === "mortalityRate"
+                                    ? "#3b82f6"
+                                    : trendMetric === "toxicReleases"
+                                      ? "#64748b"
+                                      : "#8b5cf6"
+                              }
+                              strokeWidth={2.5}
+                              dot={{ r: 4, strokeWidth: 1 }}
+                              activeDot={{ r: 7, strokeWidth: 2, fill: "#f59e0b" }}
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Infrastructure Card */}
+              <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
+                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                  <HeartPulse className="w-3 h-3" />
+                  {isSimpleMode ? "Doctors Available" : "Physician Density & Rurality"}
+                </div>
+                <div className="flex justify-between items-baseline">
+                  <div className="text-xl font-extrabold text-foreground">
+                    {countyData.mdRate ?? "—"}
+                    <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                      MDs / 100k
+                    </span>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px]">
+                    {ruccLabel(countyData.rucc ?? 1)}
+                  </Badge>
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* ── EQUITY ANALYSIS & CENSUS (H-1: EJ Story Loop) ─────────── */}
+            <TabsContent value="equity" className="space-y-4 mt-0">
+              {allCountyData ? (
+                <EquityTab
+                  county={countyData!}
+                  allCountyData={allCountyData}
+                  isSimpleMode={isSimpleMode}
+                />
+              ) : (
+                <div className="p-4 rounded-xl border border-border bg-muted/30 text-center">
+                  <p className="text-[10px] text-muted-foreground">
+                    Loading national comparison data…
+                  </p>
+                </div>
+              )}
+
+              {/* Census & Demographics Accordion/Card */}
+              <div className="rounded-xl border border-border bg-background/70 p-3.5 space-y-3 pt-3">
                 <SectionLabel icon={<PieChart className="w-3.5 h-3.5 text-primary" />}>
-                  {isSimpleMode ? "Economic Situation" : "Socioeconomic Profile"}
+                  {isSimpleMode ? "Economic & Census Snapshot" : "Detailed Census Profile"}
                 </SectionLabel>
                 <div className="grid grid-cols-2 gap-2">
                   <StatCard
@@ -764,379 +977,23 @@ export default function SidePanel({ fips, countyData, onOpenCompare, onOpenExpor
                   />
                 </div>
               </div>
-
-              <div className="rounded-xl border border-border bg-background/70 p-3.5 space-y-3">
-                <SectionLabel icon={<Users className="w-3.5 h-3.5 text-sky-500" />}>
-                  {isSimpleMode ? "Who Lives Here" : "Racial & Ethnic Distribution"}
-                </SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
-                  <StatCard label="Non-Hisp. Black" icon={<Users className="w-3 h-3" />} value={countyData.pctBlack != null ? `${countyData.pctBlack}%` : "—"} color="text-sky-500"
-                    isSimple={isSimpleMode} simpleLabel="Black residents" simpleValue={countyData.pctBlack != null ? `${countyData.pctBlack}%` : "—"} />
-                  <StatCard label="Hispanic" icon={<Users className="w-3 h-3" />} value={countyData.pctHispanic != null ? `${countyData.pctHispanic}%` : "—"} color="text-emerald-500"
-                    isSimple={isSimpleMode} simpleLabel="Hispanic residents" simpleValue={countyData.pctHispanic != null ? `${countyData.pctHispanic}%` : "—"} />
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-border bg-background/70 p-3.5 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  <HomeIcon className="w-3 h-3 text-primary" />
-                  {isSimpleMode ? "Old Housing" : "Pre-1940 Housing Units"}
-                </div>
-                <div className="text-sm font-bold text-foreground">
-                  {countyData.housingPre1940 != null ? countyData.housingPre1940.toLocaleString() : "—"}
-                  <span className="ml-1 text-[10px] font-normal text-muted-foreground">units</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  {isSimpleMode
-                    ? "Older homes (built before 1940) may have lead paint or other hazards."
-                    : "Proxy for legacy indoor environmental exposures (e.g., lead paint)."}
-                </p>
-              </div>
             </TabsContent>
 
-            {/* ── HEALTH ────────────────────────────────────── */}
-            <TabsContent value="health" className="space-y-3">
-              {isSimpleMode && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed px-0.5">
-                  How common are lung diseases and pollution in this county?
-                </p>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard label="Asthma" icon={<Droplets className="w-3 h-3" />} value={countyData.asthmaPrev ? `${countyData.asthmaPrev}%` : "—"} color="text-fuchsia-500"
-                  isSimple={isSimpleMode} simpleValue={countyData.asthmaPrev ? `${countyData.asthmaPrev}% of adults` : "—"} />
-                <StatCard label="COPD" icon={<Stethoscope className="w-3 h-3" />} value={countyData.copdPrev ? `${countyData.copdPrev}%` : "—"} color="text-teal-500"
-                  isSimple={isSimpleMode} simpleValue={countyData.copdPrev ? `${countyData.copdPrev}% of adults` : "—"} />
-                <StatCard label="Smoking Rate" icon={<Cigarette className="w-3 h-3" />} value={countyData.smokingPrev ? `${countyData.smokingPrev}%` : "—"} color="text-orange-500"
-                  isSimple={isSimpleMode} simpleValue={countyData.smokingPrev ? `${countyData.smokingPrev}% smoke` : "—"} />
-                <StatCard
-                  label="Toxic Releases"
-                  icon={<Factory className="w-3 h-3" />}
-                  value={toxicDisplay}
-                  unit="lbs"
-                  color="text-slate-400"
-                  isSimple={isSimpleMode}
-                  simpleLabel="Chemical Releases"
-                  simpleValue={toxicSimple}
+            {/* ── EQUITY ANALYSIS (H-1: EJ Story Loop) ─────────── */}
+            <TabsContent value="equity" className="space-y-3 mt-0">
+              {allCountyData ? (
+                <EquityTab
+                  county={countyData!}
+                  allCountyData={allCountyData}
+                  isSimpleMode={isSimpleMode}
                 />
-              </div>
-              <div className="p-3.5 rounded-xl border border-border bg-background/70">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                  {isSimpleMode ? "Air Pollution Level" : "PM2.5 Exposure Level"}
-                </div>
-                <div className="flex items-end gap-1.5">
-                  <span className="text-2xl font-extrabold text-foreground">{pm25Display}</span>
-                  {!isSimpleMode && <span className="text-xs text-muted-foreground mb-0.5">µg/m³</span>}
-                </div>
-                {isSimpleMode && typeof pm25Display === "number" && (
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {pm25Label(pm25Display)} — {pm25Display < 9 ? "Below" : "Above"} the EPA safe limit of 9 µg/m³
-                  </p>
-                )}
-                {typeof pm25Display === "number" && (
-                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500"
-                      style={{ width: `${Math.min(100, (pm25Display / 15) * 100)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* EPA TRI Industrial Facilities breakdown card */}
-              {fips && (() => {
-                const triSummary = getCountyTriSummary(fips);
-                if (triSummary.facilityCount === 0 && (!countyData.toxicReleases || countyData.toxicReleases === 0)) return null;
-
-                return (
-                  <div className="p-3.5 rounded-xl border border-amber-500/25 bg-amber-500/5 space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs font-bold text-amber-500">
-                        <Factory className="w-3.5 h-3.5" />
-                        <span>EPA TRI Industrial Facilities</span>
-                      </div>
-                      <Badge variant="outline" className="text-[9px] font-extrabold border-amber-500/30 text-amber-500">
-                        {triSummary.facilityCount > 0 ? `${triSummary.facilityCount} Facilities` : "Industrial Point Sources"}
-                      </Badge>
-                    </div>
-
-                    {triSummary.facilityCount > 0 ? (
-                      <div className="space-y-2">
-                        {triSummary.facilities.map((fac) => (
-                          <div key={fac.id} className="p-2.5 rounded-lg border border-border/60 bg-background/80 space-y-1 text-left">
-                            <div className="flex items-start justify-between gap-1">
-                              <span className="text-[11px] font-bold text-foreground leading-snug">{fac.name}</span>
-                              <span className="text-[9px] font-extrabold text-amber-500 shrink-0">{fac.emissionsLbs.toLocaleString()} lbs/yr</span>
-                            </div>
-                            <div className="text-[9.5px] text-muted-foreground flex items-center gap-1">
-                              <span>{fac.sector}</span>
-                              <span>•</span>
-                              <span className="font-semibold text-rose-400">{fac.hazardLevel} Risk</span>
-                            </div>
-                            <div className="flex flex-wrap gap-1 pt-0.5">
-                              {fac.primaryChemicals.slice(0, 3).map((c) => (
-                                <span key={c} className="text-[8.5px] px-1.5 py-0.2 rounded bg-muted/60 text-muted-foreground font-medium">
-                                  {c}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                        <p className="text-[9.5px] text-muted-foreground flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping inline-block" />
-                          5-mi & 10-mi population exposure zones rendered on interactive map layer.
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-[10px] text-muted-foreground">
-                        Total annual toxic chemical releases reported: <strong className="text-foreground">{countyData.toxicReleases?.toLocaleString()} lbs</strong>.
-                      </p>
-                    )}
-                  </div>
-                );
-              })()}
-            </TabsContent>
-
-            {/* ── TRENDS (2018–2024 TIME-SERIES) ────────────────── */}
-            <TabsContent value="trends" className="space-y-3 mt-0">
-              {(() => {
-                const history = fips && countyData ? getCountyHistory(countyData, fips) : [];
-                const trendDelta = history.length > 0 ? getMetricDelta(history, trendMetric) : null;
-
-                if (!history.length) return null;
-
-                return (
-                  <>
-                    {/* Metric Selector Pills */}
-                    <div className="flex items-center justify-between gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
-                      <button
-                        onClick={() => setTrendMetric("pm25Avg")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "pm25Avg"
-                            ? "bg-amber-500 text-black shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        PM2.5 Air
-                      </button>
-                      <button
-                        onClick={() => setTrendMetric("mortalityRate")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "mortalityRate"
-                            ? "bg-blue-500 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        Mortality
-                      </button>
-                      <button
-                        onClick={() => setTrendMetric("toxicReleases")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "toxicReleases"
-                            ? "bg-slate-700 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        Toxics
-                      </button>
-                      <button
-                        onClick={() => setTrendMetric("overallRisk")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "overallRisk"
-                            ? "bg-purple-600 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        Risk
-                      </button>
-                    </div>
-
-                    {/* 2018–2024 Recharts Line Chart Card */}
-                    <div className="p-3 rounded-xl border border-border bg-background/80 space-y-2">
-                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                          <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                          <span>2018–2024 Annual Trend</span>
-                        </div>
-                        <Badge variant="outline" className="font-mono text-[9.5px]">
-                          {trendMetric === "pm25Avg"
-                            ? "µg/m³"
-                            : trendMetric === "mortalityRate"
-                              ? "/ 100k"
-                              : trendMetric === "toxicReleases"
-                                ? "lbs/yr"
-                                : "Index"}
-                        </Badge>
-                      </div>
-
-                      <div className="h-44 w-full pt-1">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={history}
-                            onClick={(e) => {
-                              const activePayload = (e as any)?.activePayload;
-                              if (activePayload?.[0] && onYearChange) {
-                                onYearChange(activePayload[0].payload.year as TemporalYear);
-                              }
-                            }}
-                          >
-                            <XAxis dataKey="year" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} width={35} />
-                            <Tooltip
-                              content={({ active, payload }) => {
-                                if (!active || !payload || !payload.length) return null;
-                                const dataPt = payload[0].payload as CountyYearHistoryPoint;
-                                return (
-                                  <div className="p-2 rounded-xl bg-card border border-border shadow-xl text-xs space-y-1">
-                                    <div className="font-mono font-bold text-foreground flex items-center justify-between gap-3">
-                                      <span>Year {dataPt.year}</span>
-                                      {dataPt.eventEmoji && <span>{dataPt.eventEmoji}</span>}
-                                    </div>
-                                    <div className="text-primary font-extrabold">
-                                      {dataPt[trendMetric].toLocaleString()}{" "}
-                                      <span className="text-[9px] text-muted-foreground">
-                                        {trendMetric === "pm25Avg" ? "µg/m³" : trendMetric === "mortalityRate" ? "/100k" : "lbs"}
-                                      </span>
-                                    </div>
-                                    {dataPt.eventTitle && (
-                                      <p className="text-[9.5px] text-amber-500 font-semibold">{dataPt.eventTitle}</p>
-                                    )}
-                                    <p className="text-[8.5px] text-muted-foreground italic">Click point to select year on map</p>
-                                  </div>
-                                );
-                              }}
-                            />
-                            {selectedYear && (
-                              <ReferenceLine
-                                x={selectedYear}
-                                stroke="#f59e0b"
-                                strokeDasharray="3 3"
-                                strokeWidth={1.5}
-                              />
-                            )}
-                            <Line
-                              type="monotone"
-                              dataKey={trendMetric}
-                              stroke={
-                                trendMetric === "pm25Avg"
-                                  ? "#f59e0b"
-                                  : trendMetric === "mortalityRate"
-                                    ? "#3b82f6"
-                                    : trendMetric === "toxicReleases"
-                                      ? "#64748b"
-                                      : "#8b5cf6"
-                              }
-                              strokeWidth={2.5}
-                              dot={{ r: 4, strokeWidth: 1 }}
-                              activeDot={{ r: 7, strokeWidth: 2, fill: "#f59e0b" }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
-                      <p className="text-[9.5px] text-muted-foreground text-center italic">
-                        💡 Click any data point above to switch map snapshot year.
-                      </p>
-                    </div>
-
-                    {/* 6-Year Change Summary Stat Box */}
-                    {trendDelta && (
-                      <div className="p-3 rounded-xl border border-border bg-background/70 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                            6-Year Delta (2018 vs 2024)
-                          </span>
-                          <Badge
-                            variant={trendDelta.isImprovement ? "outline" : "destructive"}
-                            className={`text-[10px] font-bold ${trendDelta.isImprovement
-                                ? "border-emerald-500/30 text-emerald-400 bg-emerald-500/10"
-                                : ""
-                              }`}
-                          >
-                            {trendDelta.pctChange <= 0 ? "📉" : "📈"} {trendDelta.pctChange}%
-                          </Badge>
-                        </div>
-
-                        <div className="flex items-baseline justify-between pt-1">
-                          <div>
-                            <div className="text-[10px] text-muted-foreground">2018 Baseline</div>
-                            <div className="text-sm font-bold text-foreground">{trendDelta.startVal}</div>
-                          </div>
-                          <div className="text-center font-mono text-xs text-muted-foreground">→</div>
-                          <div className="text-right">
-                            <div className="text-[10px] text-muted-foreground">2024 Target</div>
-                            <div className="text-sm font-bold text-foreground">{trendDelta.endVal}</div>
-                          </div>
-                        </div>
-
-                        {isSimpleMode && (
-                          <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-1.5">
-                            {trendDelta.isImprovement
-                              ? `Overall, this indicator improved by ${Math.abs(trendDelta.pctChange)}% between 2018 and 2024. 🟢`
-                              : `This indicator increased by ${trendDelta.pctChange}% between 2018 and 2024. 🔴`}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </TabsContent>
-            <TabsContent value="care" className="space-y-3">
-              {isSimpleMode && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed px-0.5">
-                  How easy is it to see a doctor in this county?
-                </p>
-              )}
-              <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
-                  <HeartPulse className="w-3 h-3" />
-                  {isSimpleMode ? "Doctors Available" : "Physician Density"}
-                </div>
-                <div className="text-2xl font-extrabold text-foreground">
-                  {countyData.mdRate ?? "—"}
-                  <span className="text-xs font-normal text-muted-foreground ml-1.5">
-                    {isSimpleMode ? "doctors per 100k people" : "MDs / 100k"}
-                  </span>
-                </div>
-                {isSimpleMode && countyData.mdRate != null && (
+              ) : (
+                <div className="p-4 rounded-xl border border-border bg-muted/30 text-center">
                   <p className="text-[10px] text-muted-foreground">
-                    {countyData.mdRate < 50
-                      ? "This county has very few doctors — getting care may be hard."
-                      : countyData.mdRate < 150
-                        ? "Moderate access to doctors."
-                        : "Good access to doctors in this area."}
+                    Loading national comparison data…
                   </p>
-                )}
-              </div>
-
-              <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-500">
-                    <Map className="w-3 h-3" />
-                    {isSimpleMode ? "Urban or Rural?" : "USDA Rural-Urban Class."}
-                  </div>
-                  {!isSimpleMode && (
-                    <Badge variant="secondary" className="text-[10px] font-semibold">
-                      Code {countyData.rucc ?? "—"}
-                    </Badge>
-                  )}
                 </div>
-                <div className="text-sm font-medium text-foreground">
-                  {isSimpleMode
-                    ? (countyData.rucc != null ? ruccLabel(countyData.rucc) : "Unknown")
-                    : countyData.rucc && countyData.rucc <= 3
-                      ? "Metropolitan Area (High Density)"
-                      : countyData.rucc && countyData.rucc <= 6
-                        ? "Non-metro Urbanized Area"
-                        : "Rural / Non-metropolitan Area"}
-                </div>
-                {countyData.rucc && !isSimpleMode && (
-                  <div className="flex gap-0.5 mt-1">
-                    {Array.from({ length: 9 }, (_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1.5 flex-1 rounded-sm transition-colors ${i + 1 <= countyData.rucc! ? "bg-indigo-500" : "bg-muted"
-                          }`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              )}
             </TabsContent>
 
             {/* ── POLICY SIMULATOR (C-2: Real DML Causal Engine) ── */}
