@@ -522,7 +522,7 @@ export default function SidePanel({ fips, countyData, allCountyData, onOpenCompa
   /* Empty state */
   if (!fips || !countyData) {
     return (
-      <Card className="w-full h-full flex flex-col items-center justify-center p-8 text-center border-border bg-card shadow-xs">
+      <Card id="side-panel-container" className="w-full h-full flex flex-col items-center justify-center p-8 text-center border-border bg-card shadow-xs">
         <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/15 flex items-center justify-center mb-4">
           <MapPin className="h-6 w-6 text-primary" />
         </div>
@@ -578,7 +578,7 @@ export default function SidePanel({ fips, countyData, allCountyData, onOpenCompa
 
   return (
     <>
-      <Card className="w-full h-full flex flex-col border-border bg-card shadow-xs overflow-hidden">
+      <Card id="side-panel-container" className="w-full h-full flex flex-col border-border bg-card shadow-xs overflow-hidden">
         <Tabs defaultValue="overview" className="flex flex-col h-full min-h-0 w-full">
 
           {/* ── Header ─────────────────────────────────────────── */}

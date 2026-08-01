@@ -108,7 +108,15 @@ This is the tier to aim for. It is the difference between "district winner" (goo
 
 ## PART III: The Roadmap to Win
 
-> Organized by urgency and impact.
+> Do these in this order. If you are resuming after a break, start at the first unchecked item and work straight down.
+
+### What To Do Next
+
+1. Lock the one concrete finding and make it easy to say in one sentence.
+2. Add the missing discovery layer so the app highlights surprises, not just displays data.
+3. Finish the research-facing polish: methodology page, SVI, wildfire smoke notation, and confounder controls.
+4. Write the CAC short answers once the app story is stable.
+5. Record the demo video last, after the flow is locked.
 
 ---
 
@@ -225,27 +233,6 @@ That sentence is your title, your video hook, your short-answer response, and yo
 
 ---
 
-#### H-3: Script and Record the Demo Video
-
-**Problem:** You have 3 months. If you wait until October, you will panic and produce a weak video.
-
-**Script structure (90 seconds):**
-
-1. **(0:00–0:15)** Hook: Show the map lighting up. *"Right now, millions of Americans live in counties where air pollution far exceeds the EPA's danger threshold. They are not randomly distributed."*
-2. **(0:15–0:30)** State your name, app name, the problem
-3. **(0:30–1:00)** Demo the key features: map, county drill-down, equity analysis, policy simulator
-4. **(1:00–1:20)** Show one specific finding: "When we stratified by income quartile, we found..."
-5. **(1:20–1:30)** Close: "US-SEER puts federal environmental data in the hands of citizens and policymakers who need it most."
-
-**Production notes:**
-- Record at 1080p minimum
-- Use full-screen mode, hide your dock/toolbar
-- Add text callouts for key statistics
-- Add subtle background music (royalty-free, understated)
-- Upload to YouTube as Unlisted
-
----
-
 #### H-4: Add the Anomaly / Outlier Discovery Feature
 
 **Problem:** The current app shows data. It doesn't *flag* surprising things. Flagging surprises is what researchers do.
@@ -343,6 +330,27 @@ Judges may pull it up on their phone during the D.C. reception. Check:
 - Does the header not overflow on 375px width?
 
 You don't need a perfect mobile app — just don't let it look broken.
+
+---
+
+#### P-4: Script and Record the Demo Video
+
+**Problem:** The video should reflect the final app, not the app you still hope to have. Record it only after the flow is locked.
+
+**Script structure (90 seconds):**
+
+1. **(0:00–0:15)** Hook: Show the map lighting up. *"Right now, millions of Americans live in counties where air pollution far exceeds the EPA's danger threshold. They are not randomly distributed."*
+2. **(0:15–0:30)** State your name, app name, the problem
+3. **(0:30–1:00)** Demo the key features: map, county drill-down, equity analysis, policy simulator
+4. **(1:00–1:20)** Show one specific finding: "When we stratified by income quartile, we found..."
+5. **(1:20–1:30)** Close: "US-SEER puts federal environmental data in the hands of citizens and policymakers who need it most."
+
+**Production notes:**
+- Record at 1080p minimum
+- Use full-screen mode, hide your dock/toolbar
+- Add text callouts for key statistics
+- Add subtle background music (royalty-free, understated)
+- Upload to YouTube as Unlisted
 
 ---
 

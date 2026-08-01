@@ -13,6 +13,8 @@ import DataSourcesView from "@/app/_components/sources/DataSourcesView";
 import Toast from "@/app/_components/ui/Toast";
 import MyDistrictPanel from "@/app/_components/ui/MyDistrictPanel";
 import AppLoadingScreen from "@/app/_components/ui/AppLoadingScreen";
+import TutorialTourModal from "@/app/_components/ui/TutorialTourModal";
+import WelcomeTourBanner from "@/app/_components/ui/WelcomeTourBanner";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
@@ -59,6 +61,7 @@ function USSEERMain() {
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
   const [compareFipsA, setCompareFipsA] = useState<string>("48201");
   const [compareFipsB, setCompareFipsB] = useState<string>("17031");
 
@@ -367,6 +370,7 @@ function USSEERMain() {
         onOpenExporter={() => handleOpenExporter()}
         onShareLink={handleShareLink}
         onOpenDistrict={() => setIsDistrictOpen(true)}
+        onStartTour={() => setIsTourOpen(true)}
         activeView={activeView}
         onViewChange={setActiveView}
       />
@@ -523,6 +527,24 @@ function USSEERMain() {
           }}
         />
       )}
+
+      {/* Interactive Platform Guided Tour */}
+      <TutorialTourModal
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        selectedFips={selectedFips}
+        mapMetric={mapMetric}
+        selectedYear={selectedYear}
+        isDistrictOpen={isDistrictOpen}
+        onCloseDistrict={() => setIsDistrictOpen(false)}
+        isExporterOpen={isExporterOpen}
+        onCloseExporter={() => setIsExporterOpen(false)}
+      />
+
+      {/* First-Visit Tour Welcome Banner */}
+      <WelcomeTourBanner onStartTour={() => setIsTourOpen(true)} />
 
       {/* Toast Notification Container */}
       <Toast

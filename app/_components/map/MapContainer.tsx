@@ -490,7 +490,7 @@ const MapContainer = ({
     Math.abs(position.zoom - INITIAL_ZOOM) > 0.05;
 
   return (
-    <Card className="relative w-full h-full min-h-[350px] sm:min-h-[450px] overflow-hidden border-border bg-card shadow-sm flex flex-col">
+    <Card id="map-viewport" className="relative w-full h-full min-h-[350px] sm:min-h-[450px] overflow-hidden border-border bg-card shadow-sm flex flex-col">
       {/* ─── Top Controls Overlay (Search & Metric Layer) ─── */}
       <div className="absolute top-3 inset-x-3 sm:top-4 sm:inset-x-4 z-20 pointer-events-none flex flex-col sm:flex-row items-stretch sm:items-start justify-between gap-2">
         {/* Search Bar */}
@@ -571,6 +571,7 @@ const MapContainer = ({
         {/* Metric Selector */}
         {onMetricChange && (
           <div
+            id="map-metric-selector"
             ref={metricDropdownRef}
             className="pointer-events-auto relative self-end sm:self-auto"
           >
@@ -623,7 +624,7 @@ const MapContainer = ({
 
       {/* ─── Bottom-Right: Temporal Scrubber (Hidden on mobile) ─── */}
       {selectedYear && onYearChange && (
-        <div className="hidden sm:block absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20">
+        <div id="temporal-scrubber" className="hidden sm:block absolute bottom-3 sm:bottom-4 right-3 sm:right-4 z-20">
           <TemporalScrubber
             selectedYear={selectedYear}
             onYearChange={onYearChange}

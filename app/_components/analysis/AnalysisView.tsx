@@ -99,6 +99,70 @@ function fmtLarge(n: number): string {
   return n.toLocaleString();
 }
 
+const STATE_PREFIX_MAP: Record<string, string> = {
+  "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL",
+  "13": "GA", "15": "HI", "16": "ID", "17": "IL", "18": "IN", "19": "IA", "20": "KS", "21": "KY", "22": "LA", "23": "ME",
+  "24": "MD", "25": "MA", "26": "MI", "27": "MN", "28": "MS", "29": "MO", "30": "MT", "31": "NE", "32": "NV", "33": "NH",
+  "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND", "39": "OH", "40": "OK", "41": "OR", "42": "PA", "44": "RI",
+  "45": "SC", "46": "SD", "47": "TN", "48": "TX", "49": "UT", "50": "VT", "51": "VA", "53": "WA", "54": "WV", "55": "WI", "56": "WY"
+};
+
+type AnomalyCounty = {
+  fips: string;
+  name: string;
+  stateAbbr: string | null;
+  pm25: number;
+  mortality: number;
+  predicted: number;
+  residual: number;
+  medianIncome: number | undefined;
+  mdRate: number | undefined;
+  smokingPrev: number | undefined;
+  pctPoverty: number | undefined;
+  pctUninsured: number | undefined;
+  rucc: number | undefined;
+};
+
+function getStateAbbrFromFips(fips: string): string | null {
+  return STATE_PREFIX_MAP[fips.padStart(5, "0").substring(0, 2)] || null;
+}
+
+function formatCountyLabel(county: CountyData, fips: string): string {
+  const stateAbbr = getStateAbbrFromFips(fips);
+  const countyName = county.County_Name || `FIPS ${fips}`;
+  return stateAbbr ? `${countyName}, ${stateAbbr}` : countyName;
+}
+
+function buildAnomalyContext(county: CountyData, residual: number): string {
+  const notes: string[] = [];
+
+  if (residual < 0) {
+    if ((county.mdRate ?? 0) >= 20) notes.push("dense physician access");
+    if ((county.medianIncome ?? 0) >= 90000) notes.push("higher income");
+    if ((county.pctUninsured ?? 100) <= 8) notes.push("low uninsured rate");
+    if ((county.medianAge ?? 0) <= 38) notes.push("younger population");
+    if ((county.rucc ?? 10) <= 3) notes.push("urban healthcare access");
+  } else {
+    if ((county.smokingPrev ?? 0) >= 18) notes.push("high smoking prevalence");
+    if ((county.pctPoverty ?? 0) >= 20) notes.push("higher poverty");
+    if ((county.pctUninsured ?? 0) >= 12) notes.push("more uninsured residents");
+    if ((county.mdRate ?? 100) <= 15) notes.push("limited physician access");
+    if ((county.rucc ?? 0) >= 7) notes.push("rural healthcare desert");
+  }
+
+  if (notes.length === 0) {
+    return residual < 0
+      ? "Possible protective factors beyond pollution exposure"
+      : "Likely driven by non-pollution risk factors";
+  }
+
+  return notes.slice(0, 3).join(" · ");
+}
+
+function formatAnomalyResidual(residual: number): string {
+  return `${residual > 0 ? "+" : ""}${fmt(residual, 1)} residual`;
+}
+
 /* ── Animated count stat card ────────────────────────────────── */
 function ImpactKPI({
   label,
@@ -220,15 +284,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
   /* Derive 2-letter state code from selected FIPS */
   const selectedStateAbbr = useMemo(() => {
     if (!selectedFips) return null;
-    const prefix = selectedFips.padStart(5, "0").substring(0, 2);
-    const FIPS_PREFIX_MAP: Record<string, string> = {
-      "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL",
-      "13": "GA", "15": "HI", "16": "ID", "17": "IL", "18": "IN", "19": "IA", "20": "KS", "21": "KY", "22": "LA", "23": "ME",
-      "24": "MD", "25": "MA", "26": "MI", "27": "MN", "28": "MS", "29": "MO", "30": "MT", "31": "NE", "32": "NV", "33": "NH",
-      "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND", "39": "OH", "40": "OK", "41": "OR", "42": "PA", "44": "RI",
-      "45": "SC", "46": "SD", "47": "TN", "48": "TX", "49": "UT", "50": "VT", "51": "VA", "53": "WA", "54": "WV", "55": "WI", "56": "WY"
-    };
-    return FIPS_PREFIX_MAP[prefix] || null;
+    return getStateAbbrFromFips(selectedFips);
   }, [selectedFips]);
 
   /* Auto-sync state scope state when selected county changes */
@@ -310,6 +366,62 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
   const trendData = useMemo(() => {
     return olsResult.regressionLine.map((p) => ({ x: +p.x.toFixed(3), y: +p.y.toFixed(3) }));
   }, [olsResult.regressionLine]);
+
+  /* Anomaly counties for discovery section */
+  const anomalyCounties = useMemo(() => {
+    const points = defaultOls.points
+      .map((point) => {
+        const county = data[point.fips] || data[point.fips.padStart(5, "0")];
+        if (!county) return null;
+        const predicted = defaultOls.slope * point.x + defaultOls.intercept;
+        const residual = point.y - predicted;
+        return {
+          fips: point.fips,
+          name: formatCountyLabel(county, point.fips),
+          stateAbbr: getStateAbbrFromFips(point.fips),
+          pm25: point.x,
+          mortality: point.y,
+          predicted,
+          residual,
+          medianIncome: county.medianIncome,
+          mdRate: county.mdRate,
+          smokingPrev: county.smokingPrev,
+          pctPoverty: county.pctPoverty,
+          pctUninsured: county.pctUninsured,
+          rucc: county.rucc,
+        };
+      })
+      .filter((point): point is AnomalyCounty => point !== null);
+
+    const pm25TopQuartile = [...points].map((p) => p.pm25).sort((a, b) => a - b)[Math.floor(points.length * 0.75)] ?? 0;
+    const pm25BottomQuartile = [...points].map((p) => p.pm25).sort((a, b) => a - b)[Math.floor(points.length * 0.25)] ?? 0;
+    const residuals = [...points].map((p) => p.residual).sort((a, b) => a - b);
+    const lowResidualThreshold = residuals[Math.floor(residuals.length * 0.1)] ?? 0;
+    const highResidualThreshold = residuals[Math.floor(residuals.length * 0.9)] ?? 0;
+
+    const highPollutionLowMortality = points
+      .filter((p) => p.pm25 >= pm25TopQuartile && p.residual <= lowResidualThreshold)
+      .sort((a, b) => a.residual - b.residual)
+      .slice(0, 3)
+      .map((point) => ({
+        ...point,
+        context: buildAnomalyContext(data[point.fips] || data[point.fips.padStart(5, "0")], point.residual),
+      }));
+
+    const lowPollutionHighMortality = points
+      .filter((p) => p.pm25 <= pm25BottomQuartile && p.residual >= highResidualThreshold)
+      .sort((a, b) => b.residual - a.residual)
+      .slice(0, 3)
+      .map((point) => ({
+        ...point,
+        context: buildAnomalyContext(data[point.fips] || data[point.fips.padStart(5, "0")], point.residual),
+      }));
+
+    return {
+      highPollutionLowMortality,
+      lowPollutionHighMortality,
+    };
+  }, [data, defaultOls.intercept, defaultOls.points, defaultOls.slope]);
 
   /* Cluster counts */
   const clusterCounts = useMemo(() => {
@@ -2338,55 +2450,51 @@ KEY SIMULATED OUTCOMES:
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-bold flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-400" />
-                  {isSimpleMode ? "Surprising Counties" : "Outlier Counties (Regression Residuals)"}
+                  {isSimpleMode ? "Surprising Counties" : "Anomaly Counties (Regression Residuals)"}
                 </CardTitle>
                 <CardDescription className="text-xs">
-                  {isSimpleMode ? "Places that don't follow the pattern — and why that's interesting" : "High PM₂.₅ but low mortality (protective factors) and vice versa"}
+                  {isSimpleMode ? "Places that don't follow the pattern — and why that's interesting" : "Ranked by OLS residuals from the national PM₂.₅ → mortality model"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-3 space-y-3">
                 <div>
                   <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider mb-2">High Pollution, Unexpectedly Low Mortality</p>
                   <div className="space-y-1.5">
-                    {[
-                      { name: "Travis County, TX (Austin)", pm25: "9.32", mort: "15.8", note: isSimpleMode ? "World-class medical center, young population" : "−55.7 residual · $92,731 median income · dense physician access" },
-                      { name: "Santa Clara County, CA", pm25: "8.87", mort: "16.5", note: isSimpleMode ? "Silicon Valley: wealthy, well-insured" : "−55.5 residual · $153,792 median income · highest physician density" },
-                      { name: "Fort Bend County, TX", pm25: "9.85", mort: "14.5", note: isSimpleMode ? "Affluent suburb with excellent hospitals nearby" : "−56.6 residual · $109,987 median income" },
-                    ].map((c) => (
+                    {anomalyCounties.highPollutionLowMortality.length > 0 ? anomalyCounties.highPollutionLowMortality.map((c) => (
                       <div key={c.name} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/15">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <div className="min-w-0">
                           <div className="text-[11px] font-semibold text-foreground">{c.name}</div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">{c.note}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{isSimpleMode ? c.context : `${formatAnomalyResidual(c.residual)} · ${c.context}`}</div>
                           <div className="flex gap-2 mt-1">
-                            <span className="text-[9px] font-mono bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">PM₂.₅: {c.pm25}</span>
-                            <span className="text-[9px] font-mono bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">Mort: {c.mort}</span>
+                            <span className="text-[9px] font-mono bg-amber-500/10 text-amber-400 px-1.5 py-0.5 rounded">PM₂.₅: {fmt(c.pm25, 2)}</span>
+                            <span className="text-[9px] font-mono bg-emerald-500/10 text-emerald-400 px-1.5 py-0.5 rounded">Mort: {fmt(c.mortality, 1)}</span>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-[10px] text-muted-foreground px-2 py-1.5 rounded-md bg-muted/30 border border-border/50">No counties met the high-pollution/low-mortality anomaly filter.</div>
+                    )}
                   </div>
                 </div>
                 <div>
                   <p className="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-2">Clean Air, Unexpectedly High Mortality</p>
                   <div className="space-y-1.5">
-                    {[
-                      { name: "Sierra County, NM", pm25: "4.79", mort: "250.2", note: isSimpleMode ? "Clean air, but very remote — almost no doctors" : "+174 residual · 18.3% smoking · extreme rural healthcare desert" },
-                      { name: "Donley County, TX", pm25: "6.25", mort: "218.0", note: isSimpleMode ? "No major hospitals nearby and high smoking rates" : "+143 residual · 19.2% smoking prevalence" },
-                      { name: "Foard County, TX", pm25: "6.70", mort: "195.5", note: isSimpleMode ? "Rural Texas: clean air but few resources" : "+121 residual · 19.9% smoking · severe healthcare access deficit" },
-                    ].map((c) => (
+                    {anomalyCounties.lowPollutionHighMortality.length > 0 ? anomalyCounties.lowPollutionHighMortality.map((c) => (
                       <div key={c.name} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-rose-500/5 border border-rose-500/15">
                         <AlertTriangle className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />
                         <div className="min-w-0">
                           <div className="text-[11px] font-semibold text-foreground">{c.name}</div>
-                          <div className="text-[10px] text-muted-foreground mt-0.5">{c.note}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">{isSimpleMode ? c.context : `${formatAnomalyResidual(c.residual)} · ${c.context}`}</div>
                           <div className="flex gap-2 mt-1">
-                            <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded">PM₂.₅: {c.pm25}</span>
-                            <span className="text-[9px] font-mono bg-rose-500/10 text-rose-400 px-1.5 py-0.5 rounded">Mort: {c.mort}</span>
+                            <span className="text-[9px] font-mono bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded">PM₂.₅: {fmt(c.pm25, 2)}</span>
+                            <span className="text-[9px] font-mono bg-rose-500/10 text-rose-400 px-1.5 py-0.5 rounded">Mort: {fmt(c.mortality, 1)}</span>
                           </div>
                         </div>
                       </div>
-                    ))}
+                    )) : (
+                      <div className="text-[10px] text-muted-foreground px-2 py-1.5 rounded-md bg-muted/30 border border-border/50">No counties met the low-pollution/high-mortality anomaly filter.</div>
+                    )}
                   </div>
                 </div>
               </CardContent>

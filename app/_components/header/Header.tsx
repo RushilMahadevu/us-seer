@@ -17,6 +17,7 @@ import {
   X,
   SquaresSubtract,
   Landmark,
+  Compass,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -31,6 +32,7 @@ interface HeaderProps {
   onOpenExporter?: () => void;
   onShareLink?: () => void;
   onOpenDistrict?: () => void;
+  onStartTour?: () => void;
   activeView: "map" | "analysis" | "sources";
   onViewChange: (view: "map" | "analysis" | "sources") => void;
 }
@@ -44,6 +46,7 @@ export default function Header({
   onOpenExporter,
   onShareLink,
   onOpenDistrict,
+  onStartTour,
   activeView,
   onViewChange,
 }: HeaderProps) {
@@ -88,7 +91,7 @@ export default function Header({
     <header className="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs animate-in fade-in-50 slide-in-from-top-2 duration-400 z-50">
 
       {/* ── Brand ──────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2.5 shrink-0">
+      <div id="header-brand" className="flex items-center gap-2.5 shrink-0">
         <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
           <HeartPulse className="h-4 w-4 text-primary" aria-hidden="true" />
         </div>
@@ -129,6 +132,23 @@ export default function Header({
 
       {/* ── Desktop: Quick Tools ────────────────────────────────── */}
       <div className="hidden md:flex items-center gap-1 shrink-0">
+
+        {/* Take Tour — interactive platform walkthrough */}
+        {onStartTour && (
+          <button
+            onClick={onStartTour}
+            id="header-tour-btn"
+            title="Start interactive platform guided tour (Recommended)"
+            aria-label="Start interactive guided tour"
+            className="cursor-pointer flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary transition-all duration-150 active:scale-95 shadow-xs relative group"
+          >
+            <Compass className="h-3.5 w-3.5 shrink-0 text-primary animate-spin-slow" />
+            <span className="hidden sm:inline">Take Tour</span>
+            <span className="hidden xl:inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase rounded-full bg-primary/20 text-primary border border-primary/30 animate-pulse ml-0.5">
+              Recommended
+            </span>
+          </button>
+        )}
 
         {/* My District — only labeled button (primary CTA) */}
         {onOpenDistrict && (
@@ -258,6 +278,17 @@ export default function Header({
           <div className="flex flex-col gap-1 pt-1 border-t border-border/60">
             <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-1">Tools</span>
             <div className="grid grid-cols-1 gap-1.5">
+
+              {onStartTour && (
+                <button
+                  onClick={() => { onStartTour(); setMobileMenuOpen(false); }}
+                  id="mobile-tour-btn"
+                  className="cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-primary/15 text-primary border border-primary/30 transition-all shadow-xs"
+                >
+                  <Compass className="h-4 w-4 shrink-0 text-primary animate-spin-slow" />
+                  Take Platform Tour (Recommended)
+                </button>
+              )}
 
               {onToggleSimpleMode && (
                 <button
