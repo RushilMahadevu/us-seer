@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/app/_components/ui/button";
 import { MapMetric } from "@/app/_components/map/MapContainer";
 import {
@@ -117,14 +118,23 @@ export default function Header({
               key={id}
               id={`view-toggle-${id}`}
               onClick={() => onViewChange(id)}
-              className={`cursor-pointer px-3 py-1.5 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 transition-all duration-150 select-none whitespace-nowrap ${
+              className={`relative cursor-pointer px-3 py-1.5 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 select-none whitespace-nowrap ${
                 isActive
-                  ? "bg-background text-foreground shadow-xs border border-border/60"
+                  ? "text-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-background/40"
               }`}
             >
-              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : ""}`} />
-              {label}
+              {isActive && (
+                <motion.div
+                  layoutId="active-view-pill"
+                  className="absolute inset-0 bg-background border border-border/60 rounded-[10px] z-0"
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <div className="relative z-10 flex items-center gap-1.5">
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-primary" : ""}`} />
+                {label}
+              </div>
             </button>
           );
         })}

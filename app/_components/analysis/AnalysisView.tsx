@@ -65,7 +65,9 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Loader2,
 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription } from "@/app/_components/ui/dialog";
 
 interface AnalysisViewProps {
@@ -261,10 +263,35 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
   const [mobileModalTab, setMobileModalTab] = useState<"impact" | "lab" | "simulator" | "equity" | "findings" | null>(null);
   const { isSimpleMode } = useSimpleMode();
 
+  /* Grayscale loading transition state when switching tabs or parameters */
+  const [isTabSwitching, setIsTabSwitching] = useState(false);
+
+  const handleTabChange = React.useCallback((newTab: "impact" | "lab" | "simulator" | "equity" | "findings") => {
+    if (newTab === activeTab) return;
+    setIsTabSwitching(true);
+    setActiveTab(newTab);
+    const timer = setTimeout(() => setIsTabSwitching(false), 300);
+    return () => clearTimeout(timer);
+  }, [activeTab]);
+
+  const handleLabSubTabChange = React.useCallback((newSubTab: "regression" | "rucc" | "diagnostics") => {
+    if (newSubTab === labSubTab) return;
+    setIsTabSwitching(true);
+    setLabSubTab(newSubTab);
+    const timer = setTimeout(() => setIsTabSwitching(false), 300);
+    return () => clearTimeout(timer);
+  }, [labSubTab]);
+
   /* Research Lab state */
   const [xAxisKey, setXAxisKey] = useState<keyof CountyData>("pm25Avg");
   const [yAxisKey, setYAxisKey] = useState<keyof CountyData>("mortalityRate");
   const [selectedRuccFilter, setSelectedRuccFilter] = useState<number | "all">("all");
+
+  React.useEffect(() => {
+    setIsTabSwitching(true);
+    const timer = setTimeout(() => setIsTabSwitching(false), 280);
+    return () => clearTimeout(timer);
+  }, [selectedFips, xAxisKey, yAxisKey, selectedRuccFilter]);
 
   /* Simulator state */
   const [targetPm25Cap, setTargetPm25Cap] = useState<number>(9.0);
@@ -822,7 +849,7 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
       </div>
 
       {/* ── Desktop Tab navigation (hidden on phone screens) ── */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="hidden sm:flex flex-col flex-1 min-h-0">
+      <Tabs value={activeTab} onValueChange={(v) => handleTabChange(v as typeof activeTab)} className="hidden sm:flex flex-col flex-1 min-h-0">
         <div className="px-3 sm:px-6 pt-3 pb-0 shrink-0">
           <TabsList className="flex items-center w-full max-w-full bg-muted/70 p-1 rounded-xl gap-1 overflow-x-auto scrollbar-none">
             <TabsTrigger
@@ -863,7 +890,36 @@ export default function AnalysisView({ data, onOpenExporter, selectedFips }: Ana
           </TabsList>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 relative">
+          {/* Grayscale loading animation overlay while switching tabs/filters */}
+          <AnimatePresence>
+            {isTabSwitching && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-background/55 backdrop-blur-xs rounded-2xl pointer-events-none"
+              >
+                <div className="flex flex-col items-center gap-3 px-6 py-4 rounded-2xl bg-zinc-900/90 border border-zinc-700/60 shadow-2xl text-zinc-100">
+                  <div className="flex items-center gap-2.5">
+                    <Loader2 className="w-4 h-4 text-zinc-300 animate-spin" />
+                    <span className="text-xs font-bold tracking-tight text-zinc-200">
+                      {isSimpleMode ? "Switching View..." : "Loading Analytics Module..."}
+                    </span>
+                  </div>
+                  {/* Monochromatic gray pulse loading bar */}
+                  <div className="flex items-center gap-1.5 w-36">
+                    <div className="h-1.5 flex-1 rounded-full bg-zinc-600 animate-pulse" />
+                    <div className="h-1.5 flex-1 rounded-full bg-zinc-500 animate-pulse delay-75" />
+                    <div className="h-1.5 flex-1 rounded-full bg-zinc-600 animate-pulse delay-150" />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className={`transition-all duration-300 ${isTabSwitching ? "grayscale contrast-75 opacity-40 blur-[0.5px] pointer-events-none scale-[0.996]" : "grayscale-0 opacity-100 scale-100"}`}>
 
           {/* ═══════════════════════════════════════════════════════════
                 TAB 1 — MEASURABLE IMPACT DASHBOARD (hero tab)
@@ -2506,9 +2562,9 @@ KEY SIMULATED OUTCOMES:
               <p>All statistics are computed via <span className="font-mono bg-background px-1 rounded">data_pipeline/findings_analysis.py</span> from 2,953 U.S. counties with complete EPA PM₂.₅ (2018–2022 avg), CDC WONDER mortality, and Census ACS data. Correlations use Pearson r. Regression uses OLS with county-level observations. The ecological fallacy applies — county-level relationships do not prove individual-level causation.</p>
             </div>
           </TabsContent>
-
         </div>
-      </Tabs>
+      </div>
+    </Tabs>
 
       {/* ── Mobile Full-Screen Popover Modal Overlay ──────────────────── */}
       {mobileModalTab && (

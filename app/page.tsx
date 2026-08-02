@@ -22,6 +22,7 @@ import { TemporalYear, AVAILABLE_YEARS } from "@/app/_lib/temporal-data";
 import { useSimpleMode } from "@/app/_lib/simple-mode-context";
 import { MY_DISTRICT } from "@/app/_lib/district-data";
 import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 function normalizeMetric(param: string | null): MapMetric {
   if (!param) return "overallRisk";
@@ -377,101 +378,154 @@ function USSEERMain() {
 
       {/* Main Container */}
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
-        {activeView === "map" ? (
-          <div className="flex-1 flex flex-col md:flex-row gap-3 sm:gap-3.5 min-h-0 relative animate-in fade-in-50 zoom-in-98 duration-400">
-            {/* Map Section */}
-            <section className="flex-1 h-full min-h-0 flex flex-col">
-              <MapContainer
-                data={data || {}}
-                allCities={citiesData}
-                selectedFips={selectedFips}
-                onSelectCounty={handleSelectCounty}
-                metric={mapMetric}
-                onMetricChange={setMapMetric}
-                mapTarget={mapTarget}
-                onClearTarget={() => setMapTarget(null)}
-                autoOpenAnalytics={autoOpenAnalytics}
-                onToggleAutoOpenAnalytics={setAutoOpenAnalytics}
-                selectedYear={selectedYear}
-                onYearChange={setSelectedYear}
-              />
-            </section>
-
-            {/* Desktop Sidebar Analytics */}
-            <aside className="hidden md:flex md:w-[380px] lg:w-[420px] xl:w-[460px] w-full h-full flex-shrink-0">
-              <SidePanel
-                fips={selectedFips}
-                countyData={selectedFips && data ? data[selectedFips] : null}
-                allCountyData={data}
-                onOpenCompare={handleOpenCompare}
-                onOpenExporter={handleOpenExporter}
-                selectedYear={selectedYear}
-                onYearChange={setSelectedYear}
-              />
-            </aside>
-
-            {/* Floating Mobile Bottom Bar Button */}
-            {selectedFips && (
-              <button
-                onClick={() => setIsMobileDrawerOpen(true)}
-                className="md:hidden absolute bottom-3 left-3 z-30 flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-2xl active:scale-95 transition-all duration-300 animate-in fade-in-50 slide-in-from-bottom-3 hover:scale-105"
-                aria-label="View county analytics"
-              >
-                <BarChart2 className="w-4 h-4 animate-pulse" />
-                <span>{selectedCountyName ? `${selectedCountyName}` : "Analytics"}</span>
-                <ChevronUp className="w-4 h-4 ml-0.5" />
-              </button>
-            )}
-
-            {/* Mobile Drawer */}
-            {isMobileDrawerOpen && (
-              <div className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-xs flex flex-col justify-end animate-in fade-in duration-200">
-                <div
-                  className="fixed inset-0"
-                  onClick={() => setIsMobileDrawerOpen(false)}
+        <AnimatePresence mode="wait">
+          {activeView === "map" && (
+            <motion.div
+              key="map"
+              initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
+              animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1 }}
+              exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
+              transition={{ duration: 0.28 }}
+              className="flex-1 flex flex-col md:flex-row gap-3 sm:gap-3.5 min-h-0 relative"
+            >
+              {/* Map Section */}
+              <section className="flex-1 h-full min-h-0 flex flex-col">
+                <MapContainer
+                  data={data || {}}
+                  allCities={citiesData}
+                  selectedFips={selectedFips}
+                  onSelectCounty={handleSelectCounty}
+                  metric={mapMetric}
+                  onMetricChange={setMapMetric}
+                  mapTarget={mapTarget}
+                  onClearTarget={() => setMapTarget(null)}
+                  autoOpenAnalytics={autoOpenAnalytics}
+                  onToggleAutoOpenAnalytics={setAutoOpenAnalytics}
+                  selectedYear={selectedYear}
+                  onYearChange={setSelectedYear}
                 />
-                <div className="relative z-50 bg-card border-t border-border rounded-t-2xl max-h-[85vh] h-[85vh] flex flex-col overflow-hidden shadow-2xl animate-in slide-in-from-bottom duration-300 pb-safe">
-                  {/* Sheet Handle Header */}
-                  <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40 shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-1 rounded-full bg-muted-foreground/30 mx-auto absolute top-2 left-1/2 -translate-x-1/2" />
-                      <span className="text-xs font-bold text-foreground">
-                        {selectedCountyName ? `${selectedCountyName} Health Profile` : "County Analytics"}
-                      </span>
-                    </div>
-                    <button
+              </section>
+
+              {/* Desktop Sidebar Analytics */}
+              <aside className="hidden md:flex md:w-[380px] lg:w-[420px] xl:w-[460px] w-full h-full flex-shrink-0">
+                <SidePanel
+                  fips={selectedFips}
+                  countyData={selectedFips && data ? data[selectedFips] : null}
+                  allCountyData={data}
+                  onOpenCompare={handleOpenCompare}
+                  onOpenExporter={handleOpenExporter}
+                  selectedYear={selectedYear}
+                  onYearChange={setSelectedYear}
+                />
+              </aside>
+
+              {/* Floating Mobile Bottom Bar Button */}
+              <AnimatePresence>
+                {selectedFips && (
+                  <motion.button
+                    key="mobile-btn"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    onClick={() => setIsMobileDrawerOpen(true)}
+                    className="md:hidden absolute bottom-3 left-3 z-30 flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-2xl active:scale-95 transition-all hover:scale-105"
+                    aria-label="View county analytics"
+                  >
+                    <BarChart2 className="w-4 h-4 animate-pulse" />
+                    <span>{selectedCountyName ? `${selectedCountyName}` : "Analytics"}</span>
+                    <ChevronUp className="w-4 h-4 ml-0.5" />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+
+              {/* Mobile Drawer */}
+              <AnimatePresence>
+                {isMobileDrawerOpen && (
+                  <motion.div
+                    key="mobile-drawer"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-xs flex flex-col justify-end"
+                  >
+                    <div
+                      className="fixed inset-0"
                       onClick={() => setIsMobileDrawerOpen(false)}
-                      className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                      aria-label="Close analytics drawer"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  {/* Sheet Body with SidePanel */}
-                  <div className="flex-1 overflow-hidden">
-                    <SidePanel
-                      fips={selectedFips}
-                      countyData={selectedFips && data ? data[selectedFips] : null}
-                      allCountyData={data}
-                      onOpenCompare={handleOpenCompare}
-                      onOpenExporter={handleOpenExporter}
-                      selectedYear={selectedYear}
-                      onYearChange={setSelectedYear}
                     />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        ) : activeView === "analysis" ? (
-          <AnalysisView
-            data={data || {}}
-            onOpenExporter={handleOpenExporter}
-            selectedFips={selectedFips}
-          />
-        ) : (
-          <DataSourcesView />
-        )}
+                    <motion.div
+                      initial={{ y: "100%" }}
+                      animate={{ y: 0 }}
+                      exit={{ y: "100%" }}
+                      transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                      className="relative z-50 bg-card border-t border-border rounded-t-2xl max-h-[85vh] h-[85vh] flex flex-col overflow-hidden shadow-2xl pb-safe"
+                    >
+                      {/* Sheet Handle Header */}
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40 shrink-0">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-1 rounded-full bg-muted-foreground/30 mx-auto absolute top-2 left-1/2 -translate-x-1/2" />
+                          <span className="text-xs font-bold text-foreground">
+                            {selectedCountyName ? `${selectedCountyName} Health Profile` : "County Analytics"}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => setIsMobileDrawerOpen(false)}
+                          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                          aria-label="Close analytics drawer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      {/* Sheet Body with SidePanel */}
+                      <div className="flex-1 overflow-hidden">
+                        <SidePanel
+                          fips={selectedFips}
+                          countyData={selectedFips && data ? data[selectedFips] : null}
+                          allCountyData={data}
+                          onOpenCompare={handleOpenCompare}
+                          onOpenExporter={handleOpenExporter}
+                          selectedYear={selectedYear}
+                          onYearChange={setSelectedYear}
+                        />
+                      </div>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {activeView === "analysis" && (
+            <motion.div
+              key="analysis"
+              initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
+              animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1 }}
+              exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
+              transition={{ duration: 0.28 }}
+              className="w-full h-full flex flex-col"
+            >
+              <AnalysisView
+                data={data || {}}
+                onOpenExporter={handleOpenExporter}
+                selectedFips={selectedFips}
+              />
+            </motion.div>
+          )}
+
+          {activeView === "sources" && (
+            <motion.div
+              key="sources"
+              initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
+              animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1 }}
+              exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
+              transition={{ duration: 0.28 }}
+              className="w-full h-full flex flex-col"
+            >
+              <DataSourcesView />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* Search Dialog Modal */}

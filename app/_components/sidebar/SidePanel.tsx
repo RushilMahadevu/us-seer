@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CountyData, CountyDataMap } from "@/app/_lib/types";
 import { getCountyTriSummary, getTriFacilitiesByFips } from "@/app/_lib/tri-facilities-data";
 import EquityTab from "@/app/_components/sidebar/EquityTab";
@@ -158,9 +159,9 @@ function PolicySimulatorContent({ fips, countyData, allCountyData, theta, ciLo, 
   const [isBriefingOpen, setIsBriefingOpen] = useState(false);
   const [copiedBrief, setCopiedBrief] = useState(false);
 
-  const pop      = countyData.population ?? causal.rural.avg_population;
-  const pm25Now  = countyData.pm25Avg ?? causal.rural.avg_pm25;
-  const EPA_STD  = causal.policy_simulator.epa_target_pm25;
+  const pop = countyData.population ?? causal.rural.avg_population;
+  const pm25Now = countyData.pm25Avg ?? causal.rural.avg_pm25;
+  const EPA_STD = causal.policy_simulator.epa_target_pm25;
 
   // Extract state code if available
   const stateCode = useMemo(() => {
@@ -170,11 +171,11 @@ function PolicySimulatorContent({ fips, countyData, allCountyData, theta, ciLo, 
     if (fips) {
       const prefix = fips.padStart(5, "0").substring(0, 2);
       const FIPS_PREFIX_MAP: Record<string, string> = {
-        "01":"AL","02":"AK","04":"AZ","05":"AR","06":"CA","08":"CO","09":"CT","10":"DE","11":"DC","12":"FL",
-        "13":"GA","15":"HI","16":"ID","17":"IL","18":"IN","19":"IA","20":"KS","21":"KY","22":"LA","23":"ME",
-        "24":"MD","25":"MA","26":"MI","27":"MN","28":"MS","29":"MO","30":"MT","31":"NE","32":"NV","33":"NH",
-        "34":"NJ","35":"NM","36":"NY","37":"NC","38":"ND","39":"OH","40":"OK","41":"OR","42":"PA","44":"RI",
-        "45":"SC","46":"SD","47":"TN","48":"TX","49":"UT","50":"VT","51":"VA","53":"WA","54":"WV","55":"WI","56":"WY"
+        "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL",
+        "13": "GA", "15": "HI", "16": "ID", "17": "IL", "18": "IN", "19": "IA", "20": "KS", "21": "KY", "22": "LA", "23": "ME",
+        "24": "MD", "25": "MA", "26": "MI", "27": "MN", "28": "MS", "29": "MO", "30": "MT", "31": "NE", "32": "NV", "33": "NH",
+        "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND", "39": "OH", "40": "OK", "41": "OR", "42": "PA", "44": "RI",
+        "45": "SC", "46": "SD", "47": "TN", "48": "TX", "49": "UT", "50": "VT", "51": "VA", "53": "WA", "54": "WV", "55": "WI", "56": "WY"
       };
       return FIPS_PREFIX_MAP[prefix] || "State";
     }
@@ -200,34 +201,34 @@ function PolicySimulatorContent({ fips, countyData, allCountyData, theta, ciLo, 
 
   // Single-county point estimate fallback if allCountyData isn't available
   const effectiveTheta = isRural ? Math.abs(theta) : Math.max(0, -theta);
-  const countyLivesSaved  = effectiveTheta * (pop / 100_000) * deltaPm25;
-  const countyLivesLo     = Math.max(0, Math.abs(ciLo) * (pop / 100_000) * deltaPm25);
-  const countyLivesHi     = Math.abs(ciHi) * (pop / 100_000) * deltaPm25;
+  const countyLivesSaved = effectiveTheta * (pop / 100_000) * deltaPm25;
+  const countyLivesLo = Math.max(0, Math.abs(ciLo) * (pop / 100_000) * deltaPm25);
+  const countyLivesHi = Math.abs(ciHi) * (pop / 100_000) * deltaPm25;
 
   // Active KPI numbers
   const activeLivesSaved = scopedSim ? scopedSim.projectedLivesSaved : countyLivesSaved;
-  const activeAsthmaEr   = scopedSim ? scopedSim.asthmaErVisitsPrevented : Math.round(pop * ((countyData.asthmaPrev || 9.0) / 100) * (deltaPm25 * 0.017));
-  const activeEpaVsl     = scopedSim ? scopedSim.epaVslSavingsMillions : +(activeLivesSaved * 11.0).toFixed(1);
-  const activeTotalCost  = scopedSim ? scopedSim.totalEconomicSavingsMillions : +(activeEpaVsl + activeLivesSaved * 0.18).toFixed(1);
+  const activeAsthmaEr = scopedSim ? scopedSim.asthmaErVisitsPrevented : Math.round(pop * ((countyData.asthmaPrev || 9.0) / 100) * (deltaPm25 * 0.017));
+  const activeEpaVsl = scopedSim ? scopedSim.epaVslSavingsMillions : +(activeLivesSaved * 11.0).toFixed(1);
+  const activeTotalCost = scopedSim ? scopedSim.totalEconomicSavingsMillions : +(activeEpaVsl + activeLivesSaved * 0.18).toFixed(1);
 
   const maxFeasibleReduction = Math.max(0, pm25Now - EPA_STD);
-  const pm25Target      = Math.max(0, pm25Now - deltaPm25);
+  const pm25Target = Math.max(0, pm25Now - deltaPm25);
 
   const fmtLives = (v: number) => v < 0.05 ? "<0.1" : v >= 1000 ? v.toLocaleString() : v.toFixed(1);
-  const fmtCost  = (v: number) => {
-    if (v >= 1000) return `$${(v/1000).toFixed(1)}B`;
+  const fmtCost = (v: number) => {
+    if (v >= 1000) return `$${(v / 1000).toFixed(1)}B`;
     if (v >= 1) return `$${v.toFixed(1)}M`;
     return `$${(v * 1000).toFixed(0)}K`;
   };
 
   const isSignificant = ciLo > 0 && ciHi > 0;
-  const canSimulate   = isRural || effectiveTheta > 0 || scope !== "county";
+  const canSimulate = isRural || effectiveTheta > 0 || scope !== "county";
 
   // Congressional email template text
   const countyNameStr = countyData.County_Name || "our district";
   const emailSubject = encodeURIComponent(`Policy Brief: Public Health & Healthcare Savings for ${countyNameStr}`);
   const emailBody = encodeURIComponent(
-`DEAR CONGRESSIONAL REPRESENTATIVE / LEGISLATIVE STAFF,
+    `DEAR CONGRESSIONAL REPRESENTATIVE / LEGISLATIVE STAFF,
 
 I am writing to share key quantitative health and economic findings regarding air quality and health outcomes for ${countyNameStr}${scope === "state" ? ` and ${stateCode}` : ""}.
 
@@ -246,8 +247,8 @@ Respectfully submitted,
 Constituent & Public Health Advocate`
   );
 
-  const rawBriefText = 
-`CONGRESSIONAL POLICY BRIEFING MEMORANDUM
+  const rawBriefText =
+    `CONGRESSIONAL POLICY BRIEFING MEMORANDUM
 SUBJECT: Public Health & Healthcare Savings Model for ${countyNameStr} (${scope.toUpperCase()} SCOPE)
 TARGET POLICY: Reaching EPA Revised PM2.5 Standard (9.0 μg/m³, 40 CFR Part 50)
 
@@ -286,33 +287,30 @@ US-SEER Causal Policy Simulator utilizing Double Machine Learning (DML; Chernozh
         <button
           type="button"
           onClick={() => setScope("county")}
-          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-            scope === "county"
-              ? "bg-violet-600 text-white shadow-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          }`}
+          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${scope === "county"
+            ? "bg-violet-600 text-white shadow-xs"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
         >
           This County
         </button>
         <button
           type="button"
           onClick={() => setScope("state")}
-          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-            scope === "state"
-              ? "bg-violet-600 text-white shadow-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          }`}
+          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${scope === "state"
+            ? "bg-violet-600 text-white shadow-xs"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
         >
           My State ({stateCode})
         </button>
         <button
           type="button"
           onClick={() => setScope("national")}
-          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-            scope === "national"
-              ? "bg-violet-600 text-white shadow-xs"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-          }`}
+          className={`py-1 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${scope === "national"
+            ? "bg-violet-600 text-white shadow-xs"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            }`}
         >
           National (US)
         </button>
@@ -516,6 +514,7 @@ US-SEER Causal Policy Simulator utilizing Double Machine Learning (DML; Chernozh
 
 export default function SidePanel({ fips, countyData, allCountyData, onOpenCompare, onOpenExporter, selectedYear, onYearChange }: SidePanelProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("overview");
   const { isSimpleMode } = useSimpleMode();
   const [trendMetric, setTrendMetric] = useState<"pm25Avg" | "mortalityRate" | "toxicReleases" | "overallRisk">("pm25Avg");
 
@@ -579,7 +578,7 @@ export default function SidePanel({ fips, countyData, allCountyData, onOpenCompa
   return (
     <>
       <Card id="side-panel-container" className="w-full h-full flex flex-col border-border bg-card shadow-xs overflow-hidden">
-        <Tabs defaultValue="overview" className="flex flex-col h-full min-h-0 w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full min-h-0 w-full">
 
           {/* ── Header ─────────────────────────────────────────── */}
           <CardHeader className="pb-3 pt-4 px-4 border-b border-border/50 shrink-0">
@@ -688,474 +687,494 @@ export default function SidePanel({ fips, countyData, allCountyData, onOpenCompa
           </div>
 
           {/* ── Scrollable content ─────────────────────────────── */}
-          <CardContent className="flex-1 overflow-y-auto px-4 pb-4 pt-1 space-y-3 min-h-0">
-
-            {/* ── OVERVIEW ───────────────────────────────────── */}
-            <TabsContent value="overview" className="space-y-3 mt-0">
-              {countyData.overallRisk != null && riskLevel && (
-                <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <ShieldAlert className="h-4 w-4 text-primary" />
+          <CardContent className="flex-1 overflow-y-auto px-4 pb-4 pt-1 min-h-0 relative overflow-x-hidden">
+            <AnimatePresence mode="wait">
+              {/* ── OVERVIEW ───────────────────────────────────── */}
+              {activeTab === "overview" && (
+                <motion.div
+                  key="overview"
+                  initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: 5 }}
+                  animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1, y: 0 }}
+                  exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3 mt-0"
+                >
+                  {countyData.overallRisk != null && riskLevel && (
+                    <div className="p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <ShieldAlert className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          {isSimpleMode ? (
+                            <>
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Risk Level
+                              </div>
+                              <div className="text-base font-bold text-foreground">
+                                {riskLevel.emoji} {riskLevel.plain}
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                                Vulnerability Index
+                              </div>
+                              <div className="text-base font-bold text-foreground">
+                                {countyData.overallRisk}
+                                <span className="text-[10px] font-normal text-muted-foreground ml-1">/ 100</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <Badge variant={riskLevel.variant} className="text-[10px] font-semibold">
+                        {riskLevel.label}
+                      </Badge>
                     </div>
-                    <div>
-                      {isSimpleMode ? (
-                        <>
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Risk Level
-                          </div>
-                          <div className="text-base font-bold text-foreground">
-                            {riskLevel.emoji} {riskLevel.plain}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                            Vulnerability Index
-                          </div>
-                          <div className="text-base font-bold text-foreground">
-                            {countyData.overallRisk}
-                            <span className="text-[10px] font-normal text-muted-foreground ml-1">/ 100</span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <Badge variant={riskLevel.variant} className="text-[10px] font-semibold">
-                    {riskLevel.label}
-                  </Badge>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard
-                  label="Population"
-                  icon={<Users className="w-3 h-3" />}
-                  value={countyData.population?.toLocaleString() ?? "—"}
-                  color="text-primary"
-                  isSimple={isSimpleMode}
-                  simpleValue={
-                    countyData.population
-                      ? `~${(countyData.population / 1000).toFixed(0)}k people`
-                      : "—"
-                  }
-                />
-                <StatCard
-                  label="Median Income"
-                  icon={<DollarSign className="w-3 h-3" />}
-                  value={countyData.medianIncome ? `$${countyData.medianIncome.toLocaleString()}` : "—"}
-                  color="text-emerald-500"
-                  isSimple={isSimpleMode}
-                  simpleValue={
-                    countyData.medianIncome
-                      ? `Earns ~$${(countyData.medianIncome / 1000).toFixed(0)}k/yr`
-                      : "—"
-                  }
-                />
-                <StatCard
-                  label="PM2.5"
-                  icon={<Wind className="w-3 h-3" />}
-                  value={pm25Display}
-                  unit="µg/m³"
-                  color="text-amber-500"
-                  isSimple={isSimpleMode}
-                  simpleLabel="Air Quality"
-                  simpleValue={
-                    typeof pm25Display === "number"
-                      ? pm25Label(pm25Display)
-                      : "No data"
-                  }
-                />
-                <StatCard
-                  label="Mortality Rate"
-                  icon={<Activity className="w-3 h-3" />}
-                  value={countyData.mortalityRate ?? "—"}
-                  unit="/100k"
-                  color="text-blue-500"
-                  isSimple={isSimpleMode}
-                  simpleLabel="Lung Disease Deaths"
-                  simpleValue={
-                    countyData.mortalityRate
-                      ? `${countyData.mortalityRate} per 100k people/yr`
-                      : "—"
-                  }
-                />
-              </div>
-
-              {/* Prevalence chart */}
-              <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
-                    <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                    {isSimpleMode ? "Common Health Issues" : "Disease Prevalence"}
-                  </h4>
-                  {!isSimpleMode && (
-                    <Badge variant="outline" className="text-[9px] font-semibold tracking-wide uppercase">CDC PLACES</Badge>
                   )}
-                </div>
-                {isSimpleMode && (
-                  <p className="text-[10px] text-muted-foreground">
-                    % of adults in this county with each condition:
-                  </p>
-                )}
-                <div className="h-36 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={chartData} margin={{ top: 8, right: 0, left: -28, bottom: 0 }}>
-                      <XAxis
-                        dataKey="name"
-                        tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
-                        axisLine={false}
-                        tickLine={false}
-                      />
-                      <Tooltip
-                        cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
-                        contentStyle={{
-                          backgroundColor: "var(--color-card)",
-                          borderColor: "var(--color-border)",
-                          borderRadius: "8px",
-                          color: "var(--color-foreground)",
-                          fontSize: "11px",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-                        }}
-                        formatter={(val) =>
-                          isSimpleMode
-                            ? [`${Number(val).toFixed(1)}% of adults`, ""]
-                            : [`${Number(val).toFixed(1)}%`, ""]
-                        }
-                      />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                        {chartData.map((entry, idx) => (
-                          <Cell key={idx} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </TabsContent>
 
-            {/* ── HEALTH & TRENDS ────────────────────────────────────── */}
-            <TabsContent value="health" className="space-y-4">
-              {isSimpleMode && (
-                <p className="text-[11px] text-muted-foreground leading-relaxed px-0.5">
-                  How common are lung diseases, air pollution, and doctor access in this county?
-                </p>
-              )}
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard label="Asthma" icon={<Droplets className="w-3 h-3" />} value={countyData.asthmaPrev ? `${countyData.asthmaPrev}%` : "—"} color="text-fuchsia-500"
-                  isSimple={isSimpleMode} simpleValue={countyData.asthmaPrev ? `${countyData.asthmaPrev}% of adults` : "—"} />
-                <StatCard label="COPD" icon={<Stethoscope className="w-3 h-3" />} value={countyData.copdPrev ? `${countyData.copdPrev}%` : "—"} color="text-teal-500"
-                  isSimple={isSimpleMode} simpleValue={countyData.copdPrev ? `${countyData.copdPrev}% of adults` : "—"} />
-                <StatCard label="Smoking Rate" icon={<Cigarette className="w-3 h-3" />} value={countyData.smokingPrev ? `${countyData.smokingPrev}%` : "—"} color="text-orange-500"
-                  isSimple={isSimpleMode} simpleValue={countyData.smokingPrev ? `${countyData.smokingPrev}% smoke` : "—"} />
-                <StatCard
-                  label="Toxic Releases"
-                  icon={<Factory className="w-3 h-3" />}
-                  value={toxicDisplay}
-                  unit="lbs"
-                  color="text-slate-400"
-                  isSimple={isSimpleMode}
-                  simpleLabel="Chemical Releases"
-                  simpleValue={toxicSimple}
-                />
-              </div>
-              <div className="p-3.5 rounded-xl border border-border bg-background/70">
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                  {isSimpleMode ? "Air Pollution Level" : "PM2.5 Exposure Level"}
-                </div>
-                <div className="flex items-end gap-1.5">
-                  <span className="text-2xl font-extrabold text-foreground">{pm25Display}</span>
-                  {!isSimpleMode && <span className="text-xs text-muted-foreground mb-0.5">µg/m³</span>}
-                </div>
-                {isSimpleMode && typeof pm25Display === "number" && (
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    {pm25Label(pm25Display)} — {pm25Display < 9 ? "Below" : "Above"} the EPA safe limit of 9 µg/m³
-                  </p>
-                )}
-                {typeof pm25Display === "number" && (
-                  <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500"
-                      style={{ width: `${Math.min(100, (pm25Display / 15) * 100)}%` }}
+                  <div className="grid grid-cols-2 gap-2">
+                    <StatCard
+                      label="Population"
+                      icon={<Users className="w-3 h-3" />}
+                      value={countyData.population?.toLocaleString() ?? "—"}
+                      color="text-primary"
+                      isSimple={isSimpleMode}
+                      simpleValue={
+                        countyData.population
+                          ? `~${(countyData.population / 1000).toFixed(0)}k people`
+                          : "—"
+                      }
+                    />
+                    <StatCard
+                      label="Median Income"
+                      icon={<DollarSign className="w-3 h-3" />}
+                      value={countyData.medianIncome ? `$${countyData.medianIncome.toLocaleString()}` : "—"}
+                      color="text-emerald-500"
+                      isSimple={isSimpleMode}
+                      simpleValue={
+                        countyData.medianIncome
+                          ? `Earns ~$${(countyData.medianIncome / 1000).toFixed(0)}k/yr`
+                          : "—"
+                      }
+                    />
+                    <StatCard
+                      label="PM2.5"
+                      icon={<Wind className="w-3 h-3" />}
+                      value={pm25Display}
+                      unit="µg/m³"
+                      color="text-amber-500"
+                      isSimple={isSimpleMode}
+                      simpleLabel="Air Quality"
+                      simpleValue={
+                        typeof pm25Display === "number"
+                          ? pm25Label(pm25Display)
+                          : "No data"
+                      }
+                    />
+                    <StatCard
+                      label="Mortality Rate"
+                      icon={<Activity className="w-3 h-3" />}
+                      value={countyData.mortalityRate ?? "—"}
+                      unit="/100k"
+                      color="text-blue-500"
+                      isSimple={isSimpleMode}
+                      simpleLabel="Lung Disease Deaths"
+                      simpleValue={
+                        countyData.mortalityRate
+                          ? `${countyData.mortalityRate} per 100k people/yr`
+                          : "—"
+                      }
                     />
                   </div>
-                )}
-              </div>
 
-              {/* 2018–2024 Trends Component */}
-              {(() => {
-                const history = fips && countyData ? getCountyHistory(countyData, fips) : [];
-                const trendDelta = history.length > 0 ? getMetricDelta(history, trendMetric) : null;
-
-                if (!history.length) return null;
-
-                return (
-                  <div className="space-y-3 pt-2 border-t border-border/50">
-                    <div className="flex items-center justify-between gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
-                      <button
-                        onClick={() => setTrendMetric("pm25Avg")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "pm25Avg"
-                            ? "bg-amber-500 text-black shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        PM2.5 Air
-                      </button>
-                      <button
-                        onClick={() => setTrendMetric("mortalityRate")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "mortalityRate"
-                            ? "bg-blue-500 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        Mortality
-                      </button>
-                      <button
-                        onClick={() => setTrendMetric("toxicReleases")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "toxicReleases"
-                            ? "bg-slate-700 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        Toxics
-                      </button>
-                      <button
-                        onClick={() => setTrendMetric("overallRisk")}
-                        className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "overallRisk"
-                            ? "bg-purple-600 text-white shadow-xs"
-                            : "text-muted-foreground hover:text-foreground"
-                          }`}
-                      >
-                        Risk
-                      </button>
+                  {/* Prevalence chart */}
+                  <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                        <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                        {isSimpleMode ? "Common Health Issues" : "Disease Prevalence"}
+                      </h4>
+                      {!isSimpleMode && (
+                        <Badge variant="outline" className="text-[9px] font-semibold tracking-wide uppercase">CDC PLACES</Badge>
+                      )}
                     </div>
-
-                    <div className="p-3 rounded-xl border border-border bg-background/80 space-y-2">
-                      <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
-                          <TrendingUp className="w-3.5 h-3.5 text-primary" />
-                          <span>2018–2024 Annual Trend</span>
-                        </div>
-                        <Badge variant="outline" className="font-mono text-[9.5px]">
-                          {trendMetric === "pm25Avg"
-                            ? "µg/m³"
-                            : trendMetric === "mortalityRate"
-                              ? "/ 100k"
-                              : trendMetric === "toxicReleases"
-                                ? "lbs/yr"
-                                : "Index"}
-                        </Badge>
-                      </div>
-
-                      <div className="h-40 w-full pt-1">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart
-                            data={history}
-                            onClick={(e) => {
-                              const activePayload = (e as any)?.activePayload;
-                              if (activePayload?.[0] && onYearChange) {
-                                onYearChange(activePayload[0].payload.year as TemporalYear);
-                              }
+                    {isSimpleMode && (
+                      <p className="text-[10px] text-muted-foreground">
+                        % of adults in this county with each condition:
+                      </p>
+                    )}
+                    <div className="h-36 w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={chartData} margin={{ top: 8, right: 0, left: -28, bottom: 0 }}>
+                          <XAxis
+                            dataKey="name"
+                            tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <YAxis
+                            tick={{ fontSize: 10, fill: "var(--color-muted-foreground)" }}
+                            axisLine={false}
+                            tickLine={false}
+                          />
+                          <Tooltip
+                            cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                            contentStyle={{
+                              backgroundColor: "var(--color-card)",
+                              borderColor: "var(--color-border)",
+                              borderRadius: "8px",
+                              color: "var(--color-foreground)",
+                              fontSize: "11px",
+                              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
                             }}
-                          >
-                            <XAxis dataKey="year" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} width={35} />
-                            <Tooltip
-                              content={({ active, payload }) => {
-                                if (!active || !payload || !payload.length) return null;
-                                const dataPt = payload[0].payload as CountyYearHistoryPoint;
-                                return (
-                                  <div className="p-2 rounded-xl bg-card border border-border shadow-xl text-xs space-y-1">
-                                    <div className="font-mono font-bold text-foreground flex items-center justify-between gap-3">
-                                      <span>Year {dataPt.year}</span>
-                                      {dataPt.eventEmoji && <span>{dataPt.eventEmoji}</span>}
-                                    </div>
-                                    <div className="text-primary font-extrabold">
-                                      {dataPt[trendMetric].toLocaleString()}{" "}
-                                      <span className="text-[9px] text-muted-foreground">
-                                        {trendMetric === "pm25Avg" ? "µg/m³" : trendMetric === "mortalityRate" ? "/100k" : "lbs"}
-                                      </span>
-                                    </div>
-                                    {dataPt.eventTitle && (
-                                      <p className="text-[9.5px] text-amber-500 font-semibold">{dataPt.eventTitle}</p>
-                                    )}
-                                  </div>
-                                );
-                              }}
-                            />
-                            {selectedYear && (
-                              <ReferenceLine
-                                x={selectedYear}
-                                stroke="#f59e0b"
-                                strokeDasharray="3 3"
-                                strokeWidth={1.5}
-                              />
-                            )}
-                            <Line
-                              type="monotone"
-                              dataKey={trendMetric}
-                              stroke={
-                                trendMetric === "pm25Avg"
-                                  ? "#f59e0b"
-                                  : trendMetric === "mortalityRate"
-                                    ? "#3b82f6"
-                                    : trendMetric === "toxicReleases"
-                                      ? "#64748b"
-                                      : "#8b5cf6"
-                              }
-                              strokeWidth={2.5}
-                              dot={{ r: 4, strokeWidth: 1 }}
-                              activeDot={{ r: 7, strokeWidth: 2, fill: "#f59e0b" }}
-                            />
-                          </LineChart>
-                        </ResponsiveContainer>
-                      </div>
+                            formatter={(val) =>
+                              isSimpleMode
+                                ? [`${Number(val).toFixed(1)}% of adults`, ""]
+                                : [`${Number(val).toFixed(1)}%`, ""]
+                            }
+                          />
+                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                            {chartData.map((entry, idx) => (
+                              <Cell key={idx} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </div>
-                );
-              })()}
+                </motion.div>
+              )}
 
-              {/* Infrastructure Card */}
-              <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
-                  <HeartPulse className="w-3 h-3" />
-                  {isSimpleMode ? "Doctors Available" : "Physician Density & Rurality"}
-                </div>
-                <div className="flex justify-between items-baseline">
-                  <div className="text-xl font-extrabold text-foreground">
-                    {countyData.mdRate ?? "—"}
-                    <span className="text-xs font-normal text-muted-foreground ml-1.5">
-                      MDs / 100k
-                    </span>
+              {/* ── HEALTH & TRENDS ────────────────────────────────────── */}
+              {activeTab === "health" && (
+                <motion.div
+                  key="health"
+                  initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: 5 }}
+                  animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1, y: 0 }}
+                  exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4 mt-0"
+                >
+                  {isSimpleMode && (
+                    <p className="text-[11px] text-muted-foreground leading-relaxed px-0.5">
+                      How common are lung diseases, air pollution, and doctor access in this county?
+                    </p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <StatCard label="Asthma" icon={<Droplets className="w-3 h-3" />} value={countyData.asthmaPrev ? `${countyData.asthmaPrev}%` : "—"} color="text-fuchsia-500"
+                      isSimple={isSimpleMode} simpleValue={countyData.asthmaPrev ? `${countyData.asthmaPrev}% of adults` : "—"} />
+                    <StatCard label="COPD" icon={<Stethoscope className="w-3 h-3" />} value={countyData.copdPrev ? `${countyData.copdPrev}%` : "—"} color="text-teal-500"
+                      isSimple={isSimpleMode} simpleValue={countyData.copdPrev ? `${countyData.copdPrev}% of adults` : "—"} />
+                    <StatCard label="Smoking Rate" icon={<Cigarette className="w-3 h-3" />} value={countyData.smokingPrev ? `${countyData.smokingPrev}%` : "—"} color="text-orange-500"
+                      isSimple={isSimpleMode} simpleValue={countyData.smokingPrev ? `${countyData.smokingPrev}% smoke` : "—"} />
+                    <StatCard
+                      label="Toxic Releases"
+                      icon={<Factory className="w-3 h-3" />}
+                      value={toxicDisplay}
+                      unit="lbs"
+                      color="text-slate-400"
+                      isSimple={isSimpleMode}
+                      simpleLabel="Chemical Releases"
+                      simpleValue={toxicSimple}
+                    />
                   </div>
-                  <Badge variant="secondary" className="text-[10px]">
-                    {ruccLabel(countyData.rucc ?? 1)}
-                  </Badge>
-                </div>
-              </div>
-            </TabsContent>
+                  <div className="p-3.5 rounded-xl border border-border bg-background/70">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                      {isSimpleMode ? "Air Pollution Level" : "PM2.5 Exposure Level"}
+                    </div>
+                    <div className="flex items-end gap-1.5">
+                      <span className="text-2xl font-extrabold text-foreground">{pm25Display}</span>
+                      {!isSimpleMode && <span className="text-xs text-muted-foreground mb-0.5">µg/m³</span>}
+                    </div>
+                    {isSimpleMode && typeof pm25Display === "number" && (
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {pm25Label(pm25Display)} — {pm25Display < 9 ? "Below" : "Above"} the EPA safe limit of 9 µg/m³
+                      </p>
+                    )}
+                    {typeof pm25Display === "number" && (
+                      <div className="mt-2 h-1.5 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-amber-400 to-rose-500"
+                          style={{ width: `${Math.min(100, (pm25Display / 15) * 100)}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
 
-            {/* ── EQUITY ANALYSIS & CENSUS (H-1: EJ Story Loop) ─────────── */}
-            <TabsContent value="equity" className="space-y-4 mt-0">
-              {allCountyData ? (
-                <EquityTab
-                  county={countyData!}
-                  allCountyData={allCountyData}
-                  isSimpleMode={isSimpleMode}
-                />
-              ) : (
-                <div className="p-4 rounded-xl border border-border bg-muted/30 text-center">
-                  <p className="text-[10px] text-muted-foreground">
-                    Loading national comparison data…
-                  </p>
-                </div>
+                  {/* 2018–2024 Trends Component */}
+                  {(() => {
+                    const history = fips && countyData ? getCountyHistory(countyData, fips) : [];
+                    const trendDelta = history.length > 0 ? getMetricDelta(history, trendMetric) : null;
+
+                    if (!history.length) return null;
+
+                    return (
+                      <div className="space-y-3 pt-2 border-t border-border/50">
+                        <div className="flex items-center justify-between gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
+                          <button
+                            onClick={() => setTrendMetric("pm25Avg")}
+                            className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "pm25Avg"
+                              ? "bg-amber-500 text-black shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            PM2.5 Air
+                          </button>
+                          <button
+                            onClick={() => setTrendMetric("mortalityRate")}
+                            className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "mortalityRate"
+                              ? "bg-blue-500 text-white shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            Mortality
+                          </button>
+                          <button
+                            onClick={() => setTrendMetric("toxicReleases")}
+                            className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "toxicReleases"
+                              ? "bg-slate-700 text-white shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            Toxics
+                          </button>
+                          <button
+                            onClick={() => setTrendMetric("overallRisk")}
+                            className={`flex-1 text-[10px] font-bold py-1 px-1.5 rounded-lg transition-colors cursor-pointer ${trendMetric === "overallRisk"
+                              ? "bg-purple-600 text-white shadow-xs"
+                              : "text-muted-foreground hover:text-foreground"
+                              }`}
+                          >
+                            Risk
+                          </button>
+                        </div>
+
+                        <div className="p-3 rounded-xl border border-border bg-background/80 space-y-2">
+                          <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                              <TrendingUp className="w-3.5 h-3.5 text-primary" />
+                              <span>2018–2024 Annual Trend</span>
+                            </div>
+                            <Badge variant="outline" className="font-mono text-[9.5px]">
+                              {trendMetric === "pm25Avg"
+                                ? "µg/m³"
+                                : trendMetric === "mortalityRate"
+                                  ? "/ 100k"
+                                  : trendMetric === "toxicReleases"
+                                    ? "lbs/yr"
+                                    : "Index"}
+                            </Badge>
+                          </div>
+
+                          <div className="h-40 w-full pt-1">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart
+                                data={history}
+                                onClick={(e) => {
+                                  const activePayload = (e as any)?.activePayload;
+                                  if (activePayload?.[0] && onYearChange) {
+                                    onYearChange(activePayload[0].payload.year as TemporalYear);
+                                  }
+                                }}
+                              >
+                                <XAxis dataKey="year" tick={{ fontSize: 10 }} />
+                                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} width={35} />
+                                <Tooltip
+                                  content={({ active, payload }) => {
+                                    if (!active || !payload || !payload.length) return null;
+                                    const dataPt = payload[0].payload as CountyYearHistoryPoint;
+                                    return (
+                                      <div className="p-2 rounded-xl bg-card border border-border shadow-xl text-xs space-y-1">
+                                        <div className="font-mono font-bold text-foreground flex items-center justify-between gap-3">
+                                          <span>Year {dataPt.year}</span>
+                                          {dataPt.eventEmoji && <span>{dataPt.eventEmoji}</span>}
+                                        </div>
+                                        <div className="text-primary font-extrabold">
+                                          {dataPt[trendMetric].toLocaleString()}{" "}
+                                          <span className="text-[9px] text-muted-foreground">
+                                            {trendMetric === "pm25Avg" ? "µg/m³" : trendMetric === "mortalityRate" ? "/100k" : "lbs"}
+                                          </span>
+                                        </div>
+                                        {dataPt.eventTitle && (
+                                          <p className="text-[9.5px] text-amber-500 font-semibold">{dataPt.eventTitle}</p>
+                                        )}
+                                      </div>
+                                    );
+                                  }}
+                                />
+                                {selectedYear && (
+                                  <ReferenceLine
+                                    x={selectedYear}
+                                    stroke="#f59e0b"
+                                    strokeDasharray="3 3"
+                                    strokeWidth={1.5}
+                                  />
+                                )}
+                                <Line
+                                  type="monotone"
+                                  dataKey={trendMetric}
+                                  stroke={
+                                    trendMetric === "pm25Avg"
+                                      ? "#f59e0b"
+                                      : trendMetric === "mortalityRate"
+                                        ? "#3b82f6"
+                                        : trendMetric === "toxicReleases"
+                                          ? "#64748b"
+                                          : "#8b5cf6"
+                                  }
+                                  strokeWidth={2.5}
+                                  dot={{ r: 4, strokeWidth: 1 }}
+                                  activeDot={{ r: 7, strokeWidth: 2, fill: "#f59e0b" }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Infrastructure Card */}
+                  <div className="p-3.5 rounded-xl border border-border bg-background/70 space-y-2">
+                    <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                      <HeartPulse className="w-3 h-3" />
+                      {isSimpleMode ? "Doctors Available" : "Physician Density & Rurality"}
+                    </div>
+                    <div className="flex justify-between items-baseline">
+                      <div className="text-xl font-extrabold text-foreground">
+                        {countyData.mdRate ?? "—"}
+                        <span className="text-xs font-normal text-muted-foreground ml-1.5">
+                          MDs / 100k
+                        </span>
+                      </div>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {ruccLabel(countyData.rucc ?? 1)}
+                      </Badge>
+                    </div>
+                  </div>
+                </motion.div>
               )}
 
-              {/* Census & Demographics Accordion/Card */}
-              <div className="rounded-xl border border-border bg-background/70 p-3.5 space-y-3 pt-3">
-                <SectionLabel icon={<PieChart className="w-3.5 h-3.5 text-primary" />}>
-                  {isSimpleMode ? "Economic & Census Snapshot" : "Detailed Census Profile"}
-                </SectionLabel>
-                <div className="grid grid-cols-2 gap-2">
-                  <StatCard
-                    label="Poverty Rate"
-                    icon={<DollarSign className="w-3 h-3" />}
-                    value={countyData.pctPoverty != null ? `${countyData.pctPoverty}%` : "—"}
-                    color="text-rose-500"
-                    isSimple={isSimpleMode}
-                    simpleLabel="Poverty"
-                    simpleValue={
-                      countyData.pctPoverty != null
-                        ? povertyFraction(countyData.pctPoverty) + " live in poverty"
-                        : "—"
-                    }
-                  />
-                  <StatCard
-                    label="Uninsured"
-                    icon={<HeartHandshake className="w-3 h-3" />}
-                    value={countyData.pctUninsured != null ? `${countyData.pctUninsured}%` : "—"}
-                    color="text-amber-500"
-                    isSimple={isSimpleMode}
-                    simpleLabel="No Insurance"
-                    simpleValue={
-                      countyData.pctUninsured != null
-                        ? uninsuredFraction(countyData.pctUninsured) + " have no insurance"
-                        : "—"
-                    }
-                  />
-                  <StatCard
-                    label="Median Age"
-                    icon={<Calendar className="w-3 h-3" />}
-                    value={countyData.medianAge != null ? `${countyData.medianAge} yrs` : "—"}
-                    color="text-indigo-500"
-                    isSimple={isSimpleMode}
-                    simpleValue={countyData.medianAge != null ? `Typical age: ${countyData.medianAge}` : "—"}
-                  />
-                  <StatCard
-                    label="No HS Diploma"
-                    icon={<GraduationCap className="w-3 h-3" />}
-                    value={countyData.pctNoHS != null ? `${countyData.pctNoHS}%` : "—"}
-                    color="text-purple-500"
-                    isSimple={isSimpleMode}
-                    simpleLabel="Didn't finish HS"
-                    simpleValue={countyData.pctNoHS != null ? `${countyData.pctNoHS}% of adults` : "—"}
-                  />
-                </div>
-              </div>
-            </TabsContent>
+              {/* ── EQUITY ANALYSIS & CENSUS (H-1: EJ Story Loop) ─────────── */}
+              {activeTab === "equity" && (
+                <motion.div
+                  key="equity"
+                  initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: 5 }}
+                  animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1, y: 0 }}
+                  exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4 mt-0"
+                >
+                  {allCountyData ? (
+                    <EquityTab
+                      county={countyData!}
+                      allCountyData={allCountyData}
+                      isSimpleMode={isSimpleMode}
+                    />
+                  ) : (
+                    <div className="p-4 rounded-xl border border-border bg-muted/30 text-center">
+                      <p className="text-[10px] text-muted-foreground">
+                        Loading national comparison data…
+                      </p>
+                    </div>
+                  )}
 
-            {/* ── EQUITY ANALYSIS (H-1: EJ Story Loop) ─────────── */}
-            <TabsContent value="equity" className="space-y-3 mt-0">
-              {allCountyData ? (
-                <EquityTab
-                  county={countyData!}
-                  allCountyData={allCountyData}
-                  isSimpleMode={isSimpleMode}
-                />
-              ) : (
-                <div className="p-4 rounded-xl border border-border bg-muted/30 text-center">
-                  <p className="text-[10px] text-muted-foreground">
-                    Loading national comparison data…
-                  </p>
-                </div>
+                  {/* Census & Demographics Accordion/Card */}
+                  <div className="rounded-xl border border-border bg-background/70 p-3.5 space-y-3 pt-3">
+                    <SectionLabel icon={<PieChart className="w-3.5 h-3.5 text-primary" />}>
+                      {isSimpleMode ? "Economic & Census Snapshot" : "Detailed Census Profile"}
+                    </SectionLabel>
+                    <div className="grid grid-cols-2 gap-2">
+                      <StatCard
+                        label="Poverty Rate"
+                        icon={<DollarSign className="w-3 h-3" />}
+                        value={countyData.pctPoverty != null ? `${countyData.pctPoverty}%` : "—"}
+                        color="text-rose-500"
+                        isSimple={isSimpleMode}
+                        simpleLabel="Poverty"
+                        simpleValue={
+                          countyData.pctPoverty != null
+                            ? povertyFraction(countyData.pctPoverty) + " live in poverty"
+                            : "—"
+                        }
+                      />
+                      <StatCard
+                        label="Uninsured"
+                        icon={<HeartHandshake className="w-3 h-3" />}
+                        value={countyData.pctUninsured != null ? `${countyData.pctUninsured}%` : "—"}
+                        color="text-amber-500"
+                        isSimple={isSimpleMode}
+                        simpleLabel="No Insurance"
+                        simpleValue={
+                          countyData.pctUninsured != null
+                            ? uninsuredFraction(countyData.pctUninsured) + " have no insurance"
+                            : "—"
+                        }
+                      />
+                      <StatCard
+                        label="Median Age"
+                        icon={<Calendar className="w-3 h-3" />}
+                        value={countyData.medianAge != null ? `${countyData.medianAge} yrs` : "—"}
+                        color="text-indigo-500"
+                        isSimple={isSimpleMode}
+                        simpleValue={countyData.medianAge != null ? `Typical age: ${countyData.medianAge}` : "—"}
+                      />
+                      <StatCard
+                        label="No HS Diploma"
+                        icon={<GraduationCap className="w-3 h-3" />}
+                        value={countyData.pctNoHS != null ? `${countyData.pctNoHS}%` : "—"}
+                        color="text-purple-500"
+                        isSimple={isSimpleMode}
+                        simpleLabel="Didn't finish HS"
+                        simpleValue={countyData.pctNoHS != null ? `${countyData.pctNoHS}% of adults` : "—"}
+                      />
+                    </div>
+                  </div>
+                </motion.div>
               )}
-            </TabsContent>
 
-            {/* ── POLICY SIMULATOR (C-2: Real DML Causal Engine) ── */}
-            <TabsContent value="simulate" className="space-y-3 mt-0">
-              {(() => {
-                // Causal estimates loaded from DML pipeline output
-                const causal = causalEstimatesRaw as typeof causalEstimatesRaw;
-                const sim = causal.policy_simulator;
+              {/* ── POLICY SIMULATOR (C-2: Real DML Causal Engine) ── */}
+              {activeTab === "simulate" && (
+                <motion.div
+                  key="simulate"
+                  initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: 5 }}
+                  animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1, y: 0 }}
+                  exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98, y: -5 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-3 mt-0"
+                >
+                  {(() => {
+                    // Causal estimates loaded from DML pipeline output
+                    const causal = causalEstimatesRaw as typeof causalEstimatesRaw;
+                    const sim = causal.policy_simulator;
 
-                // Choose theta based on county urbanicity
-                // Rural counties (RUCC ≥ 7): use rural DML estimate
-                // Others: use all-county estimate with caveat
-                const isRural = (countyData.rucc ?? 0) >= 7;
-                const theta = isRural ? sim.primary_theta : causal.all.theta;
-                const ciLo  = isRural ? sim.primary_ci_lo : causal.all.ci_lo_95;
-                const ciHi  = isRural ? sim.primary_ci_hi : causal.all.ci_hi_95;
+                    // Choose theta based on county urbanicity
+                    // Rural counties (RUCC ≥ 7): use rural DML estimate
+                    // Others: use all-county estimate with caveat
+                    const isRural = (countyData.rucc ?? 0) >= 7;
+                    const theta = isRural ? sim.primary_theta : causal.all.theta;
+                    const ciLo = isRural ? sim.primary_ci_lo : causal.all.ci_lo_95;
+                    const ciHi = isRural ? sim.primary_ci_hi : causal.all.ci_hi_95;
 
-                // pm25 reduction state (0.5 to 5 µg/m³, step 0.5)
-                // We need a local state for the slider — using a trick: store in a ref-like way via a wrapper
-                return <PolicySimulatorContent
-                  fips={fips}
-                  countyData={countyData}
-                  allCountyData={allCountyData}
-                  theta={theta}
-                  ciLo={ciLo}
-                  ciHi={ciHi}
-                  isRural={isRural}
-                  isSimpleMode={isSimpleMode}
-                  causal={causal}
-                />;
-              })()}
-            </TabsContent>
+                    // pm25 reduction state (0.5 to 5 µg/m³, step 0.5)
+                    // We need a local state for the slider — using a trick: store in a ref-like way via a wrapper
+                    return <PolicySimulatorContent
+                      fips={fips}
+                      countyData={countyData}
+                      allCountyData={allCountyData}
+                      theta={theta}
+                      ciLo={ciLo}
+                      ciHi={ciHi}
+                      isRural={isRural}
+                      isSimpleMode={isSimpleMode}
+                      causal={causal}
+                    />;
+                  })()}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </CardContent>
         </Tabs>
       </Card>
