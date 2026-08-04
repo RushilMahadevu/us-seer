@@ -54,9 +54,9 @@ export default function Header({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const views = [
-    { id: "map" as const,      label: "Map",     Icon: Map },
-    { id: "analysis" as const, label: "Lab",     Icon: Stethoscope },
-    { id: "sources" as const,  label: "Sources", Icon: CirclePile },
+    { id: "map" as const, label: "Map", Icon: Map },
+    { id: "analysis" as const, label: "Lab", Icon: Stethoscope },
+    { id: "sources" as const, label: "Sources", Icon: CirclePile },
   ];
 
   /** Icon-only pill button for desktop quick tools */
@@ -118,11 +118,10 @@ export default function Header({
               key={id}
               id={`view-toggle-${id}`}
               onClick={() => onViewChange(id)}
-              className={`relative cursor-pointer px-3 py-1.5 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 select-none whitespace-nowrap ${
-                isActive
-                  ? "text-foreground shadow-xs"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/40"
-              }`}
+              className={`relative cursor-pointer px-3 py-1.5 rounded-[10px] text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 select-none whitespace-nowrap ${isActive
+                ? "text-foreground shadow-xs"
+                : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                }`}
             >
               {isActive && (
                 <motion.div
@@ -154,9 +153,6 @@ export default function Header({
           >
             <Compass className="h-3.5 w-3.5 shrink-0 text-primary animate-spin-slow" />
             <span className="hidden sm:inline">Take Tour</span>
-            <span className="hidden xl:inline-flex items-center px-1.5 py-0.5 text-[8.5px] font-extrabold uppercase rounded-full bg-primary/20 text-primary border border-primary/30 animate-pulse ml-0.5">
-              Recommended
-            </span>
           </button>
         )}
 
@@ -270,11 +266,10 @@ export default function Header({
                   <button
                     key={id}
                     onClick={() => { onViewChange(id); setMobileMenuOpen(false); }}
-                    className={`cursor-pointer px-2 py-2.5 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 justify-center transition-all ${
-                      isActive
-                        ? "bg-primary/10 text-primary border border-primary/20"
-                        : "bg-muted/40 text-muted-foreground hover:bg-muted"
-                    }`}
+                    className={`cursor-pointer px-2 py-2.5 rounded-xl text-xs font-semibold flex flex-col items-center gap-1 justify-center transition-all ${isActive
+                      ? "bg-primary/10 text-primary border border-primary/20"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted"
+                      }`}
                   >
                     <Icon className="w-4 h-4" />
                     <span className="text-[11px]">{label}</span>
@@ -303,11 +298,10 @@ export default function Header({
               {onToggleSimpleMode && (
                 <button
                   onClick={() => { onToggleSimpleMode(); setMobileMenuOpen(false); }}
-                  className={`cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${
-                    isSimpleMode
-                      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-                      : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
-                  }`}
+                  className={`cursor-pointer flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-all ${isSimpleMode
+                    ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+                    : "bg-muted/40 text-muted-foreground border-border/60 hover:bg-muted hover:text-foreground"
+                    }`}
                 >
                   <SquaresSubtract className="h-4 w-4 text-amber-400 shrink-0" />
                   {isSimpleMode ? "Simplified Mode (Active)" : "Simplify Mode"}

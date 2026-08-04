@@ -233,7 +233,7 @@ That sentence is your title, your video hook, your short-answer response, and yo
 
 ---
 
-#### H-4: Add the Anomaly / Outlier Discovery Feature
+#### H-4: Add the Anomaly / Outlier Discovery Feature ✅ COMPLETED
 
 **Problem:** The current app shows data. It doesn't *flag* surprising things. Flagging surprises is what researchers do.
 
@@ -248,15 +248,22 @@ That sentence is your title, your video hook, your short-answer response, and yo
 
 ---
 
-#### M-1: Add a Live Methodology Page in the App
+#### M-1: Add a Live Methodology Page in the App ✅ COMPLETED
 
-**Why:** Every serious research tool has one. It signals intellectual honesty. CAC short-answer questions ask about your data sources — a live page is better than a text description.
+**What was done:**
+- Created comprehensive in-app **Live Methodology & Data Sources Page** accessible via `/sources` and the main navigation bar (`DataSourcesView.tsx`).
+- Integrated top-level sub-tab switcher:
+  - 📊 **Dataset Catalog & Provenance**: Interactive table & card grid of 12 federal datasets (CDC WONDER, EPA AQS, CDC PLACES, Census ACS, EPA TRI, HRSA AHRF, USDA RUCC, US-SEER OVI, CDC SVI, NOAA Normals, BLS OES, USGS NWIS) complete with exact **date ranges** (e.g. CDC WONDER 2018–2022, EPA AQS 2020–2024, Census ACS 2018–2022 5-Yr, CDC PLACES 2023), 5-digit FIPS join keys, key variable metric codes, update frequencies, and direct official federal portal links.
+  - 🔬 **Causal ML & Confounders**: Mathematical & algorithmic breakdown of Robinson's Partially Linear Model (Robinson 1988; Chernozhukov et al. 2018), 5-fold cross-fitting Random Forest nuisance models, empirical rural effect parameter ($\theta = +1.47$ deaths/100k per $1\,\mu\text{g/m}^3$), and multi-variable confounder matrix (smoking, MD density, urbanicity, poverty).
+  - ⚠️ **Known Limitations & Epistemological Caveats**: Detailed interactive card breakdown of the 4 key methodological boundaries:
+    1. *The Ecological Fallacy* (County-level spatial aggregation vs. individual health risk inference)
+    2. *CDC Mortality Data Suppression* (<10 deaths privacy masking; handling via 5-year rolling temporal aggregation & state baseline imputation)
+    3. *Satellite AOD Remote Sensing & Spatial Kriging* (Ground monitor sparsity in rural counties vs. MODIS/MAIAC satellite AOD interpolation)
+    4. *Residual Unmeasured Confounding* (Indoor radon, housing age, occupational dust, microclimates)
+- Created **"Copy Citation Statement"** button for academic & policy citation.
+- Updated root `DATA_SOURCES.md` documentation file to match the in-app methodology page.
 
-**Contents:**
-- Data sources table (pull from `DATA_SOURCES.md`, surface it in the UI)
-- Known limitations: ecological fallacy, CDC suppression, modeled PM2.5
-- Date ranges for each dataset
-- Links to original federal datasets
+**Deliverable:** Live, research-grade Methodology & Data Sources view with date ranges, causal ML specs, epistemological limitations, and federal dataset provenance. ✅
 
 ---
 

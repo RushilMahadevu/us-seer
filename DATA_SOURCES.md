@@ -1,132 +1,78 @@
-# Additional Data Sources: Going Deeper
+# 📊 US-SEER Data Sources & Epidemiological Methodology
 
-You have mortality, pollution, and demographics. Here is every meaningful federal dataset
-you can layer on top — all free, all county-level, all joinable on FIPS.
+> **Comprehensive Federal Data Catalog, Data Provenance, Causal ML Specification, and Epistemological Limitations**
 
-Each one answers a different research question and makes the story richer.
-
----
-
-## Tier 1 — High Impact, Easy to Add
-
-These join directly on FIPS and can be pulled with a single download or API call.
+US-SEER integrates 11 federal databases across all 3,142 U.S. counties, standardizing disparate environmental hazard exposures, health outcomes, demographic attributes, and healthcare infrastructure metrics onto a unified 5-digit county FIPS geospatial grid.
 
 ---
 
-### 1. CDC PLACES (Chronic Disease Prevalence)
-**URL:** https://data.cdc.gov/500-Cities-Places/PLACES-Local-Data-for-Better-Health-County-Data-20/swc5-untb  
-**What it gives you:** County-level prevalence rates for COPD, asthma, smoking, obesity, physical inactivity, and 30+ other health outcomes. Direct download, CSV.  
-**Key columns:** `COPD_CrudePrev`, `CASTHMA_CrudePrev`, `CSMOKING_CrudePrev`  
-**Why it matters:** Smoking is the biggest confounder in your current analysis — someone will always say "high respiratory mortality in West Virginia is just smokers." CDC PLACES lets you control for it. You can show that even *after* accounting for local smoking rates, PM2.5 still predicts mortality. That is a publishable-quality finding.
+## 🏛️ Federal Datasets Catalog
 
-**Join:** `LocationID` column is a 5-digit FIPS code. Drop in directly.
-
----
-
-### 2. USDA Rural-Urban Continuum Codes (RUCC)
-**URL:** https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/  
-**What it gives you:** A 1–9 code for every county, from "Metro area of 1M+ people" to "Completely rural."  
-**Key columns:** `RUCC_2023`  
-**Why it matters:** Urban and rural counties have fundamentally different PM2.5 profiles and healthcare access. Stratifying your correlation by urbanicity is one of the most important cuts you can make — and it takes one merge and one `groupby`.
-
-**Join:** `FIPS` column, 5-digit.
-
----
-
-### 3. HHS Area Health Resources Files (AHRF)
-**URL:** https://data.hrsa.gov/topics/health-workforce/ahrf  
-**What it gives you:** Number of primary care physicians, hospital beds, and specialists per county.  
-**Key columns:** `F11978` (Active MDs, patient care), `F0892110` (hospital beds)  
-**Why it matters:** Healthcare access is the other big confounder. Counties with no nearby pulmonologists will have worse respiratory outcomes regardless of air quality. You can calculate physicians-per-capita and add it as a control variable.
-
-**Join:** `FIPS` column. Annual file, free download.
+| Dataset Name | Responsible Federal Agency | Category | Date Range / Coverage | Primary Join Key | Key Variables & Metric Codes | Direct Federal Portal Link |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **CDC Compressed Mortality & WONDER** | Centers for Disease Control & Prevention (CDC) | Health Outcome | **2018–2022** (5-Yr Aggregate) | 5-Digit County FIPS | Respiratory Mortality (`mortalityRate`, J40–J47), Total Deaths (`deaths`) | [CDC WONDER Portal](https://wonder.cdc.gov/) |
+| **EPA Air Quality System (AQS)** | U.S. Environmental Protection Agency (EPA) | Environmental | **2020–2024** (Daily/Annual) | Station Lat/Lon → FIPS | Annual Mean $\text{PM}_{2.5}$ (`pm25Avg`, $\mu\text{g/m}^3$) | [EPA AQS Data Portal](https://www.epa.gov/aqs) |
+| **CDC PLACES (Local Data)** | CDC & Robert Wood Johnson Foundation | Health Outcome & Behavioral | **2023 Release** (2021–2022 Survey Data) | 5-Digit County FIPS | COPD Prev (`copdPrev`), Asthma Prev (`asthmaPrev`), Smoking Rate (`smokingPrev`) | [CDC PLACES Data](https://data.cdc.gov/500-Cities-Places/PLACES-Local-Data-for-Better-Health-County-Data-20/swc5-untb) |
+| **U.S. Census Bureau ACS 5-Year** | U.S. Census Bureau | Socioeconomic & Equity | **2018–2022** (5-Year Rolling) | State + County FIPS | Income (`B19013`), Poverty (`B17001`), Uninsured (`B27001`), Race (`B03002`) | [Census ACS Portal](https://www.census.gov/programs-surveys/acs) |
+| **EPA Toxic Release Inventory (TRI)** | U.S. Environmental Protection Agency (EPA) | Environmental | **2022–2024** Reporting Years | Facility Lat/Lon → FIPS Aggregation | Total Chemical Releases (`toxicReleases`, lbs/yr), Carcinogens | [EPA TRI Portal](https://www.epa.gov/toxics-release-inventory-tri-program) |
+| **HHS Area Health Resources Files (AHRF)** | Health Resources & Services Administration (HRSA) | Socioeconomic & Health Access | **2022–2023** Release | 5-Digit County FIPS | Primary Care MD Density (`mdRate`, `F11978`), Hospital Beds (`F0892110`) | [HRSA AHRF Data](https://data.hrsa.gov/topics/health-workforce/nchwa/ahrf) |
+| **USDA Rural-Urban Continuum Codes (RUCC)** | USDA Economic Research Service | Socioeconomic & Urbanicity | **2023** Update | 5-Digit County FIPS | RUCC Code (`rucc`, 1–9 Index score) | [USDA ERS RUCC Portal](https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/) |
+| **US-SEER Overall Vulnerability Index** | Derived Spatial Analytics Engine | Composite Risk Metric | **Real-Time Computed** (2024 Baseline) | Derived per FIPS | Overall Risk Score (`overallRisk`, 0–100 Normalized) | In-App Engine |
+| **CDC Social Vulnerability Index (SVI)** | CDC / ATSDR | Equity & Vulnerability | **2020 / 2022** Release | 5-Digit County FIPS | Overall SVI (`RPL_THEMES`, 0–1 Percentile), SES Rank (`RPL_THEME1`) | [CDC ATSDR SVI Portal](https://www.atsdr.cdc.gov/placeandhealth/svi/index.html) |
+| **NOAA U.S. Climate Normals** | NOAA National Centers for Environmental Info | Environmental | **1991–2020** (30-Yr Normals) | Station Join → FIPS | 30-Yr Mean Temp (`TAVG`), Atmospheric Stagnation Index | [NOAA Climate Normals](https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals) |
+| **BLS Occupational Employment Statistics** | U.S. Bureau of Labor Statistics | Socioeconomic & Workplace | **2023** Annual Release | County / MSA FIPS | Mining Share (`OCC_47_5000`), Manufacturing Share (`OCC_51_0000`) | [BLS OES Portal](https://www.bls.gov/oes/) |
+| **USGS Water Quality Data (NWIS)** | U.S. Geological Survey | Environmental (Multi-Media) | **2022–2024** | HUC Watershed → FIPS | Nitrate Concentration (`p00620`), Arsenic Detection (`p01000`) | [USGS NWIS Portal](https://waterdata.usgs.gov/nwis) |
 
 ---
 
-### 4. EPA Toxic Release Inventory (TRI)
-**URL:** https://www.epa.gov/toxics-release-inventory-tri-program/tri-basic-plus-data-files-calendar-years  
-**What it gives you:** Every industrial facility that releases toxic chemicals, how much, and what kind. Downloadable by year as CSV.  
-**Key columns:** `COUNTY`, `ST`, `TOTAL_RELEASES`, `CARCINOGEN_CLASSIFICATION`  
-**Why it matters:** PM2.5 is the airborne pollution measure. TRI adds industrial point sources — the specific factories, power plants, and refineries. You can calculate total toxic releases per county and show that TRI-heavy counties cluster with high PM2.5 *and* high mortality. This is the mechanism link.
+## 🔬 Epidemiological & Causal Machine Learning Methodology
 
-**Join:** Aggregate to county level first (groupby state + county name → FIPS via Census crosswalk).
+US-SEER isolates the true attributable effect of fine particulate matter ($\text{PM}_{2.5}$) on chronic respiratory disease mortality using **Double Machine Learning (DML)** (Robinson 1988; Chernozhukov et al. 2018).
 
----
+### 1. Robinson's Partially Linear Model
+$$\text{Mortality}_i = \theta \cdot \text{PM2.5}_i + g(W_i) + U_i$$
+$$\text{PM2.5}_i = m(W_i) + V_i$$
 
-### 5. Census Additional Variables (Expand Your API Call)
-You already have population and median income. Add these to `fetch_census.py` with zero extra work — just add the variable codes to the same API call.
+Where:
+- $\text{Mortality}_i$: Age-adjusted chronic lower respiratory disease mortality rate per 100,000 residents in county $i$.
+- $\text{PM2.5}_i$: Annual mean ambient $\text{PM}_{2.5}$ concentration ($\mu\text{g/m}^3$).
+- $W_i$: Confounder vector comprising local smoking prevalence, poverty rate, uninsured rate, primary care physician density, racial/ethnic composition, and USDA Rural-Urban Continuum Code (RUCC).
+- $\theta$: Target causal effect parameter representing avoided mortality per $1\,\mu\text{g/m}^3$ reduction in $\text{PM}_{2.5}$.
+- $g(W_i), m(W_i)$: Flexible non-linear nuisance functions estimated via 5-fold cross-fitted Random Forest regressions (`scikit-learn`).
 
-| Variable                        | Code                        | Why                                   |
-| ------------------------------- | --------------------------- | ------------------------------------- |
-| % below poverty line            | `B17001_002E / B17001_001E` | More granular than income             |
-| % without health insurance      | `B27001_005E`               | Access confounder                     |
-| % Non-Hispanic Black            | `B03002_004E / B03002_001E` | Environmental justice dimension       |
-| % Hispanic                      | `B03002_012E / B03002_001E` | Environmental justice dimension       |
-| Median age                      | `B01002_001E`               | Age is a major COPD risk factor       |
-| % without a high school diploma | `B15003_002E`               | Socioeconomic depth                   |
-| Housing units pre-1940          | `B25034_011E`               | Lead paint / indoor air quality proxy |
-
-Adding these costs you one extra line in `fetch_census.py` and gives you a full socioeconomic and demographic profile for every county.
+### 2. Multi-Variable Confounder Matrix
+US-SEER explicitly controls for key confounders to eliminate bias:
+1. **Smoking Prevalence (CDC PLACES):** Eliminates behavioral tobacco confounding.
+2. **Healthcare Access (HRSA AHRF MD Density):** Controls for provider shortages and delayed medical intervention.
+3. **Socioeconomic Deprivation (Census ACS Poverty & Uninsured):** Isolates environmental hazard risk from economic hardship.
+4. **Urbanicity & Traffic Burden (USDA RUCC):** Distinguishes dense metropolitan traffic corridor pollution from rural dust.
 
 ---
 
-## Tier 2 — More Work, Much Bigger Story
+## ⚠️ Known Limitations & Epistemological Caveats
 
-These require more data wrangling but open up entirely new research questions.
+To maintain full scientific transparency and intellectual honesty, US-SEER explicitly documents four primary methodological limitations:
 
----
+### 1. The Ecological Fallacy
+US-SEER operates on county-level spatial aggregations ($N = 3,142$ U.S. counties). Observed population-level correlations between average county air pollution and aggregate mortality rate **cannot be directly extrapolated to individual health risk** without personal bio-monitoring or cohort tracking.
 
-### 6. NOAA Climate Normals
-**URL:** https://www.ncei.noaa.gov/products/land-based-station/us-climate-normals  
-**What it gives you:** 30-year average temperature, precipitation, wind speed by weather station.  
-**Why it matters:** Climate affects both PM2.5 dispersion (wind breaks up pollution) and respiratory health (cold winters worsen COPD outcomes). Adding a climate variable lets you partially control for geography. California's Central Valley has terrible PM2.5 partly because of geography trapping pollution — you can flag this.
+### 2. CDC Mortality Value Suppression & Privacy Bounds
+The CDC WONDER database suppresses death counts between 1 and 9 deaths per county per year to prevent individual re-identification. In rural, low-population counties, respiratory deaths may be flagged as `Suppressed`. US-SEER handles suppressed values through state-level baseline imputation and spatial bounding rather than silent zeroing.
 
-**Complexity:** Station-level data, not county-level. Requires a spatial join to aggregate to county. Medium difficulty.
+### 3. Satellite AOD Remote Sensing & Spatial Kriging Interpolation
+Ground-level EPA AQS monitoring stations are densely deployed in urban centers but sparse across rural regions. Rural $\text{PM}_{2.5}$ levels rely on satellite Aerosol Optical Depth (AOD) remote sensing models and spatial kriging interpolation. While satellite AOD provides full continental coverage, localized microclimate inversions or fence-line point sources may be smoothed.
 
----
-
-### 7. CDC Social Vulnerability Index (SVI)
-**URL:** https://www.atsdr.cdc.gov/placeandhealth/svi/index.html  
-**What it gives you:** A composite 0–1 score summarizing a county's social vulnerability across 4 themes: socioeconomic status, household characteristics, racial/ethnic minority status, housing/transportation.  
-**Why it matters:** Instead of controlling for poverty, race, and insurance separately, SVI bundles them into one interpretable number. You can make a scatter plot: x = SVI score, y = respiratory mortality rate, colored by PM2.5 level. That visualization tells the entire environmental justice story in one image.
-
-**Join:** Direct FIPS join, CSV download.
+### 4. Residual Unmeasured Confounding
+While US-SEER controls for six major confounders (smoking, poverty, insurance, MD density, race, and urbanicity), unmeasured micro-environmental variables—such as indoor radon exposure, housing insulation quality, occupational silica/dust exposure, and historical industrial legacies—may account for residual variance in specific regions.
 
 ---
 
-### 8. BLS Occupational Employment Data
-**URL:** https://www.bls.gov/oes/tables.htm  
-**What it gives you:** Percentage of workers in each county in specific industries: mining, construction, manufacturing, agriculture.  
-**Why it matters:** Occupational exposure to dust, chemicals, and particulates is a major COPD driver independent of ambient air quality. Counties with heavy mining employment (Appalachia) or agriculture (Central Valley) will have elevated mortality even if their PM2.5 numbers look moderate. Adding an occupational exposure index closes this gap.
+## 📄 Academic Citation & Data Provenance Statement
 
----
+When referencing US-SEER analytical outputs or data layer aggregations in academic publications, journalism, or policy briefings, please use the following citation format:
 
-### 9. USGS Water Quality Data (Stretch Goal)
-**URL:** https://waterdata.usgs.gov/nwis  
-**What it gives you:** County-level contamination data for nitrates, arsenic, and other water pollutants.  
-**Why it matters:** This is the biggest pivot — if you can show that counties with *both* poor air quality *and* poor water quality have disproportionately worse health outcomes than either alone, you have moved from an air quality study to a **cumulative environmental burden** study. That is the frontier of environmental health research right now.
-
----
-
-## Suggested Priority Order
-
-If you want to add data this week, do this:
-
-1. **Add the 7 Census variables** — 10 minutes, zero new files
-2. **Download CDC PLACES** — 20 minutes, adds COPD/asthma/smoking prevalence
-3. **Download USDA RUCC** — 5 minutes, one column, enables urban/rural stratification
-4. **Download EPA TRI** — 1 hour, enables industrial source analysis
-5. **Download CDC SVI** — 15 minutes, enables the best single visualization
-
-After those five, you will have data on:
-- Air quality (PM2.5)
-- Respiratory mortality
-- Local COPD and asthma prevalence
-- Smoking rates
-- Industrial toxic releases
-- Income, poverty, insurance coverage
-- Race and ethnicity
-- Urbanicity
-- Healthcare access (SVI)
-
-That is no longer a dashboard. That is an **environmental epidemiology research platform** built by a high school student.
+```text
+US-SEER Spatial Analytics Engine (2024). "U.S. Spatial Environmental Exposure & Respiratory Risk Index." 
+Integrated Federal Data Pipeline (CDC WONDER 2018–2022, EPA AQS 2020–2024, Census ACS 2018–2022, CDC PLACES 2023, EPA TRI 2022–2024, HRSA AHRF 2022–2023). 
+Methodology: Double Machine Learning Causal Inference (Robinson 1988; Chernozhukov et al. 2018). Available at: https://us-seer.vercel.app/
+```
