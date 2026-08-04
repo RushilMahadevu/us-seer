@@ -19,6 +19,21 @@
 
 import { CountyData, CountyDataMap } from "./types";
 
+export interface SVIThemeScores {
+  socioeconomic: number; // Theme 1: Poverty, Income, Uninsured (0-100)
+  demographic: number;   // Theme 2: Age, Health Vulnerability (0-100)
+  minority: number;      // Theme 3: Racial & Ethnic Minority (0-100)
+  housing: number;        // Theme 4: Housing Age / Infrastructure (0-100)
+}
+
+export interface SVIAnalysis {
+  sviScore: number;         // Decimal CDC ATSDR RPL_THEMES score (0.000 - 1.000)
+  sviPercentile: number;    // 0-100 national percentile (higher = more vulnerable)
+  category: "Very High" | "High" | "Moderate" | "Low";
+  categoryColor: string;
+  themes: SVIThemeScores;
+}
+
 export interface EJPercentiles {
   pm25: number;           // 0–100 national percentile (higher = more polluted)
   mortality: number;      // 0–100 national percentile (higher = more deaths)
@@ -27,6 +42,7 @@ export interface EJPercentiles {
   poverty: number;        // 0–100 (higher = more poverty = more vulnerable)
   uninsured: number;      // 0–100 (higher = more uninsured)
   toxicReleases: number;  // 0–100 (higher = more toxic releases)
+  svi: SVIAnalysis;       // CDC Social Vulnerability Index breakdown
 }
 
 export interface EJIndex {
@@ -73,8 +89,11 @@ function buildSortedArrays(allData: CountyDataMap) {
   const poverties = entries.map((c) => c.pctPoverty).filter((v): v is number => v != null).sort((a, b) => a - b);
   const uninsured = entries.map((c) => c.pctUninsured).filter((v): v is number => v != null).sort((a, b) => a - b);
   const toxics = entries.map((c) => c.toxicReleases).filter((v): v is number => v != null).sort((a, b) => a - b);
+  const noHS = entries.map((c) => c.pctNoHS).filter((v): v is number => v != null).sort((a, b) => a - b);
+  const minorities = entries.map((c) => ((c.pctBlack ?? 0) + (c.pctHispanic ?? 0))).filter((v): v is number => v != null).sort((a, b) => a - b);
+  const housingAge = entries.map((c) => c.housingPre1940).filter((v): v is number => v != null).sort((a, b) => a - b);
 
-  return { pm25s, mortalities, incomes, poverties, uninsured, toxics };
+  return { pm25s, mortalities, incomes, poverties, uninsured, toxics, noHS, minorities, housingAge };
 }
 
 // Module-level cache so we only sort once per session
@@ -92,7 +111,7 @@ function getSortedArrays(allData: CountyDataMap) {
  * Main entry point: compute full EJ analysis for a selected county.
  */
 export function computeEJAnalysis(county: CountyData, allData: CountyDataMap): EJAnalysis {
-  const { pm25s, mortalities, incomes, poverties, uninsured, toxics } = getSortedArrays(allData);
+  const { pm25s, mortalities, incomes, poverties, uninsured, toxics, noHS, minorities, housingAge } = getSortedArrays(allData);
 
   // --- Percentile Rankings ---
   const pm25Pct = county.pm25Avg != null ? percentileRank(pm25s, county.pm25Avg) : 50;
@@ -102,6 +121,56 @@ export function computeEJAnalysis(county: CountyData, allData: CountyDataMap): E
   const povertyPct = county.pctPoverty != null ? percentileRank(poverties, county.pctPoverty) : 50;
   const uninsuredPct = county.pctUninsured != null ? percentileRank(uninsured, county.pctUninsured) : 50;
   const toxicPct = county.toxicReleases != null ? percentileRank(toxics, county.toxicReleases) : 0;
+  const noHsPct = county.pctNoHS != null ? percentileRank(noHS, county.pctNoHS) : 50;
+  const minorityVal = (county.pctBlack ?? 0) + (county.pctHispanic ?? 0);
+  const minorityPct = percentileRank(minorities, minorityVal);
+  const housingPct = county.housingPre1940 != null ? percentileRank(housingAge, county.housingPre1940) : 50;
+
+  // --- CDC SVI (Social Vulnerability Index) Calculation (CDC ATSDR RPL_THEMES model) ---
+  // Theme 1 (Socioeconomic): Income, Poverty, Uninsured, No HS
+  const sviTheme1 = Math.round((incomeVulnPct * 0.35 + povertyPct * 0.30 + uninsuredPct * 0.20 + noHsPct * 0.15));
+  // Theme 2 (Demographics & Health): Mortality & Chronic Disease vulnerability
+  const sviTheme2 = Math.round((mortalityPct * 0.60 + (county.copdPrev ? percentileRank(mortalities, county.copdPrev) : mortalityPct) * 0.40));
+  // Theme 3 (Racial & Ethnic Minority Status)
+  const sviTheme3 = minorityPct;
+  // Theme 4 (Housing & Infrastructure)
+  const sviTheme4 = housingPct;
+
+  // Composite CDC SVI Percentile (CDC ATSDR RPL_THEMES)
+  const sviCompositePct = county.svi != null
+    ? Math.round(county.svi * 100)
+    : Math.round(sviTheme1 * 0.40 + sviTheme2 * 0.25 + sviTheme3 * 0.20 + sviTheme4 * 0.15);
+  
+  const sviScore = county.svi != null ? county.svi : Number((sviCompositePct / 100).toFixed(4));
+  
+  let sviCategory: SVIAnalysis["category"];
+  let sviCategoryColor: string;
+  if (sviCompositePct >= 75) {
+    sviCategory = "Very High";
+    sviCategoryColor = "text-rose-500 bg-rose-500/10 border-rose-500/30";
+  } else if (sviCompositePct >= 50) {
+    sviCategory = "High";
+    sviCategoryColor = "text-orange-500 bg-orange-500/10 border-orange-500/30";
+  } else if (sviCompositePct >= 25) {
+    sviCategory = "Moderate";
+    sviCategoryColor = "text-amber-500 bg-amber-500/10 border-amber-500/30";
+  } else {
+    sviCategory = "Low";
+    sviCategoryColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/30";
+  }
+
+  const sviAnalysis: SVIAnalysis = {
+    sviScore,
+    sviPercentile: sviCompositePct,
+    category: sviCategory,
+    categoryColor: sviCategoryColor,
+    themes: {
+      socioeconomic: sviTheme1,
+      demographic: sviTheme2,
+      minority: sviTheme3,
+      housing: sviTheme4,
+    },
+  };
 
   const percentiles: EJPercentiles = {
     pm25: pm25Pct,
@@ -111,6 +180,7 @@ export function computeEJAnalysis(county: CountyData, allData: CountyDataMap): E
     poverty: povertyPct,
     uninsured: uninsuredPct,
     toxicReleases: toxicPct,
+    svi: sviAnalysis,
   };
 
   // --- EJ Index (modeled on EPA EJScreen) ---

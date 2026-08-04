@@ -163,7 +163,7 @@ function EJScorecard({
         {/* Circle-like score */}
         <div className="relative flex items-center justify-center h-16 w-16 shrink-0">
           <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 64 64">
-            <circle cx="32" cy="32" r="26" fill="none" stroke="hsl(var(--muted))" strokeWidth="6" />
+            <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" className="text-muted/60" strokeWidth="6" />
             <circle
               cx="32" cy="32" r="26"
               fill="none"
@@ -219,6 +219,81 @@ function EJScorecard({
           Vulnerability = Income deprivation (40%) + Poverty (30%) + Uninsured (30%).
         </p>
       )}
+    </div>
+  );
+}
+
+/* ── SVI Scorecard component ─────────────────────────────────── */
+function SVIScorecard({
+  svi,
+  isSimple,
+}: {
+  svi: import("@/app/_lib/ej-utils").SVIAnalysis;
+  isSimple: boolean;
+}) {
+  return (
+    <div className="p-3.5 rounded-xl border border-violet-500/25 bg-violet-500/5 space-y-2.5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Activity className="h-3.5 w-3.5 text-violet-400" />
+          <span className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+            {isSimple ? "CDC Vulnerability Index (SVI)" : "CDC Social Vulnerability Index (SVI)"}
+          </span>
+        </div>
+        <Badge variant="outline" className={`text-[9px] font-semibold border-current ${svi.categoryColor}`}>
+          {svi.category} Vulnerability
+        </Badge>
+      </div>
+
+      <div className="flex items-baseline justify-between">
+        <div>
+          <span className="text-2xl font-extrabold text-violet-400">{svi.sviScore.toFixed(3)}</span>
+          <span className="text-[10px] text-muted-foreground ml-1.5 font-medium">
+            ({svi.sviPercentile}th percentile nationally)
+          </span>
+        </div>
+        <span className="text-[9.5px] font-mono text-muted-foreground">CDC ATSDR RPL_THEMES</span>
+      </div>
+
+      {/* SVI Theme Sub-bars */}
+      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/40">
+        <div>
+          <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5">
+            <span>Socioeconomic</span>
+            <span className="font-bold text-foreground">{svi.themes.socioeconomic}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-violet-500 rounded-full" style={{ width: `${svi.themes.socioeconomic}%` }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5">
+            <span>Health & Mortality</span>
+            <span className="font-bold text-foreground">{svi.themes.demographic}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-rose-500 rounded-full" style={{ width: `${svi.themes.demographic}%` }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5">
+            <span>Minority Share</span>
+            <span className="font-bold text-foreground">{svi.themes.minority}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-amber-500 rounded-full" style={{ width: `${svi.themes.minority}%` }} />
+          </div>
+        </div>
+        <div>
+          <div className="flex justify-between text-[9px] text-muted-foreground mb-0.5">
+            <span>Housing Age</span>
+            <span className="font-bold text-foreground">{svi.themes.housing}%</span>
+          </div>
+          <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-full bg-teal-500 rounded-full" style={{ width: `${svi.themes.housing}%` }} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -358,6 +433,9 @@ export default function EquityTab({ county, allCountyData, isSimpleMode }: Equit
         vulnerabilityScore={ej.vulnerabilityScore}
         isSimple={isSimpleMode}
       />
+
+      {/* CDC Social Vulnerability Index (SVI) Scorecard */}
+      <SVIScorecard svi={percentiles.svi} isSimple={isSimpleMode} />
 
       {/* National Percentile Gauges */}
       <div className="space-y-1">

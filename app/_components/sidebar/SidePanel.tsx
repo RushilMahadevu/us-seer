@@ -820,7 +820,7 @@ export default function SidePanel({ fips, countyData, allCountyData, onOpenCompa
                             tickLine={false}
                           />
                           <Tooltip
-                            cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                            cursor={{ fill: "rgba(148, 163, 184, 0.15)" }}
                             contentStyle={{
                               backgroundColor: "var(--color-card)",
                               borderColor: "var(--color-border)",

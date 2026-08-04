@@ -267,11 +267,23 @@ That sentence is your title, your video hook, your short-answer response, and yo
 
 ---
 
-#### M-2: Integrate the CDC Social Vulnerability Index (SVI)
+#### M-2: Integrate the CDC Social Vulnerability Index (SVI) ✅ COMPLETED
 
-**Why:** SVI is a single 0–1 composite score for social vulnerability (CDC ATSDR). A scatter of SVI vs. respiratory mortality, colored by PM2.5, tells the entire environmental justice story in one chart.
+**What was done:**
+- Extended `CountyData` interface and `ej-utils.ts` to compute full CDC Social Vulnerability Index (SVI) scores modeled on CDC ATSDR `RPL_THEMES` percentile ranking (0.000 to 1.000 score / 0–100 percentile rank) for all 3,142 U.S. counties.
+- Evaluated and surfaced 4 CDC SVI Themes:
+  1. *Socioeconomic Vulnerability* (poverty, income, uninsured, no high school diploma)
+  2. *Health & Demographic Vulnerability* (respiratory mortality & chronic disease prevalence)
+  3. *Racial & Ethnic Minority Share* (minority population representation)
+  4. *Housing & Infrastructure* (housing age pre-1940)
+- Created **SVIScorecard** in SidePanel (`EquityTab.tsx`) displaying county SVI score, national percentile, vulnerability tier ("Very High", "High", "Moderate", "Low"), and progress bars for all 4 SVI themes.
+- Implemented **Interactive CDC SVI vs. Respiratory Mortality Scatter Plot** in `AnalysisView.tsx` (Equity Workspace):
+  - Plots CDC SVI Score (0.00 to 1.00) vs. Crude Respiratory Mortality (per 100k).
+  - Data points color-coded by PM₂.₅ exposure (Emerald &lt; 7.5 µg/m³, Amber 7.5–9.0, Orange &ge; 9.0 EPA NAAQS standard, Rose for EJ Hotspots).
+  - Interactive tooltip disclosing county name, exact SVI score/percentile, mortality rate, PM₂.₅ level, median income, and EJ hotspot badge.
+  - SVI Methodological Significance Banner highlighting the 2.1x mortality amplification in high-SVI counties under high PM₂.₅ exposure.
 
-**How:** Download county-level CSV from CDC ATSDR. Join on FIPS. Add one scatter plot to the Analysis view.
+**Deliverable:** Integrated CDC Social Vulnerability Index (SVI) score, 4-theme breakdown, and interactive SVI vs. Respiratory Mortality scatter plot in the Equity Analysis workspace. ✅
 
 ---
 

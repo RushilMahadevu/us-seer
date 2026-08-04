@@ -19,6 +19,7 @@ export interface CountyData {
   mdRate?: number;
   toxicReleases?: number;
   overallRisk?: number;
+  svi?: number;
 }
 
 export type CountyDataMap = Record<string, CountyData>;
