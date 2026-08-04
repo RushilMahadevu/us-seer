@@ -184,7 +184,15 @@ export default function TutorialTourModal({
 }: TutorialTourModalProps) {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<ElementRect | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   // References for tracking state changes
   const prevFipsRef = useRef(selectedFips);
@@ -404,7 +412,6 @@ export default function TutorialTourModal({
 
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
-    const isMobile = viewportW < 768;
 
     if (isMobile || !targetRect) {
       return {
@@ -500,7 +507,7 @@ export default function TutorialTourModal({
   return (
     <div className="fixed inset-0 z-[100] overflow-hidden pointer-events-none">
       {/* ── Spotlight Backdrop & Click-Through Hole ── */}
-      {targetRect ? (
+      {targetRect && !isMobile ? (
         <>
           {/* Spotlight Highlight Box with Box-Shadow Dim Backdrop */}
           <div
@@ -606,8 +613,16 @@ export default function TutorialTourModal({
           </div>
         </div>
 
+        {/* Mobile Info Note */}
+        {isMobile && isFirstStep && (
+          <div className="px-2.5 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20 text-[10.5px] text-blue-400 font-medium flex items-start gap-1.5 leading-tight">
+            <Compass className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+            <span>Note: The tour is highly interactive on desktop/PC, but uses a simplified card format on mobile.</span>
+          </div>
+        )}
+
         {/* Interactive Action Prompt Callout */}
-        {step.requiredAction && step.requiredAction !== "none" ? (
+        {!isMobile && step.requiredAction && step.requiredAction !== "none" ? (
           <div className="px-3 py-2 rounded-xl border bg-rose-500/15 border-rose-500/40 text-rose-400 animate-pulse text-xs font-semibold flex items-center gap-2 transition-all shadow-xs ring-1 ring-rose-500/20">
             <MousePointerClick className="w-4 h-4 text-rose-400 shrink-0 animate-bounce" />
             <span className="leading-tight">
@@ -616,7 +631,7 @@ export default function TutorialTourModal({
             </span>
           </div>
         ) : (
-          step.actionHint && (
+          !isMobile && step.actionHint && (
             <div className="px-2.5 py-1.5 rounded-lg bg-muted/60 border border-border/60 text-[10.5px] text-muted-foreground font-medium flex items-center gap-1.5">
               <Eye className="w-3.5 h-3.5 text-primary shrink-0" />
               <span>{step.actionHint}</span>
@@ -666,7 +681,7 @@ export default function TutorialTourModal({
                 <span>Finish</span>
                 <CheckCircle2 className="w-3.5 h-3.5 ml-1" />
               </Button>
-            ) : step.requiredAction && step.requiredAction !== "none" ? (
+            ) : (!isMobile && step.requiredAction && step.requiredAction !== "none") ? (
               <Button
                 variant="ghost"
                 size="sm"

@@ -15,6 +15,7 @@ import MyDistrictPanel from "@/app/_components/ui/MyDistrictPanel";
 import AppLoadingScreen from "@/app/_components/ui/AppLoadingScreen";
 import TutorialTourModal from "@/app/_components/ui/TutorialTourModal";
 import WelcomeTourBanner from "@/app/_components/ui/WelcomeTourBanner";
+import ModeSelectionModal from "@/app/_components/ui/ModeSelectionModal";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
@@ -599,6 +600,9 @@ function USSEERMain() {
 
       {/* First-Visit Tour Welcome Banner */}
       <WelcomeTourBanner onStartTour={() => setIsTourOpen(true)} />
+
+      {/* Mode Selection Prompt (First Visit) */}
+      <ModeSelectionModal />
 
       {/* Toast Notification Container */}
       <Toast

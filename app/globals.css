@@ -212,33 +212,32 @@
 /* Printable PDF Document Styles */
 @media print {
   @page {
-    size: A4;
-    margin: 18mm 20mm;
+    size: letter portrait;
+    margin: 12mm 15mm;
   }
 
-  /* Hide everything except the report */
-  body * {
-    visibility: hidden !important;
+  html, body {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background-color: #ffffff !important;
+    color: #0f172a !important;
   }
 
-  .no-print,
-  nav,
-  header,
-  aside,
-  button,
-  [role="dialog"] > div:first-child {
+  /* Hide everything on the page EXCEPT top-level print portal */
+  body > *:not(#printable-report-portal) {
     display: none !important;
   }
 
-  #printable-report,
-  #printable-report * {
-    visibility: visible !important;
+  .no-print {
+    display: none !important;
   }
 
-  /* Reset the report container for print */
-  #printable-report {
-    position: fixed !important;
-    inset: 0 !important;
+  #printable-report-portal {
+    display: block !important;
+    position: relative !important;
+    inset: auto !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -250,21 +249,30 @@
     border-radius: 0 !important;
     font-size: 10.5pt !important;
     overflow: visible !important;
-    /* Allow natural multi-page flow */
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  #printable-report-portal * {
+    visibility: visible !important;
   }
 
   /* Page break helpers */
-  .print-break-before {
-    break-before: page !important;
-  }
-
   .print-no-break {
     break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-break-before {
+    break-before: page !important;
+    page-break-before: always !important;
   }
 
   /* Tables: keep thead with first row on same page */
   table {
     break-inside: auto !important;
+    page-break-inside: auto !important;
+    width: 100% !important;
   }
 
   thead {
@@ -273,11 +281,13 @@
 
   tr {
     break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 
   /* Avoid orphaned section headings */
-  h1, h2, h3 {
+  h1, h2, h3, h4 {
     break-after: avoid !important;
+    page-break-after: avoid !important;
   }
 }
 

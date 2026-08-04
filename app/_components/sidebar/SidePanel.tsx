@@ -165,10 +165,13 @@ function PolicySimulatorContent({ fips, countyData, allCountyData, theta, ciLo, 
 
   // Extract state code if available
   const stateCode = useMemo(() => {
+    let parsedState = "State";
     if (countyData.County_Name && countyData.County_Name.includes(", ")) {
-      return countyData.County_Name.split(", ")[1].trim();
+      parsedState = countyData.County_Name.split(", ")[1].trim();
     }
-    if (fips) {
+    
+    // If parsedState is longer than 2 chars (e.g. "Nevada"), or if missing, use FIPS prefix map
+    if (parsedState.length !== 2 && fips) {
       const prefix = fips.padStart(5, "0").substring(0, 2);
       const FIPS_PREFIX_MAP: Record<string, string> = {
         "01": "AL", "02": "AK", "04": "AZ", "05": "AR", "06": "CA", "08": "CO", "09": "CT", "10": "DE", "11": "DC", "12": "FL",
@@ -177,9 +180,10 @@ function PolicySimulatorContent({ fips, countyData, allCountyData, theta, ciLo, 
         "34": "NJ", "35": "NM", "36": "NY", "37": "NC", "38": "ND", "39": "OH", "40": "OK", "41": "OR", "42": "PA", "44": "RI",
         "45": "SC", "46": "SD", "47": "TN", "48": "TX", "49": "UT", "50": "VT", "51": "VA", "53": "WA", "54": "WV", "55": "WI", "56": "WY"
       };
-      return FIPS_PREFIX_MAP[prefix] || "State";
+      return FIPS_PREFIX_MAP[prefix] || parsedState;
     }
-    return "State";
+    
+    return parsedState;
   }, [countyData.County_Name, fips]);
 
   // Target PM2.5 calculation

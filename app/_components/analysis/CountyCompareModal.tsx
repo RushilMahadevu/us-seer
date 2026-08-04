@@ -396,23 +396,14 @@ export default function CountyCompareModal({
         <div className="relative w-full max-w-5xl bg-card border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto">
           
           {/* Header Bar */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 border-b border-border bg-muted/40 shrink-0">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-border bg-muted/40 shrink-0">
             <div className="flex items-center gap-2.5">
-              <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
                 <Scale className="w-5 h-5" />
               </div>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2 leading-none">
+              <div className="min-w-0">
+                <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2 leading-tight">
                   {isSimpleMode ? "Compare 2 Counties Side-by-Side" : "Dual-County Side-by-Side Comparison"}
-                  {isSimpleMode ? (
-                    <Badge variant="outline" className="hidden sm:inline-flex text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20">
-                      Simplify Mode
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="hidden sm:inline-flex text-[10px] bg-primary/10 text-primary border-primary/20">
-                      Interactive Lab
-                    </Badge>
-                  )}
                 </h2>
                 <p className="text-xs text-muted-foreground mt-0.5 leading-none">
                   {isSimpleMode
@@ -422,13 +413,13 @@ export default function CountyCompareModal({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {onOpenExporter && (
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => onOpenExporter(fipsA, fipsB)}
-                  className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 cursor-pointer shadow-2xs"
+                  className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-emerald-500/40 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 cursor-pointer shadow-2xs shrink-0"
                   title="Export side-by-side comparative policy brief to PDF"
                 >
                   <FileText className="w-3.5 h-3.5" />
@@ -437,7 +428,7 @@ export default function CountyCompareModal({
               )}
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-pointer shrink-0"
                 aria-label="Close modal"
               >
                 <X className="w-5 h-5" />
@@ -735,11 +726,11 @@ export default function CountyCompareModal({
           </div>
 
           {/* Footer Bar */}
-          <div className="px-4 sm:px-6 py-3 border-t border-border bg-muted/40 flex items-center justify-between shrink-0">
+          <div className="px-4 sm:px-6 py-4 border-t border-border bg-muted/40 flex flex-wrap items-center justify-between gap-3 shrink-0">
             <span className="text-xs text-muted-foreground hidden sm:inline">
               Data synchronized with EPA TRI, CDC WONDER, &amp; US Census
             </span>
-            <Button variant="default" size="sm" onClick={onClose} className="ml-auto font-semibold cursor-pointer">
+            <Button variant="default" size="sm" onClick={onClose} className="ml-auto font-semibold cursor-pointer shrink-0">
               Done Comparing
             </Button>
           </div>

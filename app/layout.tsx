@@ -24,6 +24,15 @@ export const metadata: Metadata = {
     "National spatial epidemiology platform mapping ambient air quality, toxic industrial releases, CDC respiratory mortality, and demographic vulnerability across all 3,142 U.S. counties.",
 };
 
+import type { Viewport } from "next";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
