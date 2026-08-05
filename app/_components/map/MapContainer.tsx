@@ -161,7 +161,7 @@ function formatMetricValue(val: number | undefined, metric: MapMetric): string {
 }
 
 const DEFAULT_CENTER: [number, number] = [-96, 38];
-const INITIAL_CENTER: [number, number] = [DEFAULT_CENTER[0] - 3, DEFAULT_CENTER[1] - 1];
+const INITIAL_CENTER: [number, number] = [DEFAULT_CENTER[0] - 3, DEFAULT_CENTER[1] - 0.5];
 const INITIAL_ZOOM = 0.9;
 
 function isSafeUsCenter(coords: any): coords is [number, number] {

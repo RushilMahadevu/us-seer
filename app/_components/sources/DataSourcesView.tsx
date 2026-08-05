@@ -1048,7 +1048,7 @@ export default function DataSourcesView() {
             </div>
 
             <a
-              href="https://github.com"
+              href="https://github.com/RushilMahadevu/us-seer"
               target="_blank"
               rel="noopener noreferrer"
               className="cursor-pointer text-primary hover:underline font-semibold flex items-center gap-1 shrink-0 text-xs bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20"

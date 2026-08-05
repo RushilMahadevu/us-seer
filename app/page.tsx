@@ -22,7 +22,7 @@ import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
 import { TemporalYear, AVAILABLE_YEARS } from "@/app/_lib/temporal-data";
 import { useSimpleMode } from "@/app/_lib/simple-mode-context";
 import { MY_DISTRICT } from "@/app/_lib/district-data";
-import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract } from "lucide-react";
+import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract, PanelRightOpen, PanelRightClose, GripVertical } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 function normalizeMetric(param: string | null): MapMetric {
@@ -82,6 +82,84 @@ function USSEERMain() {
   const [toastOpen, setToastOpen] = useState(false);
   const [toastTitle, setToastTitle] = useState("");
   const [toastMessage, setToastMessage] = useState("");
+
+  // Desktop sidebar collapse & resizing state
+  const [sidebarWidth, setSidebarWidth] = useState<number>(420);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
+
+  // Hydrate sidebar width & collapse state from localStorage
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedWidth = localStorage.getItem("usseer_sidebar_width");
+      if (savedWidth) {
+        const parsed = parseInt(savedWidth, 10);
+        if (!isNaN(parsed) && parsed >= 300 && parsed <= 800) {
+          setSidebarWidth(parsed);
+        }
+      }
+      const savedCollapsed = localStorage.getItem("usseer_sidebar_collapsed");
+      if (savedCollapsed !== null) {
+        setIsSidebarCollapsed(savedCollapsed === "true");
+      }
+    }
+  }, []);
+
+  const handleToggleSidebar = useCallback(() => {
+    setIsSidebarCollapsed((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("usseer_sidebar_collapsed", String(next));
+      }
+      return next;
+    });
+  }, []);
+
+  // Keyboard shortcut: Cmd+\ or Ctrl+\ to toggle sidebar collapse
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
+        e.preventDefault();
+        handleToggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleToggleSidebar]);
+
+  // Sidebar drag resizer handlers (Desktop only)
+  const handleMouseDownResizer = (e: React.MouseEvent) => {
+    if (window.innerWidth < 768) return;
+    e.preventDefault();
+    setIsResizingSidebar(true);
+  };
+
+  useEffect(() => {
+    if (!isResizingSidebar) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (window.innerWidth < 768) return;
+      const containerRight = window.innerWidth - 20;
+      const calculatedWidth = containerRight - e.clientX;
+      const maxAllowed = Math.min(800, Math.floor(window.innerWidth * 0.55));
+      const clampedWidth = Math.max(300, Math.min(maxAllowed, calculatedWidth));
+      setSidebarWidth(clampedWidth);
+    };
+
+    const handleMouseUp = () => {
+      setIsResizingSidebar(false);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("usseer_sidebar_width", String(sidebarWidth));
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizingSidebar, sidebarWidth]);
 
   // Initial URL query parameter hydration
   useEffect(() => {
@@ -375,6 +453,8 @@ function USSEERMain() {
         onStartTour={() => setIsTourOpen(true)}
         activeView={activeView}
         onViewChange={setActiveView}
+        isSidebarCollapsed={isSidebarCollapsed}
+        onToggleSidebar={handleToggleSidebar}
       />
 
       {/* Main Container */}
@@ -407,18 +487,68 @@ function USSEERMain() {
                 />
               </section>
 
-              {/* Desktop Sidebar Analytics */}
-              <aside className="hidden md:flex md:w-[380px] lg:w-[420px] xl:w-[460px] w-full h-full flex-shrink-0">
-                <SidePanel
-                  fips={selectedFips}
-                  countyData={selectedFips && data ? data[selectedFips] : null}
-                  allCountyData={data}
-                  onOpenCompare={handleOpenCompare}
-                  onOpenExporter={handleOpenExporter}
-                  selectedYear={selectedYear}
-                  onYearChange={setSelectedYear}
-                />
-              </aside>
+              {/* Desktop Resizer Handle & Sidebar with Smooth Framer Motion Open/Close Animation */}
+              <AnimatePresence initial={false}>
+                {!isSidebarCollapsed && (
+                  <motion.div
+                    key="desktop-sidebar-wrapper"
+                    initial={{ width: 0, opacity: 0 }}
+                    animate={{ width: "auto", opacity: 1 }}
+                    exit={{ width: 0, opacity: 0 }}
+                    transition={
+                      isResizingSidebar
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 300, damping: 32 }
+                    }
+                    className="hidden md:flex h-full min-h-0 flex-row overflow-hidden shrink-0"
+                  >
+                    {/* Resizer Handle Bar */}
+                    <div
+                      onMouseDown={handleMouseDownResizer}
+                      onDoubleClick={() => {
+                        setSidebarWidth(420);
+                        if (typeof window !== "undefined") {
+                          localStorage.setItem("usseer_sidebar_width", "420");
+                        }
+                      }}
+                      title="Drag to resize sidebar width • Double-click to reset (420px)"
+                      className={`flex relative z-20 items-center justify-center w-2.5 -mx-1 hover:w-3.5 cursor-col-resize group select-none transition-all duration-150 shrink-0 ${
+                        isResizingSidebar ? "w-3.5 bg-primary/20" : ""
+                      }`}
+                    >
+                      <div
+                        className={`w-1 h-14 rounded-full transition-all duration-150 flex items-center justify-center ${
+                          isResizingSidebar
+                            ? "bg-primary shadow-[0_0_10px_rgba(59,130,246,0.8)]"
+                            : "bg-border/80 group-hover:bg-primary/80 group-hover:shadow-xs"
+                        }`}
+                      >
+                        <GripVertical className="w-2.5 h-2.5 text-muted-foreground group-hover:text-primary-foreground opacity-60 group-hover:opacity-100" />
+                      </div>
+                    </div>
+
+                    {/* Desktop Sidebar Analytics */}
+                    <aside
+                      style={{ width: `${sidebarWidth}px` }}
+                      className={`h-full flex-shrink-0 overflow-hidden ${
+                        isResizingSidebar ? "select-none pointer-events-none" : ""
+                      }`}
+                    >
+                      <div className="w-full h-full min-w-[300px]">
+                        <SidePanel
+                          fips={selectedFips}
+                          countyData={selectedFips && data ? data[selectedFips] : null}
+                          allCountyData={data}
+                          onOpenCompare={handleOpenCompare}
+                          onOpenExporter={handleOpenExporter}
+                          selectedYear={selectedYear}
+                          onYearChange={setSelectedYear}
+                        />
+                      </div>
+                    </aside>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {/* Floating Mobile Bottom Bar Button */}
               <AnimatePresence>

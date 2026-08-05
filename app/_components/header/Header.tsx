@@ -19,6 +19,8 @@ import {
   SquaresSubtract,
   Landmark,
   Compass,
+  PanelRightClose,
+  PanelRightOpen,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -36,6 +38,8 @@ interface HeaderProps {
   onStartTour?: () => void;
   activeView: "map" | "analysis" | "sources";
   onViewChange: (view: "map" | "analysis" | "sources") => void;
+  isSidebarCollapsed?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export default function Header({
@@ -50,6 +54,8 @@ export default function Header({
   onStartTour,
   activeView,
   onViewChange,
+  isSidebarCollapsed,
+  onToggleSidebar,
 }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -214,6 +220,27 @@ export default function Header({
 
         {/* Divider */}
         <div className="w-px h-5 bg-border/60 mx-1" />
+
+        {/* Sidebar toggle button (desktop only) */}
+        {onToggleSidebar && activeView === "map" && (
+          <IconBtn
+            id="header-sidebar-toggle-btn"
+            onClick={onToggleSidebar}
+            title={isSidebarCollapsed ? "Show sidebar (Cmd+\\)" : "Hide sidebar (Cmd+\\)"}
+            ariaLabel="Toggle sidebar visibility"
+            colorClass={
+              isSidebarCollapsed
+                ? "text-primary bg-primary/10 hover:bg-primary/20 ring-1 ring-primary/30"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }
+          >
+            {isSidebarCollapsed ? (
+              <PanelRightOpen className="h-4 w-4 text-primary" />
+            ) : (
+              <PanelRightClose className="h-4 w-4" />
+            )}
+          </IconBtn>
+        )}
 
         {/* Theme toggle */}
         <IconBtn
