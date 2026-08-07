@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/app/_components/ui/button";
 import { MapMetric } from "@/app/_components/map/MapContainer";
@@ -94,8 +94,89 @@ export default function Header({
     );
   }
 
+  // ── Scroll-hide / scroll-show logic ───────────────────────────────────
+  const [hidden, setHidden] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // Reset visibility whenever active view tab changes
+  useEffect(() => {
+    setHidden(false);
+    lastScrollY.current = 0;
+  }, [activeView]);
+
+  useEffect(() => {
+    const handleScroll = (e: Event) => {
+      const target = e.target as HTMLElement | Document | Window | null;
+      let currentY = 0;
+
+      if (
+        target &&
+        target !== (typeof document !== "undefined" ? document : null) &&
+        target !== (typeof window !== "undefined" ? window : null) &&
+        "scrollTop" in (target as HTMLElement) &&
+        typeof (target as HTMLElement).scrollTop === "number"
+      ) {
+        currentY = (target as HTMLElement).scrollTop;
+      } else {
+        currentY =
+          (typeof window !== "undefined" ? window.scrollY : 0) ||
+          (typeof document !== "undefined"
+            ? document.documentElement.scrollTop || document.body.scrollTop
+            : 0) ||
+          0;
+      }
+
+      const delta = currentY - lastScrollY.current;
+
+      // Always show when near the top
+      if (currentY <= 25) {
+        setHidden(false);
+      } else if (delta > 8 && currentY > 50) {
+        // Scrolling down -> hide header
+        setHidden(true);
+      } else if (delta < -8) {
+        // Scrolling up -> reveal header
+        setHidden(false);
+      }
+
+      lastScrollY.current = currentY;
+    };
+
+    // Wheel listener for snappy immediate response across any scrollable child
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY > 18 && lastScrollY.current > 40) {
+        setHidden(true);
+      } else if (e.deltaY < -18) {
+        setHidden(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true, capture: true });
+    window.addEventListener("wheel", handleWheel, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll, { capture: true } as EventListenerOptions);
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, []);
+
   return (
-    <header className="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs animate-in fade-in-50 slide-in-from-top-2 duration-400 z-50">
+    <motion.div
+      initial={false}
+      animate={{
+        height: hidden ? 0 : "auto",
+        opacity: hidden ? 0 : 1,
+        y: hidden ? -24 : 0,
+        marginBottom: hidden ? -14 : 0,
+      }}
+      transition={{
+        duration: 0.28,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      className="z-50 flex-shrink-0 overflow-hidden"
+      style={{ willChange: "transform, opacity, height, margin" }}
+    >
+    <header className="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs animate-in fade-in-50 slide-in-from-top-2 duration-400">
 
       {/* ── Brand ──────────────────────────────────────────────── */}
       <div id="header-brand" className="flex items-center gap-2.5 shrink-0">
@@ -381,5 +462,6 @@ export default function Header({
         </div>
       )}
     </header>
+    </motion.div>
   );
 }
