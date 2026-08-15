@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SimpleModeProvider } from "@/app/_lib/simple-mode-context";
+import FloatingSimplifyButton from "@/app/_components/ui/FloatingSimplifyButton";
 
 const fontSans = DM_Sans({
   subsets: ["latin"],
@@ -50,6 +51,7 @@ export default function RootLayout({
       <body className={`${fontSans.variable} ${fontSerif.variable} ${fontMono.variable} font-sans antialiased min-h-full flex flex-col`}>
         <SimpleModeProvider>
           {children}
+          <FloatingSimplifyButton />
         </SimpleModeProvider>
       </body>
     </html>

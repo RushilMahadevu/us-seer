@@ -1,316 +1,76 @@
 "use client";
 
-import { useEffect, useState, Suspense, useCallback } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
-import MapContainer, { MapMetric } from "@/app/_components/map/MapContainer";
-import SidePanel from "@/app/_components/sidebar/SidePanel";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion, type Variants } from "framer-motion";
 import Header from "@/app/_components/header/Header";
-import SearchModal from "@/app/_components/search/SearchModal";
-import AnalysisView from "@/app/_components/analysis/AnalysisView";
-import CountyCompareModal from "@/app/_components/analysis/CountyCompareModal";
-import ReportExporter, { ReportMode } from "@/app/_components/ui/ReportExporter";
-import DataSourcesView from "@/app/_components/sources/DataSourcesView";
-import Toast from "@/app/_components/ui/Toast";
-import MyDistrictPanel from "@/app/_components/ui/MyDistrictPanel";
-import AppLoadingScreen from "@/app/_components/ui/AppLoadingScreen";
-import TutorialTourModal from "@/app/_components/ui/TutorialTourModal";
-import WelcomeTourBanner from "@/app/_components/ui/WelcomeTourBanner";
-import ModeSelectionModal from "@/app/_components/ui/ModeSelectionModal";
-import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
-import { CountyDataMap } from "@/app/_lib/types";
-import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
-import { TemporalYear, AVAILABLE_YEARS } from "@/app/_lib/temporal-data";
-import { useSimpleMode } from "@/app/_lib/simple-mode-context";
-import { MY_DISTRICT } from "@/app/_lib/district-data";
-import { Loader2, BarChart2, X, ChevronUp, SquaresSubtract, PanelRightOpen, PanelRightClose, GripVertical } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  Map as MapIcon,
+  HeartPulse,
+  Stethoscope,
+  CirclePile,
+  ArrowRight,
+  Landmark,
+  Sun,
+  Moon,
+  ChevronRight,
+  ShieldCheck,
+  Activity,
+  Wind,
+  Layers,
+} from "lucide-react";
+import { fetchCountyData, fetchCitiesData } from "@/app/_lib/data-utils";
 
-function normalizeMetric(param: string | null): MapMetric {
-  if (!param) return "overallRisk";
-  const p = param.toLowerCase();
-  if (p === "pm25" || p === "pm25avg") return "pm25Avg";
-  if (p === "overall" || p === "overallrisk") return "overallRisk";
-  if (p === "mortality" || p === "mortalityrate") return "mortalityRate";
-  if (p === "asthma" || p === "asthmaprev") return "asthmaPrev";
-  if (p === "copd" || p === "copdprev") return "copdPrev";
-  if (p === "smoking" || p === "smokingprev") return "smokingPrev";
-  if (p === "rucc") return "rucc";
-  if (p === "md" || p === "mdrate") return "mdRate";
-  if (p === "toxics" || p === "toxic" || p === "toxicreleases") return "toxicReleases";
-  return "overallRisk";
-}
-
-function normalizeView(param: string | null): "map" | "analysis" | "sources" {
-  if (!param) return "map";
-  const p = param.toLowerCase();
-  if (p === "analysis" || p === "lab") return "analysis";
-  if (p === "sources" || p === "data") return "sources";
-  return "map";
-}
-
-function USSEERMain() {
-  const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const { isSimpleMode, toggleSimpleMode } = useSimpleMode();
-
-  const [data, setData] = useState<CountyDataMap | null>(null);
-  const [citiesData, setCitiesData] = useState<CityEntry[]>([]);
-  const [selectedFips, setSelectedFips] = useState<string | null>(null);
-  const [mapMetric, setMapMetric] = useState<MapMetric>("overallRisk");
-  const [selectedYear, setSelectedYear] = useState<TemporalYear>(2024);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isResetting, setIsResetting] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isCompareOpen, setIsCompareOpen] = useState(false);
-  const [isTourOpen, setIsTourOpen] = useState(false);
-  const [compareFipsA, setCompareFipsA] = useState<string>("48201");
-  const [compareFipsB, setCompareFipsB] = useState<string>("17031");
-
-  // Report Exporter state
-  const [isExporterOpen, setIsExporterOpen] = useState(false);
-  const [exporterFipsA, setExporterFipsA] = useState<string>("48201");
-  const [exporterFipsB, setExporterFipsB] = useState<string>("17031");
-  const [exporterMode, setExporterMode] = useState<ReportMode>("single");
-  const [activeView, setActiveView] = useState<"map" | "analysis" | "sources">("map");
-  const [mapTarget, setMapTarget] = useState<{ coordinates: [number, number]; zoom: number; label?: string } | null>(null);
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
-  const [autoOpenAnalytics, setAutoOpenAnalytics] = useState(true);
-  const [isDistrictOpen, setIsDistrictOpen] = useState(false);
-
-  // Toast notification state
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastTitle, setToastTitle] = useState("");
-  const [toastMessage, setToastMessage] = useState("");
-
-  // Desktop sidebar collapse & resizing state
-  const [sidebarWidth, setSidebarWidth] = useState<number>(420);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
-  const [isResizingSidebar, setIsResizingSidebar] = useState<boolean>(false);
-
-  // Hydrate sidebar width & collapse state from localStorage
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedWidth = localStorage.getItem("usseer_sidebar_width");
-      if (savedWidth) {
-        const parsed = parseInt(savedWidth, 10);
-        if (!isNaN(parsed) && parsed >= 300 && parsed <= 800) {
-          setSidebarWidth(parsed);
-        }
-      }
-      const savedCollapsed = localStorage.getItem("usseer_sidebar_collapsed");
-      if (savedCollapsed !== null) {
-        setIsSidebarCollapsed(savedCollapsed === "true");
-      }
-    }
-  }, []);
-
-  const handleToggleSidebar = useCallback(() => {
-    setIsSidebarCollapsed((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem("usseer_sidebar_collapsed", String(next));
-      }
-      return next;
-    });
-  }, []);
-
-  // Keyboard shortcut: Cmd+\ or Ctrl+\ to toggle sidebar collapse
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "\\") {
-        e.preventDefault();
-        handleToggleSidebar();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleToggleSidebar]);
-
-  // Sidebar drag resizer handlers (Desktop only)
-  const handleMouseDownResizer = (e: React.MouseEvent) => {
-    if (window.innerWidth < 768) return;
-    e.preventDefault();
-    setIsResizingSidebar(true);
-  };
-
-  useEffect(() => {
-    if (!isResizingSidebar) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (window.innerWidth < 768) return;
-      const containerRight = window.innerWidth - 20;
-      const calculatedWidth = containerRight - e.clientX;
-      const maxAllowed = Math.min(800, Math.floor(window.innerWidth * 0.55));
-      const clampedWidth = Math.max(300, Math.min(maxAllowed, calculatedWidth));
-      setSidebarWidth(clampedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizingSidebar(false);
-      if (typeof window !== "undefined") {
-        localStorage.setItem("usseer_sidebar_width", String(sidebarWidth));
-      }
-    };
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isResizingSidebar, sidebarWidth]);
-
-  // Initial URL query parameter hydration
-  useEffect(() => {
-    const fipsParam = searchParams.get("fips");
-    const metricParam = searchParams.get("metric");
-    const viewParam = searchParams.get("view");
-    const yearParam = searchParams.get("year");
-
-    if (metricParam) {
-      setMapMetric(normalizeMetric(metricParam));
-    }
-    if (viewParam) {
-      setActiveView(normalizeView(viewParam));
-    }
-    if (yearParam) {
-      const yr = Number(yearParam);
-      if (AVAILABLE_YEARS.includes(yr as any)) {
-        setSelectedYear(yr as TemporalYear);
-      }
-    }
-    if (fipsParam) {
-      setSelectedFips(fipsParam);
-      const coords = coordsFromFips(fipsParam);
-      if (coords) {
-        setMapTarget({
-          coordinates: coords,
-          zoom: 4.0,
-          label: `FIPS ${fipsParam}`,
-        });
-      }
-    }
-  }, [searchParams]);
-
-  // Sync state back to URL search params
-  const updateUrlParams = useCallback(
-    (fips: string | null, metric: MapMetric, view: "map" | "analysis" | "sources", year: TemporalYear) => {
-      if (typeof window === "undefined") return;
-      const params = new URLSearchParams(window.location.search);
-
-      if (fips) {
-        params.set("fips", fips);
-      } else {
-        params.delete("fips");
-      }
-
-      if (metric && metric !== "overallRisk") {
-        params.set("metric", metric);
-      } else {
-        params.delete("metric");
-      }
-
-      if (view && view !== "map") {
-        params.set("view", view);
-      } else {
-        params.delete("view");
-      }
-
-      if (year && year !== 2024) {
-        params.set("year", String(year));
-      } else {
-        params.delete("year");
-      }
-
-      const queryString = params.toString();
-      const currentBasePath = pathname === "/map" ? "/map" : "/";
-      const newUrl = queryString ? `${currentBasePath}?${queryString}` : currentBasePath;
-      window.history.replaceState(null, "", newUrl);
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.08,
+      delayChildren: 0.04,
     },
-    [pathname]
-  );
+  },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 14 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.35,
+      ease: "easeOut",
+    },
+  },
+};
+
+const cardVariants: Variants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut",
+    },
+  },
+};
+
+export default function LandingPage() {
+  const router = useRouter();
+  const [isDarkMode, setIsDarkMode] = useState(true);
 
   useEffect(() => {
-    updateUrlParams(selectedFips, mapMetric, activeView, selectedYear);
-  }, [selectedFips, mapMetric, activeView, selectedYear, updateUrlParams]);
-
-  // Handle browser back/forward buttons (popstate)
-  useEffect(() => {
-    const handlePopState = () => {
-      const params = new URLSearchParams(window.location.search);
-      const fipsParam = params.get("fips");
-      const metricParam = params.get("metric");
-      const viewParam = params.get("view");
-
-      setSelectedFips(fipsParam);
-      setMapMetric(normalizeMetric(metricParam));
-      setActiveView(normalizeView(viewParam));
-
-      if (fipsParam) {
-        const coords = coordsFromFips(fipsParam);
-        if (coords) {
-          setMapTarget({
-            coordinates: coords,
-            zoom: 4.0,
-            label: `FIPS ${fipsParam}`,
-          });
-        }
-      }
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, []);
-
-  useEffect(() => {
-    // Check initial dark mode state
     const isDark = document.documentElement.classList.contains("dark") || true;
     setIsDarkMode(isDark);
     if (isDark) {
       document.documentElement.classList.add("dark");
     }
 
-    async function loadData() {
-      try {
-        const [countyData, cities] = await Promise.all([
-          fetchCountyData(),
-          fetchCitiesData(),
-        ]);
-        setData(countyData);
-        setCitiesData(cities);
-      } catch (err) {
-        console.error("Failed to load county data:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    loadData();
-  }, []);
-
-  // Open mobile drawer when a county is selected on smaller screens if autoOpenAnalytics is enabled
-  const handleSelectCounty = (fips: string) => {
-    if (selectedFips === fips) {
-      setSelectedFips(null);
-      setIsMobileDrawerOpen(false);
-    } else {
-      setSelectedFips(fips);
-      if (autoOpenAnalytics && window.innerWidth < 768) {
-        setIsMobileDrawerOpen(true);
-      }
-    }
-  };
-
-  // Global keyboard shortcut for Cmd+K / Ctrl+K
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        setIsSearchOpen((prev) => !prev);
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    // Pre-warm data cache in the background for instant 0ms map transition
+    fetchCountyData().catch(() => { });
+    fetchCitiesData().catch(() => { });
   }, []);
 
   const handleToggleDarkMode = () => {
@@ -323,468 +83,191 @@ function USSEERMain() {
     }
   };
 
-  const handleSelectSearchResult = (result: SearchResultItem) => {
-    if (result.fips) {
-      handleSelectCounty(result.fips);
-      const coords = result.coordinates ?? coordsFromFips(result.fips) ?? [-96, 38] as [number, number];
-      setMapTarget({
-        coordinates: coords,
-        zoom: result.zoom ?? (result.type === "city" ? 4.5 : 4.0),
-        label: result.title,
-      });
-      setActiveView("map");
-    } else if (result.coordinates) {
-      setMapTarget({
-        coordinates: result.coordinates,
-        zoom: result.zoom ?? 2.5,
-        label: result.title,
-      });
-      setActiveView("map");
-    }
+  const handleViewChange = (view: "map" | "analysis" | "sources") => {
+    if (view === "map") router.push("/map");
+    else if (view === "analysis") router.push("/lab");
+    else if (view === "sources") router.push("/sources");
   };
 
-  const handleShareLink = () => {
-    if (typeof window === "undefined") return;
-    const origin = window.location.origin;
-    const params = new URLSearchParams();
-
-    if (selectedFips) params.set("fips", selectedFips);
-    if (mapMetric) params.set("metric", mapMetric);
-    if (activeView) params.set("view", activeView);
-
-    const shareUrl = `${origin}/map?${params.toString()}`;
-
-    navigator.clipboard
-      .writeText(shareUrl)
-      .then(() => {
-        const countyLabel = selectedFips && data?.[selectedFips] ? data[selectedFips].County_Name : null;
-        setToastTitle("Share Link Copied!");
-        setToastMessage(
-          countyLabel
-            ? `Copied bookmark for ${countyLabel} (${selectedFips}) to clipboard.`
-            : `Copied current view bookmark URL to clipboard.`
-        );
-        setToastOpen(true);
-      })
-      .catch((err) => {
-        console.error("Failed to copy link:", err);
-        setToastTitle("Share Link Ready");
-        setToastMessage(shareUrl);
-        setToastOpen(true);
-      });
-  };
-
-  const selectedCountyName = selectedFips && data?.[selectedFips] ? data[selectedFips].County_Name : null;
-
-  const handleOpenCompare = (initialA?: string) => {
-    if (initialA) {
-      setCompareFipsA(initialA);
-    }
-    setIsCompareOpen(true);
-  };
-
-  const handleOpenExporter = (fipsA?: string, fipsB?: string) => {
-    if (fipsB) {
-      setExporterFipsA(fipsA || "48201");
-      setExporterFipsB(fipsB);
-      setExporterMode("compare");
-    } else if (fipsA) {
-      setExporterFipsA(fipsA);
-      setExporterMode("single");
-    } else if (selectedFips) {
-      setExporterFipsA(selectedFips);
-      setExporterMode("single");
-    } else {
-      setExporterFipsA("48201");
-      setExporterMode("single");
-    }
-    setIsExporterOpen(true);
-  };
-
-  const handleZoomToDistrict = () => {
-    setActiveView("map");
-    setMapTarget({
-      coordinates: MY_DISTRICT.mapCenter as [number, number],
-      zoom: MY_DISTRICT.mapZoom,
-      label: `NV-${MY_DISTRICT.districtNumber.toString().padStart(2, "0")} — ${MY_DISTRICT.representative}`,
-    });
-    // Also select home county (Washoe) so SidePanel opens with local data
-    setSelectedFips(MY_DISTRICT.homeCountyFips);
-  };
-
-  const handleResetApp = useCallback(() => {
-    setIsResetting(true);
-    setSelectedFips(null);
-    setMapMetric("overallRisk");
-    setSelectedYear(2024);
-    setActiveView("map");
-    setMapTarget(null);
-    setIsMobileDrawerOpen(false);
-
-    if (typeof window !== "undefined") {
-      const currentBasePath = pathname === "/map" ? "/map" : "/";
-      window.history.replaceState(null, "", currentBasePath);
-    }
-
-    setTimeout(() => {
-      setIsResetting(false);
-      setToastTitle("Workspace Reset");
-      setToastMessage("Restored default map view, metrics, and parameters.");
-      setToastOpen(true);
-    }, 750);
-  }, [pathname]);
+  const sections = [
+    {
+      title: "Interactive Map Dashboard",
+      description:
+        "Choropleth mapping across all 3,142 U.S. counties with 2018-2024 temporal trends, county health profiles, and dual-county comparison.",
+      href: "/map",
+      icon: MapIcon,
+      action: "Open Map",
+      badge: "Main Dashboard",
+    },
+    {
+      title: "Epidemiological Research Lab",
+      description:
+        "Multivariate OLS regressions, scatter plot correlations, and CDC Social Vulnerability Index (SVI) inequality distributions.",
+      href: "/lab",
+      icon: Stethoscope,
+      action: "Open Lab",
+      badge: "Statistical Tools",
+    },
+    {
+      title: "Data Sources & Provenance",
+      description:
+        "Full dataset documentation and citations for EPA NAAQS PM2.5, CDC WONDER respiratory mortality, and EPA TRI industrial releases.",
+      href: "/sources",
+      icon: CirclePile,
+      action: "View Sources",
+      badge: "Methodology",
+    },
+    {
+      title: "NV-02 Congressional District Case Study",
+      description:
+        "In-depth analysis of Nevada's 2nd District, examining mining corridor emissions, rural healthcare access, and environmental justice hotspots.",
+      href: "/map?fips=32031",
+      icon: Landmark,
+      action: "View NV-02",
+      badge: "Case Study",
+    },
+  ];
 
   return (
-    <div className="flex flex-col h-[100dvh] w-full bg-background text-foreground p-3.5 sm:p-5 gap-3.5 sm:gap-4 overflow-hidden pt-4 sm:pt-6 pb-4 sm:pb-5">
-      {/* Fullscreen Overlay Loading Screen (Pre-loads App in Background) */}
-      <AppLoadingScreen isLoading={isLoading} isResetting={isResetting} />
-
-      {/* Top Navigation & Control Header */}
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="flex flex-col min-h-screen w-full bg-background text-foreground p-3.5 sm:p-5 gap-3.5 sm:gap-4 overflow-x-hidden pt-4 sm:pt-6 pb-6"
+    >
+      {/* ── Top Header ────────────────────────────────────────────── */}
       <Header
+        activeView="map"
+        onViewChange={handleViewChange}
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
-        isSimpleMode={isSimpleMode}
-        onToggleSimpleMode={toggleSimpleMode}
-        onOpenSearch={() => setIsSearchOpen(true)}
-        onOpenCompare={() => handleOpenCompare()}
-        onOpenExporter={() => handleOpenExporter()}
-        onShareLink={handleShareLink}
-        onOpenDistrict={() => setIsDistrictOpen(true)}
-        onStartTour={() => setIsTourOpen(true)}
-        activeView={activeView}
-        onViewChange={setActiveView}
-        isSidebarCollapsed={isSidebarCollapsed}
-        onToggleSidebar={handleToggleSidebar}
+        onOpenDistrict={() => router.push("/map?fips=32031")}
       />
 
-      {/* Main Container */}
-      <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
-        <AnimatePresence mode="wait">
-          {activeView === "map" && (
-            <motion.div
-              key="map"
-              initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
-              animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1 }}
-              exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
-              transition={{ duration: 0.28 }}
-              className="flex-1 flex flex-col md:flex-row gap-3 sm:gap-3.5 min-h-0 relative"
-            >
-              {/* Map Section */}
-              <section className="flex-1 h-full min-h-0 flex flex-col">
-                <MapContainer
-                  data={data || {}}
-                  allCities={citiesData}
-                  selectedFips={selectedFips}
-                  onSelectCounty={handleSelectCounty}
-                  metric={mapMetric}
-                  onMetricChange={setMapMetric}
-                  mapTarget={mapTarget}
-                  onClearTarget={() => setMapTarget(null)}
-                  autoOpenAnalytics={autoOpenAnalytics}
-                  onToggleAutoOpenAnalytics={setAutoOpenAnalytics}
-                  selectedYear={selectedYear}
-                  onYearChange={setSelectedYear}
-                />
-              </section>
+      {/* ── Main Content Container ─────────────────────────────────── */}
+      <main className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto w-full px-2 sm:px-4 py-8 sm:py-12 gap-8 sm:gap-12">
+        {/* Hero Section */}
+        <motion.div variants={itemVariants} className="text-center flex flex-col items-center max-w-2xl gap-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-card border border-border text-xs font-medium text-muted-foreground shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+            <span>3,142 U.S. Counties Indexed • 2018-2024</span>
+          </div>
 
-              {/* Desktop Resizer Handle & Sidebar with Smooth Framer Motion Open/Close Animation */}
-              <AnimatePresence initial={false}>
-                {!isSidebarCollapsed && (
-                  <motion.div
-                    key="desktop-sidebar-wrapper"
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: "auto", opacity: 1 }}
-                    exit={{ width: 0, opacity: 0 }}
-                    transition={
-                      isResizingSidebar
-                        ? { duration: 0 }
-                        : { type: "spring", stiffness: 300, damping: 32 }
-                    }
-                    className="hidden md:flex h-full min-h-0 flex-row overflow-hidden shrink-0"
-                  >
-                    {/* Resizer Handle Bar */}
-                    <div
-                      onMouseDown={handleMouseDownResizer}
-                      onDoubleClick={() => {
-                        setSidebarWidth(420);
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem("usseer_sidebar_width", "420");
-                        }
-                      }}
-                      title="Drag to resize sidebar width • Double-click to reset (420px)"
-                      className={`flex relative z-20 items-center justify-center w-2.5 -mx-1 hover:w-3.5 cursor-col-resize group select-none transition-all duration-150 shrink-0 ${
-                        isResizingSidebar ? "w-3.5 bg-primary/20" : ""
-                      }`}
-                    >
-                      <div
-                        className={`w-1 h-14 rounded-full transition-all duration-150 flex items-center justify-center ${
-                          isResizingSidebar
-                            ? "bg-primary shadow-[0_0_10px_rgba(59,130,246,0.8)]"
-                            : "bg-border/80 group-hover:bg-primary/80 group-hover:shadow-xs"
-                        }`}
-                      >
-                        <GripVertical className="w-2.5 h-2.5 text-muted-foreground group-hover:text-primary-foreground opacity-60 group-hover:opacity-100" />
+          <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-foreground">
+            U.S. Spatial Environmental Exposure &amp; Respiratory Risk Index
+          </h1>
+
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+            US-SEER maps fine particulate air pollution (PM2.5), toxic industrial emissions (EPA TRI), and CDC respiratory disease mortality across all 3,142 U.S. counties with longitudinal trend analysis.
+          </p>
+
+          {/* ── PRIMARY ONE-CLICK BUTTON FOR JUDGES ───────────────────── */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 mt-3 w-full sm:w-auto">
+            <Link
+              href="/map"
+              id="landing-launch-map-btn"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-md hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <MapIcon className="w-4 h-4" />
+              <span>Launch Interactive Map</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+
+            <Link
+              href="/lab"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-card border border-border text-foreground font-semibold text-xs hover:bg-accent hover:border-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <Stethoscope className="w-4 h-4 text-muted-foreground" />
+              <span>Research Lab</span>
+            </Link>
+
+            <Link
+              href="/sources"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-card border border-border text-foreground font-semibold text-xs hover:bg-accent hover:border-primary/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
+            >
+              <CirclePile className="w-4 h-4 text-muted-foreground" />
+              <span>Data Sources</span>
+            </Link>
+          </div>
+        </motion.div>
+
+        {/* ── Key Statistics Row ────────────────────────────────────── */}
+        <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 gap-3 w-full">
+          <div className="p-4 rounded-xl bg-card border border-border flex flex-col gap-1 hover:border-primary/40 transition-colors">
+            <span className="text-2xl font-bold text-foreground">3,142</span>
+            <span className="text-xs text-muted-foreground">U.S. Counties Analyzed</span>
+          </div>
+          <div className="p-4 rounded-xl bg-card border border-border flex flex-col gap-1 hover:border-primary/40 transition-colors">
+            <span className="text-2xl font-bold text-foreground">9</span>
+            <span className="text-xs text-muted-foreground">Environmental &amp; Health Metrics</span>
+          </div>
+          <div className="p-4 rounded-xl bg-card border border-border flex flex-col gap-1 hover:border-primary/40 transition-colors">
+            <span className="text-2xl font-bold text-foreground">2018-2024</span>
+            <span className="text-xs text-muted-foreground">Temporal Longitudinal Range</span>
+          </div>
+          <div className="p-4 rounded-xl bg-card border border-border flex flex-col gap-1 hover:border-primary/40 transition-colors">
+            <span className="text-2xl font-bold text-foreground">100% Open</span>
+            <span className="text-xs text-muted-foreground">EPA &amp; CDC Data Sources</span>
+          </div>
+        </motion.div>
+
+        {/* ── Platform Sections Grid ─────────────────────────────────── */}
+        <motion.div variants={containerVariants} className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+          {sections.map((sec, idx) => {
+            const Icon = sec.icon;
+            return (
+              <motion.div key={idx} variants={cardVariants}>
+                <Link
+                  href={sec.href}
+                  className="h-full p-5 rounded-xl bg-card border border-border hover:border-primary/50 hover:shadow-md transition-all flex flex-col justify-between gap-4 group cursor-pointer"
+                >
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="p-2 rounded-lg bg-muted/80 text-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                        <Icon className="w-4 h-4" />
                       </div>
+                      <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md">
+                        {sec.badge}
+                      </span>
                     </div>
+                    <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+                      {sec.title}
+                    </h2>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {sec.description}
+                    </p>
+                  </div>
 
-                    {/* Desktop Sidebar Analytics */}
-                    <aside
-                      style={{ width: `${sidebarWidth}px` }}
-                      className={`h-full flex-shrink-0 overflow-hidden ${
-                        isResizingSidebar ? "select-none pointer-events-none" : ""
-                      }`}
-                    >
-                      <div className="w-full h-full min-w-[300px]">
-                        <SidePanel
-                          fips={selectedFips}
-                          countyData={selectedFips && data ? data[selectedFips] : null}
-                          allCountyData={data}
-                          onOpenCompare={handleOpenCompare}
-                          onOpenExporter={handleOpenExporter}
-                          selectedYear={selectedYear}
-                          onYearChange={setSelectedYear}
-                        />
-                      </div>
-                    </aside>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Floating Mobile Bottom Bar Button */}
-              <AnimatePresence>
-                {selectedFips && (
-                  <motion.button
-                    key="mobile-btn"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                    onClick={() => setIsMobileDrawerOpen(true)}
-                    className="md:hidden absolute bottom-3 left-3 z-30 flex items-center gap-2 px-3.5 py-2 rounded-full bg-primary text-primary-foreground font-bold text-xs shadow-2xl active:scale-95 transition-all hover:scale-105"
-                    aria-label="View county analytics"
-                  >
-                    <BarChart2 className="w-4 h-4 animate-pulse" />
-                    <span>{selectedCountyName ? `${selectedCountyName}` : "Analytics"}</span>
-                    <ChevronUp className="w-4 h-4 ml-0.5" />
-                  </motion.button>
-                )}
-              </AnimatePresence>
-
-              {/* Mobile Drawer */}
-              <AnimatePresence>
-                {isMobileDrawerOpen && (
-                  <motion.div
-                    key="mobile-drawer"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="md:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-xs flex flex-col justify-end"
-                  >
-                    <div
-                      className="fixed inset-0"
-                      onClick={() => setIsMobileDrawerOpen(false)}
-                    />
-                    <motion.div
-                      initial={{ y: "100%" }}
-                      animate={{ y: 0 }}
-                      exit={{ y: "100%" }}
-                      transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                      className="relative z-50 bg-card border-t border-border rounded-t-2xl max-h-[85vh] h-[85vh] flex flex-col overflow-hidden shadow-2xl pb-safe"
-                    >
-                      {/* Sheet Handle Header */}
-                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-muted/40 shrink-0">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-1 rounded-full bg-muted-foreground/30 mx-auto absolute top-2 left-1/2 -translate-x-1/2" />
-                          <span className="text-xs font-bold text-foreground">
-                            {selectedCountyName ? `${selectedCountyName} Health Profile` : "County Analytics"}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => setIsMobileDrawerOpen(false)}
-                          className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                          aria-label="Close analytics drawer"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                      {/* Sheet Body with SidePanel */}
-                      <div className="flex-1 overflow-hidden">
-                        <SidePanel
-                          fips={selectedFips}
-                          countyData={selectedFips && data ? data[selectedFips] : null}
-                          allCountyData={data}
-                          onOpenCompare={handleOpenCompare}
-                          onOpenExporter={handleOpenExporter}
-                          selectedYear={selectedYear}
-                          onYearChange={setSelectedYear}
-                        />
-                      </div>
-                    </motion.div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-
-          {activeView === "analysis" && (
-            <motion.div
-              key="analysis"
-              initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
-              animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1 }}
-              exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
-              transition={{ duration: 0.28 }}
-              className="w-full h-full flex flex-col"
-            >
-              <AnalysisView
-                data={data || {}}
-                onOpenExporter={handleOpenExporter}
-                selectedFips={selectedFips}
-              />
-            </motion.div>
-          )}
-
-          {activeView === "sources" && (
-            <motion.div
-              key="sources"
-              initial={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
-              animate={{ opacity: 1, filter: "grayscale(0%)", scale: 1 }}
-              exit={{ opacity: 0, filter: "grayscale(100%)", scale: 0.98 }}
-              transition={{ duration: 0.28 }}
-              className="w-full h-full flex flex-col"
-            >
-              <DataSourcesView />
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <div className="flex items-center gap-1 text-xs font-semibold text-primary pt-2 border-t border-border/60">
+                    <span>{sec.action}</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </motion.div>
       </main>
 
-      {/* Search Dialog Modal */}
-      {data && (
-        <SearchModal
-          isOpen={isSearchOpen}
-          onClose={() => setIsSearchOpen(false)}
-          countyData={data}
-          allCities={citiesData}
-          onSelectResult={handleSelectSearchResult}
-        />
-      )}
-
-      {/* Dual-County Side-by-Side Comparison Modal */}
-      {data && (
-        <CountyCompareModal
-          isOpen={isCompareOpen}
-          onClose={() => setIsCompareOpen(false)}
-          countyDataMap={data}
-          initialFipsA={compareFipsA}
-          initialFipsB={compareFipsB}
-          onOpenExporter={handleOpenExporter}
-        />
-      )}
-
-      {/* PDF & Executive Summary Exporter Modal */}
-      {data && (
-        <ReportExporter
-          isOpen={isExporterOpen}
-          onClose={() => setIsExporterOpen(false)}
-          countyDataMap={data}
-          initialFipsA={exporterFipsA}
-          initialFipsB={exporterFipsB}
-          initialMode={exporterMode}
-        />
-      )}
-
-      {/* My District Panel — NV-02 */}
-      {data && (
-        <MyDistrictPanel
-          isOpen={isDistrictOpen}
-          onClose={() => setIsDistrictOpen(false)}
-          countyDataMap={data}
-          onZoomToDistrict={handleZoomToDistrict}
-          onSelectCounty={(fips) => {
-            handleSelectCounty(fips);
-            setMapTarget({
-              coordinates: MY_DISTRICT.mapCenter as [number, number],
-              zoom: MY_DISTRICT.mapZoom,
-              label: MY_DISTRICT.homeCountyName,
-            });
-            setActiveView("map");
-          }}
-        />
-      )}
-
-      {/* Interactive Platform Guided Tour */}
-      <TutorialTourModal
-        isOpen={isTourOpen}
-        onClose={() => setIsTourOpen(false)}
-        activeView={activeView}
-        onViewChange={setActiveView}
-        selectedFips={selectedFips}
-        mapMetric={mapMetric}
-        selectedYear={selectedYear}
-        isDistrictOpen={isDistrictOpen}
-        onCloseDistrict={() => setIsDistrictOpen(false)}
-        isExporterOpen={isExporterOpen}
-        onCloseExporter={() => setIsExporterOpen(false)}
-      />
-
-      {/* First-Visit Tour Welcome Banner */}
-      <WelcomeTourBanner onStartTour={() => setIsTourOpen(true)} />
-
-      {/* Mode Selection Prompt (First Visit) */}
-      <ModeSelectionModal />
-
-      {/* Toast Notification Container */}
-      <Toast
-        isOpen={toastOpen}
-        title={toastTitle}
-        message={toastMessage}
-        onClose={() => setToastOpen(false)}
-      />
-
-      {/* Floating Bottom-Right Simplify Mode Toggle Widget (Desktop only, included in Header menu on Mobile) */}
-      <button
-        id="floating-simple-mode-btn"
-        onClick={toggleSimpleMode}
-        title={isSimpleMode ? "Switch to standard detailed mode" : "Switch to Simplify mode (plain English summary)"}
-        aria-label="Toggle Simplify mode"
-        className={`hidden md:flex fixed bottom-5 right-5 z-40 group cursor-pointer items-center gap-2.5 px-4 py-2.5 rounded-full border text-xs font-bold transition-all duration-300 shadow-xl backdrop-blur-xl active:scale-95 hover:scale-105 ${
-          isSimpleMode
-            ? "bg-gradient-to-r from-amber-500/20 via-orange-500/15 to-amber-500/10 border-amber-500/50 text-amber-400 shadow-amber-500/15 ring-1 ring-amber-500/30"
-            : "bg-card/90 border-border/80 text-muted-foreground hover:text-foreground hover:bg-card hover:border-primary/40 hover:shadow-primary/10"
-        }`}
-      >
-        <span
-          className={`w-2 h-2 rounded-full transition-all duration-300 ${
-            isSimpleMode
-              ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)] animate-pulse"
-              : "bg-muted-foreground/40 group-hover:bg-primary/70"
-          }`}
-        />
-        <SquaresSubtract
-          className={`w-4 h-4 transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110 ${
-            isSimpleMode ? "text-amber-400" : "text-muted-foreground group-hover:text-primary"
-          }`}
-        />
-        <span className="select-none tracking-tight">
-          {isSimpleMode ? "Simplified" : "Simplify"}
-        </span>
-      </button>
-    </div>
-  );
-}
-
-export default function Home() {
-  return (
-    <Suspense
-      fallback={
-        <div className="w-full h-screen flex flex-col items-center justify-center bg-background text-foreground gap-3">
-          <Loader2 className="h-7 w-7 text-primary animate-spin" />
-          <p className="text-xs font-semibold text-muted-foreground">Initializing US-SEER Engine…</p>
+      {/* ── Footer ─────────────────────────────────────────────────── */}
+      <motion.footer variants={itemVariants} className="w-full max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border text-xs text-muted-foreground">
+        <div className="flex items-center gap-2">
+          <HeartPulse className="w-3.5 h-3.5 text-primary" />
+          <span className="font-semibold text-foreground">US-SEER</span>
+          <span>• Spatial Environmental Exposure &amp; Respiratory Risk Index</span>
         </div>
-      }
-    >
-      <USSEERMain />
-    </Suspense>
+        <div className="flex items-center gap-4">
+          <Link href="/map" className="hover:text-foreground transition-colors">
+            Map
+          </Link>
+          <Link href="/lab" className="hover:text-foreground transition-colors">
+            Lab
+          </Link>
+          <Link href="/sources" className="hover:text-foreground transition-colors">
+            Sources
+          </Link>
+        </div>
+      </motion.footer>
+    </motion.div>
   );
 }

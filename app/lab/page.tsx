@@ -3,20 +3,26 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import Header from "@/app/_components/header/Header";
-import DataSourcesView from "@/app/_components/sources/DataSourcesView";
+import AnalysisView from "@/app/_components/analysis/AnalysisView";
 import SearchModal from "@/app/_components/search/SearchModal";
+import ReportExporter, { ReportMode } from "@/app/_components/ui/ReportExporter";
 import AppLoadingScreen from "@/app/_components/ui/AppLoadingScreen";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
 import { SearchResultItem } from "@/app/_lib/search-utils";
 import { Loader2 } from "lucide-react";
 
-function SourcesPageContent() {
+function LabPageContent() {
   const router = useRouter();
   const [data, setData] = useState<CountyDataMap | null>(null);
   const [citiesData, setCitiesData] = useState<CityEntry[]>([]);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isExporterOpen, setIsExporterOpen] = useState(false);
+  const [exporterFipsA, setExporterFipsA] = useState<string>("48201");
+  const [exporterFipsB, setExporterFipsB] = useState<string>("17031");
+  const [exporterMode, setExporterMode] = useState<ReportMode>("single");
+  const [selectedFips, setSelectedFips] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -56,13 +62,21 @@ function SourcesPageContent() {
   const handleViewChange = (view: "map" | "analysis" | "sources") => {
     if (view === "map") {
       router.push("/map");
-    } else if (view === "analysis") {
-      router.push("/lab");
+    } else if (view === "sources") {
+      router.push("/sources");
     }
   };
 
+  const handleOpenExporter = (fipsA?: string, fipsB?: string, mode?: ReportMode) => {
+    if (fipsA) setExporterFipsA(fipsA);
+    if (fipsB) setExporterFipsB(fipsB);
+    if (mode) setExporterMode(mode);
+    setIsExporterOpen(true);
+  };
+
   const handleSelectSearchResult = (result: SearchResultItem) => {
-    if (result.type === "county") {
+    if (result.type === "county" && result.fips) {
+      setSelectedFips(result.fips);
       router.push(`/map?fips=${result.fips}`);
     } else {
       router.push("/map");
@@ -80,13 +94,18 @@ function SourcesPageContent() {
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
         onOpenSearch={() => setIsSearchOpen(true)}
-        activeView="sources"
+        onOpenExporter={() => handleOpenExporter(selectedFips || "48201", undefined, "single")}
+        activeView="analysis"
         onViewChange={handleViewChange}
       />
 
       {/* Main Content Area */}
       <main className="flex-1 min-h-0 flex flex-col overflow-hidden relative">
-        <DataSourcesView />
+        <AnalysisView
+          data={data || {}}
+          onOpenExporter={handleOpenExporter}
+          selectedFips={selectedFips}
+        />
       </main>
 
       {/* Search Modal */}
@@ -99,21 +118,33 @@ function SourcesPageContent() {
           onSelectResult={handleSelectSearchResult}
         />
       )}
+
+      {/* Report Exporter Modal */}
+      {data && (
+        <ReportExporter
+          isOpen={isExporterOpen}
+          onClose={() => setIsExporterOpen(false)}
+          countyDataMap={data}
+          initialFipsA={exporterFipsA}
+          initialFipsB={exporterFipsB}
+          initialMode={exporterMode}
+        />
+      )}
     </div>
   );
 }
 
-export default function SourcesPage() {
+export default function LabPage() {
   return (
     <Suspense
       fallback={
         <div className="w-full h-screen flex flex-col items-center justify-center bg-background text-foreground gap-3">
           <Loader2 className="h-7 w-7 text-primary animate-spin" />
-          <p className="text-xs font-semibold text-muted-foreground">Initializing US-SEER Data Sources…</p>
+          <p className="text-xs font-semibold text-muted-foreground">Initializing US-SEER Research Lab…</p>
         </div>
       }
     >
-      <SourcesPageContent />
+      <LabPageContent />
     </Suspense>
   );
 }

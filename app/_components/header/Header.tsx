@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/app/_components/ui/button";
 import { MapMetric } from "@/app/_components/map/MapContainer";
@@ -164,28 +165,33 @@ export default function Header({
     <motion.div
       initial={false}
       animate={{
-        height: hidden ? 0 : "auto",
-        opacity: hidden ? 0 : 1,
-        y: hidden ? -24 : 0,
-        marginBottom: hidden ? -14 : 0,
+        height: hidden && !mobileMenuOpen ? 0 : "auto",
+        opacity: hidden && !mobileMenuOpen ? 0 : 1,
+        y: hidden && !mobileMenuOpen ? -24 : 0,
+        marginBottom: hidden && !mobileMenuOpen ? -14 : 0,
       }}
       transition={{
         duration: 0.28,
         ease: [0.16, 1, 0.3, 1],
       }}
-      className="z-50 flex-shrink-0 overflow-hidden"
+      className={`z-50 flex-shrink-0 ${hidden && !mobileMenuOpen ? "overflow-hidden" : "overflow-visible"}`}
       style={{ willChange: "transform, opacity, height, margin" }}
     >
       <header className="relative flex items-center justify-between gap-3 px-3 py-2 sm:px-4 sm:py-2 rounded-2xl border border-border bg-card/95 backdrop-blur-md shadow-xs animate-in fade-in-50 slide-in-from-top-2 duration-400">
 
         {/* ── Brand ──────────────────────────────────────────────── */}
-        <div id="header-brand" className="flex items-center gap-2.5 shrink-0">
-          <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+        <Link
+          href="/"
+          id="header-brand"
+          title="Return to US-SEER Overview"
+          className="flex items-center gap-2.5 shrink-0 group cursor-pointer transition-opacity hover:opacity-90"
+        >
+          <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
             <HeartPulse className="h-4 w-4 text-primary" aria-hidden="true" />
           </div>
           <div className="flex flex-col justify-center leading-none">
             <div className="flex items-center gap-1.5">
-              <h1 className="text-sm font-bold tracking-tight text-foreground">US-SEER</h1>
+              <h1 className="text-sm font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">US-SEER</h1>
               <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[9px] font-bold rounded bg-primary/10 text-primary border border-primary/20">
                 National Index
               </span>
@@ -194,7 +200,7 @@ export default function Header({
               Spatial Environmental Exposure &amp; Respiratory Risk
             </p>
           </div>
-        </div>
+        </Link>
 
         {/* ── Desktop: View Switcher ──────────────────────────────── */}
         <nav className="hidden md:flex items-center p-0.5 bg-muted/60 border border-border/80 rounded-xl gap-0.5 shrink-0">
@@ -236,7 +242,7 @@ export default function Header({
               id="header-tour-btn"
               title="Start interactive platform guided tour (Recommended)"
               aria-label="Start interactive guided tour"
-              className="cursor-pointer flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary/40 bg-primary/10 hover:bg-primary/20 text-xs font-bold text-primary transition-all duration-150 active:scale-95 shadow-xs relative group"
+              className="cursor-pointer flex items-center gap-1.5 h-8 px-3 rounded-lg border border-primary/40 bg-primary/10 hover:red/20 text-xs font-bold text-primary transition-all duration-150 active:scale-95 shadow-xs relative group"
             >
               <Compass className="h-3.5 w-3.5 shrink-0 text-primary animate-spin-slow" />
               <span className="hidden sm:inline">Take Tour</span>
@@ -362,7 +368,12 @@ export default function Header({
 
         {/* ── Mobile Menu Popover ─────────────────────────────────── */}
         {mobileMenuOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl md:hidden flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-200 z-50">
+          <>
+            <div
+              className="fixed inset-0 z-40 bg-black/40 backdrop-blur-xs md:hidden"
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="absolute top-full left-0 right-0 mt-2 p-3 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl md:hidden flex flex-col gap-3 animate-in fade-in-50 zoom-in-95 duration-200 z-50">
 
             {/* Views */}
             <div className="flex flex-col gap-1">
@@ -460,6 +471,7 @@ export default function Header({
               </div>
             </div>
           </div>
+          </>
         )}
       </header>
     </motion.div>
