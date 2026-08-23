@@ -16,7 +16,15 @@ function LabPageContent() {
   const router = useRouter();
   const [data, setData] = useState<CountyDataMap | null>(null);
   const [citiesData, setCitiesData] = useState<CityEntry[]>([]);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme");
+      if (saved === "light") return false;
+      if (saved === "dark") return true;
+      return document.documentElement.classList.contains("dark");
+    }
+    return true;
+  });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isExporterOpen, setIsExporterOpen] = useState(false);
   const [exporterFipsA, setExporterFipsA] = useState<string>("48201");
@@ -26,9 +34,10 @@ function LabPageContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark") || true;
-    setIsDarkMode(isDark);
-    if (isDark) {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      document.documentElement.classList.remove("dark");
+    } else {
       document.documentElement.classList.add("dark");
     }
 
@@ -52,6 +61,11 @@ function LabPageContent() {
   const handleToggleDarkMode = () => {
     const nextDark = !isDarkMode;
     setIsDarkMode(nextDark);
+    try {
+      localStorage.setItem("theme", nextDark ? "dark" : "light");
+    } catch {
+      /* ignore */
+    }
     if (nextDark) {
       document.documentElement.classList.add("dark");
     } else {

@@ -80,8 +80,43 @@ export const STATE_CENTROIDS: Record<string, { name: string; code: string; coord
   WY: { name: "Wyoming", code: "WY", coordinates: [-107.3, 43.0] },
 };
 
-/** Given a 5-digit county FIPS, return the state centroid coordinates. */
+export const MAJOR_FIPS_COORDS: Record<string, [number, number]> = {
+  "32031": [-119.81, 39.53], // Washoe County, NV (Reno / NV-02)
+  "32007": [-115.76, 40.83], // Elko County, NV (NV-02)
+  "32013": [-117.72, 41.41], // Humboldt County, NV (NV-02)
+  "48201": [-95.39, 29.77],  // Harris County, TX (Houston)
+  "17031": [-87.69, 41.84],  // Cook County, IL (Chicago)
+  "06037": [-118.24, 34.05], // Los Angeles County, CA
+  "54047": [-81.59, 37.42],  // McDowell County, WV
+  "42003": [-79.98, 40.44],  // Allegheny County, PA (Pittsburgh)
+  "32003": [-115.14, 36.17], // Clark County, NV (Las Vegas)
+  "04013": [-112.07, 33.45], // Maricopa County, AZ (Phoenix)
+  "53033": [-122.33, 47.61], // King County, WA (Seattle)
+  "12086": [-80.19, 25.76],  // Miami-Dade County, FL
+  "27053": [-93.27, 44.98],  // Hennepin County, MN (Minneapolis)
+  "08031": [-104.99, 39.74], // Denver County, CO
+  "36061": [-73.97, 40.78],  // New York County, NY
+  "48453": [-97.74, 30.27],  // Travis County, TX (Austin)
+  "48113": [-96.80, 32.78],  // Dallas County, TX
+  "06075": [-122.42, 37.77], // San Francisco, CA
+  "06073": [-117.16, 32.72], // San Diego, CA
+  "25025": [-71.06, 42.36],  // Suffolk County, MA (Boston)
+  "47037": [-86.78, 36.16],  // Davidson County, TN (Nashville)
+  "37119": [-80.84, 35.23],  // Mecklenburg County, NC (Charlotte)
+  "13121": [-84.39, 33.75],  // Fulton County, GA (Atlanta)
+  "39049": [-82.99, 39.96],  // Franklin County, OH (Columbus)
+  "18097": [-86.16, 39.77],  // Marion County, IN (Indianapolis)
+  "26163": [-83.05, 42.33],  // Wayne County, MI (Detroit)
+  "42101": [-75.16, 39.95],  // Philadelphia County, PA
+  "48029": [-98.49, 29.42],  // Bexar County, TX (San Antonio)
+  "48439": [-97.33, 32.75],  // Tarrant County, TX (Fort Worth)
+};
+
+/** Given a 5-digit county FIPS, return its exact or state centroid coordinates. */
 export function coordsFromFips(fips: string): [number, number] | null {
+  if (MAJOR_FIPS_COORDS[fips]) {
+    return MAJOR_FIPS_COORDS[fips];
+  }
   const stateAbbr = FIPS_STATE_PREFIX[fips.slice(0, 2)];
   if (!stateAbbr) return null;
   return STATE_CENTROIDS[stateAbbr]?.coordinates ?? null;

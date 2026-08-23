@@ -396,7 +396,13 @@ const MapContainer = ({
   React.useEffect(() => {
     if (mapTarget && mapTarget.coordinates) {
       const validCoords = isSafeUsCenter(mapTarget.coordinates) ? mapTarget.coordinates : DEFAULT_CENTER;
-      animateToPosition(validCoords, mapTarget.zoom || 2.5, 650);
+      animateToPosition(validCoords, mapTarget.zoom || 3.8, 650);
+      if (mapTarget.label) {
+        setLastClickedCoords({
+          coordinates: validCoords,
+          label: mapTarget.label,
+        });
+      }
     }
   }, [mapTarget, animateToPosition]);
 
@@ -407,10 +413,14 @@ const MapContainer = ({
       lastAutoZoomedFipsRef.current = selectedFips;
       const coords = coordsFromFips(selectedFips);
       if (coords && isSafeUsCenter(coords)) {
-        animateToPosition(coords, 3.8, 650);
+        animateToPosition(coords, 4.2, 650);
+        setLastClickedCoords({
+          coordinates: coords,
+          label: data[selectedFips]?.County_Name || `FIPS ${selectedFips}`,
+        });
       }
     }
-  }, [selectedFips, autoZoomOnClick, animateToPosition]);
+  }, [selectedFips, autoZoomOnClick, animateToPosition, data]);
 
   const config = METRIC_CONFIG[metric];
   const colorScale = scaleQuantize<string>().domain(config.domain).range(config.range);

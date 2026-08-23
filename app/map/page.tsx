@@ -18,7 +18,7 @@ import ModeSelectionModal from "@/app/_components/ui/ModeSelectionModal";
 import AppLoadingScreen from "@/app/_components/ui/AppLoadingScreen";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
-import { SearchResultItem, coordsFromFips } from "@/app/_lib/search-utils";
+import { SearchResultItem, coordsFromFips, performSearch } from "@/app/_lib/search-utils";
 import { TemporalYear, AVAILABLE_YEARS } from "@/app/_lib/temporal-data";
 import { useSimpleMode } from "@/app/_lib/simple-mode-context";
 import { MY_DISTRICT } from "@/app/_lib/district-data";
@@ -61,7 +61,15 @@ function USSEERMapDashboard() {
   const [selectedYear, setSelectedYear] = useState<TemporalYear>(2024);
   const [isLoading, setIsLoading] = useState(true);
   const [isResetting, setIsResetting] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("theme");
+      if (saved === "light") return false;
+      if (saved === "dark") return true;
+      return document.documentElement.classList.contains("dark");
+    }
+    return true;
+  });
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
@@ -168,6 +176,10 @@ function USSEERMapDashboard() {
     const metricParam = searchParams.get("metric");
     const viewParam = searchParams.get("view");
     const yearParam = searchParams.get("year");
+    const searchParam = searchParams.get("search") || searchParams.get("q");
+    const latParam = searchParams.get("lat");
+    const lngParam = searchParams.get("lng");
+    const zoomParam = searchParams.get("zoom");
 
     if (metricParam) {
       setMapMetric(normalizeMetric(metricParam));
@@ -187,12 +199,43 @@ function USSEERMapDashboard() {
       if (coords) {
         setMapTarget({
           coordinates: coords,
-          zoom: 4.0,
+          zoom: 4.2,
           label: `FIPS ${fipsParam}`,
         });
       }
+      if (window.innerWidth < 768) {
+        setIsMobileDrawerOpen(true);
+      }
+    } else if (searchParam && (data || citiesData.length > 0)) {
+      const results = performSearch(searchParam, data || {}, citiesData);
+      if (results.length > 0) {
+        const top = results[0];
+        if (top.fips) {
+          setSelectedFips(top.fips);
+        }
+        const coords = top.coordinates ?? (top.fips ? coordsFromFips(top.fips) : null);
+        if (coords) {
+          setMapTarget({
+            coordinates: coords,
+            zoom: top.zoom ?? 4.2,
+            label: top.title,
+          });
+        }
+        if (window.innerWidth < 768 && top.fips) {
+          setIsMobileDrawerOpen(true);
+        }
+      }
+    } else if (latParam && lngParam) {
+      const lat = parseFloat(latParam);
+      const lng = parseFloat(lngParam);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        setMapTarget({
+          coordinates: [lng, lat],
+          zoom: zoomParam ? parseFloat(zoomParam) : 4.0,
+        });
+      }
     }
-  }, [searchParams]);
+  }, [searchParams, data, citiesData]);
 
   // Sync state back to URL search params
   const updateUrlParams = useCallback(
@@ -265,9 +308,10 @@ function USSEERMapDashboard() {
   }, []);
 
   useEffect(() => {
-    const isDark = document.documentElement.classList.contains("dark") || true;
-    setIsDarkMode(isDark);
-    if (isDark) {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+      document.documentElement.classList.remove("dark");
+    } else {
       document.documentElement.classList.add("dark");
     }
 
@@ -303,6 +347,11 @@ function USSEERMapDashboard() {
   const handleToggleDarkMode = () => {
     const nextDark = !isDarkMode;
     setIsDarkMode(nextDark);
+    try {
+      localStorage.setItem("theme", nextDark ? "dark" : "light");
+    } catch {
+      /* ignore */
+    }
     if (nextDark) {
       document.documentElement.classList.add("dark");
     } else {
