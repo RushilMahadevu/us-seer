@@ -1,10 +1,11 @@
 {
   "metadata": {
-    "generated_at": "2026-07-30T21:42:01Z",
+    "generated_at": "2026-08-29T21:07:12Z",
     "method": "Double Machine Learning (Robinson 1988 / Chernozhukov et al. 2018)",
-    "implementation": "Custom sklearn-based DML with cross-fitted RF nuisance models",
+    "implementation": "Custom Neyman-Orthogonal DML with Spatial Block Cross-Fitting and Random Forest Nuisance Estimators",
+    "cross_fitting_scheme": "5-Fold Spatial Block Cross-Fitting (coordinates clustered via KMeans)",
     "n_folds": 5,
-    "n_bootstrap": 200,
+    "n_bootstrap": 500,
     "confounders": [
       "smokingPrev",
       "pctPoverty",
@@ -15,7 +16,7 @@
     ],
     "treatment": "pm25Avg",
     "outcome": "mortalityRate (respiratory deaths per 100k)",
-    "n_counties_total": 3222,
+    "n_counties_total": 3213,
     "n_counties_analyzed": 2954,
     "n_counties_rural": 1139,
     "n_counties_urban": 1165,
@@ -23,47 +24,105 @@
     "epa_standard_pm25": 9.0,
     "n_counties_above_epa_standard": 258,
     "pct_counties_above_epa_standard": 8.7,
-    "interpretation": "theta is the DML causal effect estimate: deaths per 100k per 1 \u00b5g/m\u00b3 change in PM2.5. A positive theta means higher PM2.5 \u2192 more deaths. Confidence intervals represent estimation uncertainty after partialling out confounders."
+    "interpretation": "theta is the DML causal effect estimate: deaths per 100k per 1 \u00b5g/m\u00b3 change in PM2.5. A positive theta means higher PM2.5 \u2192 more deaths. Spatial Block cross-fitting prevents spatial proximity leakage across folds."
+  },
+  "spatial_block_dml": {
+    "rural": {
+      "theta": 1.927157,
+      "se": 0.727487,
+      "ci_lo_95": 0.501284,
+      "ci_hi_95": 3.353031,
+      "bootstrap_ci_lo_95": 0.422416,
+      "bootstrap_ci_hi_95": 3.368312,
+      "bootstrap_se": 0.767631,
+      "n": 1139,
+      "avg_mortality": 86.52,
+      "avg_pm25": 7.107,
+      "avg_population": 14249.0,
+      "label": "Rural counties (RUCC \u2265 7) \u2014 Primary Spatial Block Causal Signal"
+    },
+    "urban": {
+      "theta": -1.130575,
+      "se": 0.389607,
+      "ci_lo_95": -1.894203,
+      "ci_hi_95": -0.366946,
+      "n": 1165,
+      "label": "Urban counties (RUCC \u2264 3) \u2014 Healthcare access buffering"
+    },
+    "all": {
+      "theta": 0.645671,
+      "se": 0.369256,
+      "ci_lo_95": -0.078071,
+      "ci_hi_95": 1.369412,
+      "n": 2954,
+      "label": "All counties pooled (Spatial Block CV)"
+    }
+  },
+  "random_kfold_dml": {
+    "rural": {
+      "theta": 1.495726,
+      "se": 0.963848,
+      "ci_lo_95": -0.393416,
+      "ci_hi_95": 3.384868,
+      "bootstrap_ci_lo_95": -0.335486,
+      "bootstrap_ci_hi_95": 3.300858,
+      "bootstrap_se": 0.964632,
+      "n": 1139
+    },
+    "urban": {
+      "theta": -1.614153,
+      "se": 0.558837,
+      "ci_lo_95": -2.709474,
+      "ci_hi_95": -0.518832,
+      "n": 1165
+    },
+    "all": {
+      "theta": -0.515625,
+      "se": 0.526413,
+      "ci_lo_95": -1.547395,
+      "ci_hi_95": 0.516145,
+      "n": 2954
+    }
   },
   "rural": {
-    "theta": 1.474053,
-    "se": 0.959406,
-    "ci_lo_95": -0.406383,
-    "ci_hi_95": 3.354489,
-    "bootstrap_ci_lo_95": 1.515845,
-    "bootstrap_ci_hi_95": 5.261602,
-    "bootstrap_se": 0.92963,
+    "theta": 1.927157,
+    "se": 0.727487,
+    "ci_lo_95": 0.501284,
+    "ci_hi_95": 3.353031,
+    "bootstrap_ci_lo_95": 0.422416,
+    "bootstrap_ci_hi_95": 3.368312,
+    "bootstrap_se": 0.767631,
     "n": 1139,
     "avg_mortality": 86.52,
     "avg_pm25": 7.107,
     "avg_population": 14249.0,
-    "label": "Rural counties (RUCC \u2265 7) \u2014 primary causal signal"
+    "label": "Rural counties (RUCC \u2265 7) \u2014 Primary Spatial Block Causal Signal"
   },
   "all": {
-    "theta": -0.509841,
-    "se": 0.525563,
-    "ci_lo_95": -1.539945,
-    "ci_hi_95": 0.520262,
+    "theta": 0.645671,
+    "se": 0.369256,
+    "ci_lo_95": -0.078071,
+    "ci_hi_95": 1.369412,
     "n": 2954,
     "avg_mortality": 73.23,
     "avg_pm25": 7.568,
     "avg_population": 109989.0,
-    "label": "All counties \u2014 urban confounding present (see methodology)"
+    "label": "All counties \u2014 spatial block cross-fitted"
   },
   "urban": {
-    "theta": -1.631705,
-    "se": 0.556919,
-    "ci_lo_95": -2.723267,
-    "ci_hi_95": -0.540144,
+    "theta": -1.130575,
+    "se": 0.389607,
+    "ci_lo_95": -1.894203,
+    "ci_hi_95": -0.366946,
     "n": 1165,
     "label": "Urban counties (RUCC \u2264 3) \u2014 healthcare access dominates"
   },
   "policy_simulator": {
-    "primary_theta": 1.474053,
-    "primary_se": 0.959406,
-    "primary_ci_lo": 1.515845,
-    "primary_ci_hi": 5.261602,
-    "explanation": "For rural counties: reducing PM2.5 by 1 \u00b5g/m\u00b3 is associated with a 1.47 change in respiratory deaths per 100k population (95% CI: 1.52\u20135.26 per 100k). Formula: lives_saved = |theta| \u00d7 (county_population / 100000) \u00d7 delta_pm25",
+    "primary_theta": 1.927157,
+    "primary_se": 0.727487,
+    "primary_ci_lo": 0.501284,
+    "primary_ci_hi": 3.353031,
+    "explanation": "For rural counties: reducing PM2.5 by 1 \u00b5g/m\u00b3 is associated with a 1.93 change in respiratory deaths per 100k population (95% CI: 0.50\u20133.35 per 100k). Formula: lives_saved = |theta| \u00d7 (county_population / 100000) \u00d7 delta_pm25",
     "epa_vsl": 11000000,
     "cost_savings_note": "Healthcare cost savings estimated using EPA Value of Statistical Life ($11M per life, 2024).",
     "epa_target_pm25": 9.0,

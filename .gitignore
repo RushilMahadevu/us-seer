@@ -42,3 +42,11 @@ next-env.d.ts
 
 # data pipeline
 data_pipeline/
+
+# Strategy & Planning Documents
+/paper_research/*
+NEXT_STEPS.md
+MASTER_PLAN.md
+COLLEGE_APP_STRATEGY.md
+CAC_STRATEGY.md
+SCRIPT.md

@@ -34,6 +34,9 @@ import {
   CheckCircle2,
   Compass,
   Zap,
+  AlertTriangle,
+  Microscope,
+  TrendingUp,
 } from "lucide-react";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
@@ -338,20 +341,20 @@ export default function LandingPage() {
       ════════════════════════════════════════════════════════════ */}
       <section className="relative min-h-screen w-full flex flex-col overflow-hidden">
         {/* Dot-grid background */}
-        <div className="absolute inset-0 -z-10 bg-background">
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           {/* SVG dot grid */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 text-foreground/[0.18] dark:text-foreground/[0.22]"
             style={{
-              backgroundImage: `radial-gradient(circle, oklch(0.45 0.02 85 / 0.5) 1px, transparent 1px)`,
+              backgroundImage: `radial-gradient(circle, currentColor 1px, transparent 1px)`,
               backgroundSize: "28px 28px",
             }}
           />
-          {/* Radial fade — bright center, dark edges */}
+          {/* Radial fade — center visible, soft fade to edges */}
           <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, var(--background) 75%)",
+              background: "radial-gradient(ellipse 80% 65% at 50% 40%, transparent 20%, var(--background) 95%)",
             }}
           />
         </div>
@@ -902,7 +905,151 @@ export default function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── Section Divider: Bento → CTA ──────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════
+          SECTION 2.5 — KEY RESEARCH FINDINGS
+          The headline empirical results from the epidemiological analysis
+      ════════════════════════════════════════════════════════════ */}
+
+      {/* ── Section Divider: Bento → Findings ────────────────────── */}
+      <div className="relative max-w-7xl mx-auto w-full px-4 sm:px-6">
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-widest text-muted-foreground/40 select-none">
+            <span>Findings</span>
+          </div>
+          <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+        </div>
+      </div>
+
+      <section className="max-w-7xl mx-auto w-full px-4 sm:px-6 py-10">
+        {/* Section header */}
+        <motion.div
+          variants={sectionScrollVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          className="flex items-center gap-3 mb-8"
+        >
+          <div className="flex items-center gap-1.5 text-[11px] font-bold text-rose-400 uppercase tracking-widest">
+            <Microscope className="w-3.5 h-3.5" />
+            <span>Key Research Findings</span>
+          </div>
+          <div className="flex-1 h-px bg-border" />
+          <p className="text-[11px] text-muted-foreground hidden sm:block">Empirical results from 2,953 U.S. counties · 2018–2022</p>
+        </motion.div>
+
+        <motion.div
+          variants={sectionScrollVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        >
+          {/* Finding 1 — EJ Hotspot Counties */}
+          <div className="group relative p-5 rounded-2xl border border-border bg-card/50 hover:bg-rose-500/[0.03] transition-all space-y-3 overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-rose-500/5 blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+                <AlertTriangle className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono text-rose-400 font-bold uppercase tracking-widest">EJ Hotspots</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">74</span>
+              <span className="text-sm font-bold text-muted-foreground">counties</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              Simultaneously in the <span className="font-bold text-foreground">top quartile</span> for PM₂.₅ pollution, respiratory mortality, and poverty — averaging <span className="font-bold text-rose-400">+59% higher</span> respiratory death rates than the national average.
+            </p>
+            <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
+              Tri-quartile intersection · N = 2,953
+            </div>
+          </div>
+
+          {/* Finding 2 — Rural PM2.5 Signal */}
+          <div className="group relative p-5 rounded-2xl border border-border bg-card/50 hover:bg-amber-500/[0.03] transition-all space-y-3 overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/5 blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
+                <TrendingUp className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest">Rural Signal</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">r = 0.172</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              In <span className="font-bold text-foreground">rural counties</span> (RUCC 7–9), PM₂.₅ concentration is a <span className="font-bold text-amber-400">significant predictor</span> of respiratory mortality even after controlling for poverty and smoking.
+            </p>
+            <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
+              p &lt; 0.001 · N = 1,138 rural counties
+            </div>
+          </div>
+
+          {/* Finding 3 — 5-Variable Model */}
+          <div className="group relative p-5 rounded-2xl border border-border bg-card/50 hover:bg-primary/[0.03] transition-all space-y-3 overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary">
+                <Stethoscope className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-widest">Regression</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">R² = 35.4%</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              A 5-variable OLS model (PM₂.₅, smoking, poverty, race, uninsured) jointly explains <span className="font-bold text-primary">35.4%</span> of county-level respiratory mortality variance nationally.
+            </p>
+            <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
+              Multiple regression · N = 2,953
+            </div>
+          </div>
+
+          {/* Finding 4 — Dominant Driver */}
+          <div className="group relative p-5 rounded-2xl border border-border bg-card/50 hover:bg-emerald-500/[0.03] transition-all space-y-3 overflow-hidden">
+            <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-emerald-500/5 blur-2xl pointer-events-none" />
+            <div className="flex items-center gap-2">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
+                <Activity className="w-4 h-4" />
+              </div>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest">Key Driver</span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">27%</span>
+              <span className="text-sm font-bold text-muted-foreground">variance</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground leading-relaxed">
+              <span className="font-bold text-foreground">Smoking prevalence</span> is the single strongest county-level predictor of respiratory mortality (r = 0.52), explaining <span className="font-bold text-emerald-400">27%</span> of all variation.
+            </p>
+            <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
+              Pearson r = 0.521 · p &lt; 0.001
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Research methodology note */}
+        <motion.div
+          variants={sectionScrollVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          className="mt-6 p-4 rounded-xl border border-border/60 bg-card/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+        >
+          <div className="text-[11px] text-muted-foreground leading-relaxed">
+            <span className="font-bold text-foreground">Study design:</span> Observational cross-sectional ecological analysis of 2,953 U.S. counties using EPA AQS, CDC WONDER, Census ACS, CDC PLACES, and USDA RUCC federal datasets (2018–2022 five-year averages). Results represent county-level associations, not individual-level causal effects.
+          </div>
+          <Link
+            href="/lab"
+            className="shrink-0 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline"
+          >
+            <span>Explore in Lab</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        </motion.div>
+      </section>
+
+      {/* ── Section Divider: Findings → CTA ─────────────────────────── */}
       <div className="relative max-w-7xl mx-auto w-full px-4 sm:px-6">
         <div className="flex items-center gap-4">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-border to-transparent" />

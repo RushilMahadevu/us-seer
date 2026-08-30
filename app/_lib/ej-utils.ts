@@ -258,6 +258,33 @@ export function incomePercentileColor(pct: number): string {
   return "text-teal-500";
 }
 
+/**
+ * Compute the Set of FIPS codes for all Environmental Justice hotspot counties.
+ *
+ * Criteria (per FINDINGS.md Finding 5 — tri-quartile intersection):
+ *   PM2.5      ≥ 75th percentile nationally (≥ 8.53 µg/m³)
+ *   Mortality  ≥ 75th percentile nationally (≥ 92.35 / 100k)
+ *   Income     ≤ 25th percentile nationally (≤ $51,823)
+ *
+ * Returns a Set<string> of FIPS codes (typically ~74 counties).
+ */
+export function getEJHotspotFips(allData: CountyDataMap): Set<string> {
+  const hotspots = new Set<string>();
+  for (const [fips, county] of Object.entries(allData)) {
+    if (
+      county.pm25Avg != null &&
+      county.mortalityRate != null &&
+      county.medianIncome != null &&
+      county.pm25Avg >= NATIONAL_THRESHOLDS.pm25.q75 &&
+      county.mortalityRate >= NATIONAL_THRESHOLDS.mortality.q75 &&
+      county.medianIncome <= NATIONAL_THRESHOLDS.income.q25
+    ) {
+      hotspots.add(fips);
+    }
+  }
+  return hotspots;
+}
+
 /** EJ category colors */
 export const EJ_CATEGORY_COLORS = {
   critical: { bg: "bg-rose-500/10", border: "border-rose-500/30", text: "text-rose-500", badge: "bg-rose-500" },

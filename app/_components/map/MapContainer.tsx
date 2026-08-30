@@ -1,6 +1,6 @@
 "use client";
 
-import React, { memo, useState, useRef, useEffect, useCallback } from "react";
+import React, { memo, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker } from "react-simple-maps";
 import { scaleQuantize } from "d3-scale";
 import { geoCentroid } from "d3-geo";
@@ -8,6 +8,7 @@ import { CountyDataMap } from "@/app/_lib/types";
 import { GEO_URL, STATES_GEO_URL, CityEntry } from "@/app/_lib/data-utils";
 import { SearchResultItem, performSearch, coordsFromFips } from "@/app/_lib/search-utils";
 import { TRIFacility, TRI_FACILITIES } from "@/app/_lib/tri-facilities-data";
+import { getEJHotspotFips } from "@/app/_lib/ej-utils";
 import { TemporalYear, getCountyDataForYear } from "@/app/_lib/temporal-data";
 import TemporalScrubber from "@/app/_components/map/TemporalScrubber";
 import { Card } from "@/app/_components/ui/card";
@@ -239,7 +240,11 @@ const MapContainer = ({
   const [selectedGlow, setSelectedGlow] = useState(true);
   const [showTriFacilities, setShowTriFacilities] = useState(true);
   const [showTriBuffers, setShowTriBuffers] = useState(true);
+  const [showEJHotspots, setShowEJHotspots] = useState(false);
   const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
+  // Compute the set of EJ hotspot FIPS codes (memoized, depends only on raw data)
+  const ejHotspotFips = useMemo(() => getEJHotspotFips(data), [data]);
 
   // 1. Load saved preferences from localStorage on mount
   useEffect(() => {
@@ -260,6 +265,7 @@ const MapContainer = ({
           if (typeof parsed.showTooltip === "boolean") setShowTooltip(parsed.showTooltip);
           if (typeof parsed.showTriFacilities === "boolean") setShowTriFacilities(parsed.showTriFacilities);
           if (typeof parsed.showTriBuffers === "boolean") setShowTriBuffers(parsed.showTriBuffers);
+          if (typeof parsed.showEJHotspots === "boolean") setShowEJHotspots(parsed.showEJHotspots);
         }
       }
     } catch (err) {
@@ -287,6 +293,7 @@ const MapContainer = ({
           showTooltip,
           showTriFacilities,
           showTriBuffers,
+          showEJHotspots,
         };
         localStorage.setItem(MAP_SETTINGS_STORAGE_KEY, JSON.stringify(payload));
       }
@@ -307,6 +314,7 @@ const MapContainer = ({
     showTooltip,
     showTriFacilities,
     showTriBuffers,
+    showEJHotspots,
   ]);
 
   const handleResetSettings = () => {
@@ -322,6 +330,7 @@ const MapContainer = ({
     setShowTooltip(true);
     setShowTriFacilities(true);
     setShowTriBuffers(true);
+    setShowEJHotspots(false);
     try {
       if (typeof window !== "undefined") {
         localStorage.removeItem(MAP_SETTINGS_STORAGE_KEY);
@@ -911,6 +920,26 @@ const MapContainer = ({
                     </button>
                   </div>
                 )}
+                {/* EJ Hotspot Overlay Layer Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                  <div className="flex flex-col pr-2">
+                    <span className="text-[11px] font-semibold text-foreground flex items-center gap-1.5">
+                      <ShieldAlert className="w-3 h-3 text-rose-500 shrink-0" />
+                      EJ Hotspot Counties
+                    </span>
+                    <span className="text-[9px] text-muted-foreground">Highlight {ejHotspotFips.size} environmental justice hotspot counties</span>
+                  </div>
+                  <button
+                    onClick={() => setShowEJHotspots(!showEJHotspots)}
+                    className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${showEJHotspots ? "bg-rose-500" : "bg-muted-foreground/30"
+                      }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-background shadow-lg transition duration-200 ease-in-out ${showEJHotspots ? "translate-x-4" : "translate-x-0"
+                        }`}
+                    />
+                  </button>
+                </div>
               </>
             )}
 
@@ -1055,6 +1084,7 @@ const MapContainer = ({
                     const fips = geo.id;
                     const countyData = effectiveData[fips];
                     const isSelected = selectedFips === fips;
+                    const isEJHotspot = showEJHotspots && ejHotspotFips.has(fips);
                     const val = countyData ? countyData[metric] : undefined;
                     const fill = val != null ? colorScale(val) : "var(--color-muted)";
 
@@ -1062,23 +1092,34 @@ const MapContainer = ({
 
                     const countyStrokeWidth = isSelected
                       ? 0.6
-                      : showCountyBorders
-                        ? countyBorderWeight === "normal"
-                          ? 0.4
-                          : 0.2
-                        : 0;
+                      : isEJHotspot
+                        ? 0.8
+                        : showCountyBorders
+                          ? countyBorderWeight === "normal"
+                            ? 0.4
+                            : 0.2
+                          : 0;
 
                     const countyStrokeColor = isSelected
                       ? "#000000"
-                      : showCountyBorders
-                        ? "rgba(255, 255, 255, 0.35)"
-                        : "transparent";
+                      : isEJHotspot
+                        ? "#f59e0b"
+                        : showCountyBorders
+                          ? "rgba(255, 255, 255, 0.35)"
+                          : "transparent";
+
+                    // For EJ hotspots, blend a warm amber tint over the choropleth fill
+                    const effectiveFill = isSelected
+                      ? selectedColor
+                      : isEJHotspot
+                        ? fill  // keep choropleth fill — the amber stroke provides distinction
+                        : fill;
 
                     return (
                       <Geography
                         key={geo.rsmKey}
                         geography={geo}
-                        fill={isSelected ? selectedColor : fill}
+                        fill={effectiveFill}
                         stroke={countyStrokeColor}
                         strokeWidth={countyStrokeWidth}
                         onMouseEnter={(e) => {
@@ -1127,7 +1168,11 @@ const MapContainer = ({
                           default: {
                             outline: "none",
                             transition: "fill 0.15s ease, filter 0.15s ease",
-                            filter: isSelected && selectedGlow ? `drop-shadow(0 0 4px ${selectedColor})` : undefined,
+                            filter: isSelected && selectedGlow
+                              ? `drop-shadow(0 0 4px ${selectedColor})`
+                              : isEJHotspot
+                                ? "drop-shadow(0 0 3px rgba(245, 158, 11, 0.6))"
+                                : undefined,
                           },
                           hover: {
                             fill: isSelected ? selectedColor : undefined,

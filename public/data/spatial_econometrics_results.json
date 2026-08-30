@@ -1,0 +1,461 @@
+{
+  "metadata": {
+    "generated_at": "2026-08-29T21:09:59Z",
+    "sample_size": 2954,
+    "k_neighbors": 6,
+    "cluster_variables": [
+      "county_fips",
+      "state_fips"
+    ]
+  },
+  "ols": {
+    "r2": 0.5304,
+    "aic": 26340.56,
+    "coefficients": {
+      "Intercept": -76.9142,
+      "PM2.5": 1.1821,
+      "Smoking (%)": 2.7356,
+      "Poverty (%)": 0.966,
+      "Uninsured (%)": -5.4648,
+      "Black (%)": -0.491,
+      "MD Rate": -0.0661,
+      "RUCC": 1.5364,
+      "Median Age": 2.2023
+    },
+    "standard_errors": {
+      "Intercept": 5.2762,
+      "PM2.5": 0.3431,
+      "Smoking (%)": 0.1294,
+      "Poverty (%)": 0.0964,
+      "Uninsured (%)": 1.5305,
+      "Black (%)": 0.0313,
+      "MD Rate": 0.0062,
+      "RUCC": 0.1655,
+      "Median Age": 0.0855
+    },
+    "t_statistics": {
+      "Intercept": -14.58,
+      "PM2.5": 3.45,
+      "Smoking (%)": 21.15,
+      "Poverty (%)": 10.02,
+      "Uninsured (%)": -3.57,
+      "Black (%)": -15.68,
+      "MD Rate": -10.63,
+      "RUCC": 9.28,
+      "Median Age": 25.75
+    },
+    "p_values": {
+      "Intercept": 0.0,
+      "PM2.5": 0.0005774,
+      "Smoking (%)": 0.0,
+      "Poverty (%)": 0.0,
+      "Uninsured (%)": 0.000362,
+      "Black (%)": 0.0,
+      "MD Rate": 0.0,
+      "RUCC": 0.0,
+      "Median Age": 0.0
+    }
+  },
+  "morans_i": {
+    "mortality": {
+      "I": 0.4784,
+      "z": 47.91,
+      "p": 0.001
+    },
+    "pm25": {
+      "I": 0.8821,
+      "z": 87.26,
+      "p": 0.001
+    },
+    "ols_residuals": {
+      "I": 0.2213,
+      "z": 21.5,
+      "p": 0.001
+    }
+  },
+  "sar": {
+    "rho": 0.4037,
+    "se_rho": 0.0238,
+    "aic": 25957.11,
+    "multipliers": {
+      "direct": 1.0302,
+      "indirect": 0.6469,
+      "total": 1.6771
+    },
+    "coefficients": {
+      "Intercept": -80.3427,
+      "PM2.5": 0.8962,
+      "Smoking (%)": 1.8034,
+      "Poverty (%)": 0.7313,
+      "Uninsured (%)": -2.5972,
+      "Black (%)": -0.3326,
+      "MD Rate": -0.0399,
+      "RUCC": 1.0397,
+      "Median Age": 1.9655
+    },
+    "standard_errors": {
+      "Intercept": 4.8886,
+      "PM2.5": 0.3181,
+      "Smoking (%)": 0.134,
+      "Poverty (%)": 0.0905,
+      "Uninsured (%)": 1.4234,
+      "Black (%)": 0.031,
+      "MD Rate": 0.0059,
+      "RUCC": 0.1542,
+      "Median Age": 0.0819
+    },
+    "impacts": {
+      "PM2.5": {
+        "beta": 0.8962,
+        "se": 0.3181,
+        "direct": 0.9233,
+        "indirect": 0.5798,
+        "total": 1.5031
+      },
+      "Smoking (%)": {
+        "beta": 1.8034,
+        "se": 0.134,
+        "direct": 1.8578,
+        "indirect": 1.1667,
+        "total": 3.0245
+      },
+      "Poverty (%)": {
+        "beta": 0.7313,
+        "se": 0.0905,
+        "direct": 0.7533,
+        "indirect": 0.4731,
+        "total": 1.2264
+      },
+      "Uninsured (%)": {
+        "beta": -2.5972,
+        "se": 1.4234,
+        "direct": -2.6755,
+        "indirect": -1.6802,
+        "total": -4.3557
+      },
+      "Black (%)": {
+        "beta": -0.3326,
+        "se": 0.031,
+        "direct": -0.3426,
+        "indirect": -0.2151,
+        "total": -0.5577
+      },
+      "MD Rate": {
+        "beta": -0.0399,
+        "se": 0.0059,
+        "direct": -0.0412,
+        "indirect": -0.0258,
+        "total": -0.067
+      },
+      "RUCC": {
+        "beta": 1.0397,
+        "se": 0.1542,
+        "direct": 1.071,
+        "indirect": 0.6726,
+        "total": 1.7436
+      },
+      "Median Age": {
+        "beta": 1.9655,
+        "se": 0.0819,
+        "direct": 2.0247,
+        "indirect": 1.2715,
+        "total": 3.2963
+      }
+    }
+  },
+  "sem": {
+    "lambda": 0.4911,
+    "aic": 25980.0
+  },
+  "spatial_weight_sensitivity": {
+    "knn_4": {
+      "specification": "k-Nearest Neighbors (k=4)",
+      "morans_I_residuals": 0.2397,
+      "morans_z": 18.88,
+      "morans_p": 0.002,
+      "sar_rho": 0.3488,
+      "sar_aic": 25996.07
+    },
+    "knn_6": {
+      "specification": "k-Nearest Neighbors (k=6)",
+      "morans_I_residuals": 0.2213,
+      "morans_z": 20.85,
+      "morans_p": 0.002,
+      "sar_rho": 0.4037,
+      "sar_aic": 25957.11
+    },
+    "knn_8": {
+      "specification": "k-Nearest Neighbors (k=8)",
+      "morans_I_residuals": 0.2109,
+      "morans_z": 24.48,
+      "morans_p": 0.002,
+      "sar_rho": 0.431,
+      "sar_aic": 25944.67
+    },
+    "knn_10": {
+      "specification": "k-Nearest Neighbors (k=10)",
+      "morans_I_residuals": 0.2026,
+      "morans_z": 25.38,
+      "morans_p": 0.002,
+      "sar_rho": 0.452,
+      "sar_aic": 25941.19
+    },
+    "knn_12": {
+      "specification": "k-Nearest Neighbors (k=12)",
+      "morans_I_residuals": 0.1959,
+      "morans_z": 27.04,
+      "morans_p": 0.002,
+      "sar_rho": 0.4681,
+      "sar_aic": 25939.26
+    },
+    "gaussian_decay_150km": {
+      "specification": "Gaussian Distance Decay (b=150km)",
+      "morans_I_residuals": 0.1106,
+      "morans_z": 43.64,
+      "morans_p": 0.002,
+      "sar_rho": 0.6127,
+      "sar_aic": 26032.96
+    },
+    "gaussian_decay_300km": {
+      "specification": "Gaussian Distance Decay (b=300km)",
+      "morans_I_residuals": 0.06,
+      "morans_z": 41.53,
+      "morans_p": 0.002,
+      "sar_rho": 0.8192,
+      "sar_aic": 26095.86
+    },
+    "connected_contiguity": {
+      "specification": "Connected Adaptive Contiguity (k >= 1, 75km)",
+      "morans_I_residuals": 0.2148,
+      "morans_z": 18.57,
+      "morans_p": 0.002,
+      "sar_rho": 0.319,
+      "sar_aic": 26065.01
+    },
+    "unconnected_fixed_75km": {
+      "specification": "Fixed Distance Cutoff 75km (121 Island Counties)",
+      "morans_I_residuals": 0.2163,
+      "morans_z": 20.43,
+      "morans_p": 0.002,
+      "sar_rho": 0.2692,
+      "sar_aic": 26066.66
+    }
+  },
+  "gwr": {
+    "pm25_beta_mean": 0.9824,
+    "pm25_beta_rural_mean": 1.2727,
+    "pm25_beta_urban_mean": 0.7008
+  },
+  "lisa": {
+    "hotspots_count": 421,
+    "coldspots_count": 497
+  },
+  "twfe_panel": {
+    "primary_full_panel": {
+      "theta": 0.4072,
+      "se_naive": 0.0261,
+      "t_naive": 15.63,
+      "se_county_clustered": 0.0295,
+      "t_county_clustered": 13.78,
+      "p_county_clustered": 0.0,
+      "se_state_clustered": 0.0313,
+      "t_state_clustered": 13.02,
+      "p_state_clustered": 0.0,
+      "n_obs": 20678,
+      "n_counties": 2954,
+      "n_years": 7
+    },
+    "pre_pandemic_2018_2019": {
+      "theta": 0.4635,
+      "se_naive": 0.0656,
+      "t_naive": 7.06,
+      "se_county_clustered": 0.0918,
+      "t_county_clustered": 5.05,
+      "p_county_clustered": 4.427e-07,
+      "se_state_clustered": 0.0839,
+      "t_state_clustered": 5.52,
+      "p_state_clustered": 3.351e-08,
+      "n_obs": 5908,
+      "n_counties": 2954,
+      "n_years": 2
+    },
+    "post_pandemic_2022_2024": {
+      "theta": 0.3929,
+      "se_naive": 0.045,
+      "t_naive": 8.73,
+      "se_county_clustered": 0.0558,
+      "t_county_clustered": 7.04,
+      "p_county_clustered": 1.863e-12,
+      "se_state_clustered": 0.052,
+      "t_state_clustered": 7.56,
+      "p_state_clustered": 4.086e-14,
+      "n_obs": 8862,
+      "n_counties": 2954,
+      "n_years": 3
+    },
+    "ex_peak_covid_panel": {
+      "theta": 0.4277,
+      "se_naive": 0.0323,
+      "t_naive": 13.25,
+      "se_county_clustered": 0.0373,
+      "t_county_clustered": 11.46,
+      "p_county_clustered": 0.0,
+      "se_state_clustered": 0.0364,
+      "t_state_clustered": 11.74,
+      "p_state_clustered": 0.0,
+      "n_obs": 14770,
+      "n_counties": 2954,
+      "n_years": 5
+    },
+    "unsuppressed_panel": {
+      "theta": 0.2505,
+      "se_naive": 0.0295,
+      "t_naive": 8.49,
+      "se_county_clustered": 0.0332,
+      "t_county_clustered": 7.55,
+      "p_county_clustered": 4.33e-14,
+      "se_state_clustered": 0.0297,
+      "t_state_clustered": 8.44,
+      "p_state_clustered": 0.0,
+      "n_obs": 16100,
+      "n_counties": 2300,
+      "n_years": 7
+    }
+  },
+  "dml_causal": {
+    "metadata": {
+      "generated_at": "2026-08-29T21:07:12Z",
+      "method": "Double Machine Learning (Robinson 1988 / Chernozhukov et al. 2018)",
+      "implementation": "Custom Neyman-Orthogonal DML with Spatial Block Cross-Fitting and Random Forest Nuisance Estimators",
+      "cross_fitting_scheme": "5-Fold Spatial Block Cross-Fitting (coordinates clustered via KMeans)",
+      "n_folds": 5,
+      "n_bootstrap": 500,
+      "confounders": [
+        "smokingPrev",
+        "pctPoverty",
+        "pctUninsured",
+        "pctBlack",
+        "mdRate",
+        "rucc"
+      ],
+      "treatment": "pm25Avg",
+      "outcome": "mortalityRate (respiratory deaths per 100k)",
+      "n_counties_total": 3213,
+      "n_counties_analyzed": 2954,
+      "n_counties_rural": 1139,
+      "n_counties_urban": 1165,
+      "epa_vsl": 11000000,
+      "epa_standard_pm25": 9.0,
+      "n_counties_above_epa_standard": 258,
+      "pct_counties_above_epa_standard": 8.7,
+      "interpretation": "theta is the DML causal effect estimate: deaths per 100k per 1 \u00b5g/m\u00b3 change in PM2.5. A positive theta means higher PM2.5 \u2192 more deaths. Spatial Block cross-fitting prevents spatial proximity leakage across folds."
+    },
+    "spatial_block_dml": {
+      "rural": {
+        "theta": 1.927157,
+        "se": 0.727487,
+        "ci_lo_95": 0.501284,
+        "ci_hi_95": 3.353031,
+        "bootstrap_ci_lo_95": 0.422416,
+        "bootstrap_ci_hi_95": 3.368312,
+        "bootstrap_se": 0.767631,
+        "n": 1139,
+        "avg_mortality": 86.52,
+        "avg_pm25": 7.107,
+        "avg_population": 14249.0,
+        "label": "Rural counties (RUCC \u2265 7) \u2014 Primary Spatial Block Causal Signal"
+      },
+      "urban": {
+        "theta": -1.130575,
+        "se": 0.389607,
+        "ci_lo_95": -1.894203,
+        "ci_hi_95": -0.366946,
+        "n": 1165,
+        "label": "Urban counties (RUCC \u2264 3) \u2014 Healthcare access buffering"
+      },
+      "all": {
+        "theta": 0.645671,
+        "se": 0.369256,
+        "ci_lo_95": -0.078071,
+        "ci_hi_95": 1.369412,
+        "n": 2954,
+        "label": "All counties pooled (Spatial Block CV)"
+      }
+    },
+    "random_kfold_dml": {
+      "rural": {
+        "theta": 1.495726,
+        "se": 0.963848,
+        "ci_lo_95": -0.393416,
+        "ci_hi_95": 3.384868,
+        "bootstrap_ci_lo_95": -0.335486,
+        "bootstrap_ci_hi_95": 3.300858,
+        "bootstrap_se": 0.964632,
+        "n": 1139
+      },
+      "urban": {
+        "theta": -1.614153,
+        "se": 0.558837,
+        "ci_lo_95": -2.709474,
+        "ci_hi_95": -0.518832,
+        "n": 1165
+      },
+      "all": {
+        "theta": -0.515625,
+        "se": 0.526413,
+        "ci_lo_95": -1.547395,
+        "ci_hi_95": 0.516145,
+        "n": 2954
+      }
+    },
+    "rural": {
+      "theta": 1.927157,
+      "se": 0.727487,
+      "ci_lo_95": 0.501284,
+      "ci_hi_95": 3.353031,
+      "bootstrap_ci_lo_95": 0.422416,
+      "bootstrap_ci_hi_95": 3.368312,
+      "bootstrap_se": 0.767631,
+      "n": 1139,
+      "avg_mortality": 86.52,
+      "avg_pm25": 7.107,
+      "avg_population": 14249.0,
+      "label": "Rural counties (RUCC \u2265 7) \u2014 Primary Spatial Block Causal Signal"
+    },
+    "all": {
+      "theta": 0.645671,
+      "se": 0.369256,
+      "ci_lo_95": -0.078071,
+      "ci_hi_95": 1.369412,
+      "n": 2954,
+      "avg_mortality": 73.23,
+      "avg_pm25": 7.568,
+      "avg_population": 109989.0,
+      "label": "All counties \u2014 spatial block cross-fitted"
+    },
+    "urban": {
+      "theta": -1.130575,
+      "se": 0.389607,
+      "ci_lo_95": -1.894203,
+      "ci_hi_95": -0.366946,
+      "n": 1165,
+      "label": "Urban counties (RUCC \u2264 3) \u2014 healthcare access dominates"
+    },
+    "policy_simulator": {
+      "primary_theta": 1.927157,
+      "primary_se": 0.727487,
+      "primary_ci_lo": 0.501284,
+      "primary_ci_hi": 3.353031,
+      "explanation": "For rural counties: reducing PM2.5 by 1 \u00b5g/m\u00b3 is associated with a 1.93 change in respiratory deaths per 100k population (95% CI: 0.50\u20133.35 per 100k). Formula: lives_saved = |theta| \u00d7 (county_population / 100000) \u00d7 delta_pm25",
+      "epa_vsl": 11000000,
+      "cost_savings_note": "Healthcare cost savings estimated using EPA Value of Statistical Life ($11M per life, 2024).",
+      "epa_target_pm25": 9.0,
+      "national_context": {
+        "counties_above_epa_standard": 258,
+        "pct_above_epa_standard": 8.7,
+        "national_avg_pm25": 7.568,
+        "national_avg_mortality": 73.23
+      }
+    }
+  }
+}
