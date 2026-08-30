@@ -16,6 +16,7 @@ import {
 } from "framer-motion";
 import Header from "@/app/_components/header/Header";
 import SearchModal from "@/app/_components/search/SearchModal";
+import HeroMapIllustration from "@/app/_components/ui/HeroMapIllustration";
 
 import {
   Map as MapIcon,
@@ -226,7 +227,6 @@ export default function LandingPage() {
 
   const [activeMetricId, setActiveMetricId] = useState<string>("overallRisk");
   const [selectedYearIdx, setSelectedYearIdx] = useState<number>(6);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
   const [countyData, setCountyData] = useState<CountyDataMap | null>(null);
   const [citiesData, setCitiesData] = useState<CityEntry[]>([]);
@@ -288,28 +288,10 @@ export default function LandingPage() {
     }
   };
 
-  const handleHeroSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) {
-      setIsSearchModalOpen(true);
-      return;
-    }
-    const results = performSearch(searchQuery, countyData || {}, citiesData);
-    if (results.length > 0) {
-      handleSelectSearchResult(results[0]);
-    } else {
-      router.push(`/map?search=${encodeURIComponent(searchQuery)}`);
-    }
-  };
-
   const activeMetric = useMemo(() => {
     return BENTO_METRICS.find((m) => m.id === activeMetricId) || BENTO_METRICS[0];
   }, [activeMetricId]);
 
-  const inlineSearchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    return performSearch(searchQuery, countyData || {}, citiesData).slice(0, 5);
-  }, [searchQuery, countyData, citiesData]);
 
   const activeTemporal = TEMPORAL_POINTS[selectedYearIdx];
 
@@ -371,171 +353,79 @@ export default function LandingPage() {
           />
         </div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 pt-8 pb-16 text-center max-w-5xl mx-auto w-full gap-7">
+        {/* Hero Content - Clean SaaS Two Column Layout */}
+        <div className="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-7xl mx-auto w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
 
-          {/* Status pill */}
-          <motion.div variants={itemVariants}>
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-card/60 border border-border/80 text-[11px] font-medium backdrop-blur-xl shadow-sm">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
-              </span>
-              <span className="font-bold text-primary tracking-wide uppercase">Live</span>
-              <span className="text-muted-foreground/60">·</span>
-              <span className="text-muted-foreground">3,142 counties indexed</span>
-              <span className="text-muted-foreground/60 hidden sm:inline">·</span>
-              <span className="text-muted-foreground hidden sm:inline">EPA & CDC validated</span>
-            </div>
-          </motion.div>
-
-          {/* Headline */}
-          <motion.div variants={itemVariants} className="space-y-4 max-w-3xl">
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tighter text-foreground leading-[1.1]">
-              U.S. Environmental<br />
-              Risk Intelligence<br />
-              <span className="relative inline-block">
-                at County Resolution
-                <span className="absolute -bottom-1 left-0 right-0 h-[3px] rounded-full bg-primary/60" />
-              </span>
-            </h1>
-            <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto leading-relaxed">
-              Epidemiological surveillance mapping PM2.5, EPA toxics, and CDC respiratory mortality
-              across every U.S. county — 2018 through 2024.
-            </p>
-          </motion.div>
-
-          {/* Search bar */}
-          <motion.div variants={itemVariants} className="w-full max-w-2xl mx-auto relative">
-            <form onSubmit={handleHeroSearchSubmit} className="relative flex items-center">
-              <Search className="absolute left-4 w-4.5 h-4.5 text-muted-foreground pointer-events-none" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search any county, city, or state…"
-                className="w-full pl-11 pr-28 py-3.5 rounded-2xl bg-card/70 border border-border/80 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/60 transition-all shadow-lg backdrop-blur-xl"
-              />
-              <button
-                type="submit"
-                id="hero-search-submit-btn"
-                className="cursor-pointer absolute right-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5"
-              >
-                <span>Search</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </form>
-
-            {/* Inline dropdown */}
-            <AnimatePresence>
-              {inlineSearchResults.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  className="absolute top-full left-0 right-0 mt-2 z-30 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-2xl overflow-hidden divide-y divide-border/60 text-left"
-                >
-                  {inlineSearchResults.map((res) => (
-                    <button
-                      key={res.id}
-                      type="button"
-                      onClick={() => { handleSelectSearchResult(res); setSearchQuery(""); }}
-                      className="w-full px-4 py-3 flex items-center justify-between hover:bg-accent transition-colors text-left group cursor-pointer"
-                    >
-                      <div>
-                        <div className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{res.title}</div>
-                        <div className="text-xs text-muted-foreground">{res.subtitle}</div>
-                      </div>
-                      <div className="flex items-center gap-1 text-xs text-primary font-medium">
-                        <span>Open on Map</span>
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Quick chips */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 mt-2.5 text-xs text-muted-foreground">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Try:</span>
-              {[
-                { label: "Washoe, NV", fips: "32031" },
-                { label: "Harris Co.", fips: "48201" },
-                { label: "Cook Co.", fips: "17031" },
-                { label: "Los Angeles", fips: "06037" },
-                { label: "Allegheny", fips: "42003" },
-              ].map((chip) => (
-                <button
-                  key={chip.fips}
-                  type="button"
-                  onClick={() => router.push(`/map?fips=${chip.fips}`)}
-                  className="cursor-pointer px-2 py-0.5 rounded-md bg-card/60 hover:bg-card border border-border/60 hover:border-primary/40 text-foreground/70 hover:text-foreground text-[11px] font-medium transition-all backdrop-blur-sm"
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* CTA Buttons */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
-            <Link
-              href="/map"
-              id="landing-launch-map-btn"
-              className="group relative w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/25 hover:bg-primary/95 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
-            >
-              <MapIcon className="w-4 h-4 transition-transform group-hover:rotate-6" />
-              <span>Launch Map</span>
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="/lab"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-card/60 backdrop-blur-xl border border-border/80 text-foreground font-semibold text-sm hover:bg-card hover:border-rose-400/50 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
-            >
-              <Stethoscope className="w-4 h-4 text-rose-400 transition-transform group-hover:scale-110" />
-              <span>Epidemiological Lab</span>
-            </Link>
-            <Link
-              href="/map?fips=32031"
-              className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-card/60 backdrop-blur-xl border border-border/80 text-foreground font-semibold text-sm hover:bg-card hover:border-amber-400/50 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
-            >
-              <Landmark className="w-4 h-4 text-amber-400" />
-              <span>NV-02 Case Study</span>
-            </Link>
-          </motion.div>
-
-          {/* ── Stat Pills Row (embedded in hero) ─────────────── */}
-          <motion.div
-            variants={itemVariants}
-            className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 w-full max-w-2xl mt-2"
-          >
-            {[
-              { label: "Counties", value: 3142, suffix: "", icon: <MapIcon className="w-3.5 h-3.5" />, color: "text-primary" },
-              { label: "Coverage", value: 100, suffix: "%", icon: <ShieldCheck className="w-3.5 h-3.5" />, color: "text-emerald-400" },
-              { label: "Indices", value: 9, suffix: "", icon: <Layers className="w-3.5 h-3.5" />, color: "text-rose-400" },
-              { label: "Latency", value: 50, prefix: "<", suffix: "ms", icon: <Zap className="w-3.5 h-3.5" />, color: "text-amber-400" },
-            ].map((stat) => (
-              <div
-                key={stat.label}
-                className="flex flex-col items-center justify-center gap-1 p-3 rounded-xl bg-card/50 backdrop-blur-xl border border-border/60 text-center"
-              >
-                <div className={`${stat.color}`}>{stat.icon}</div>
-                <div className="text-xl font-extrabold font-mono text-foreground tracking-tight leading-none">
-                  {stat.prefix && <span className="text-sm font-bold text-muted-foreground">{stat.prefix}</span>}
-                  <AnimatedCount value={stat.value} duration={1.0} />
-                  {stat.suffix && <span className="text-sm font-bold text-muted-foreground ml-0.5">{stat.suffix}</span>}
+            {/* Left Column: Clean, Punchy Copy & CTAs */}
+            <div className="flex flex-col items-start text-left gap-6 lg:pr-8">
+              
+              <motion.div variants={itemVariants}>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50 text-xs font-semibold backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-foreground">Now tracking all 3,142 U.S. counties</span>
                 </div>
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{stat.label}</div>
-              </div>
-            ))}
-          </motion.div>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="space-y-4 max-w-xl">
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
+                  Environmental Risk Intelligence
+                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-500 to-rose-500 mt-1">
+                    at County Resolution
+                  </span>
+                </h1>
+                <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+                  High-resolution epidemiological surveillance mapping ambient PM2.5, EPA toxic releases, and CDC respiratory mortality across the United States.
+                </p>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 mt-2">
+                <Link
+                  href="/map"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                >
+                  <MapIcon className="w-4 h-4" />
+                  <span>Open Interactive Map</span>
+                </Link>
+                <Link
+                  href="/lab"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-card border border-border text-foreground font-semibold text-sm hover:bg-accent hover:border-border/80 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+                >
+                  <Stethoscope className="w-4 h-4 text-rose-500" />
+                  <span>View Research Lab</span>
+                </Link>
+              </motion.div>
+              
+              <motion.div variants={itemVariants} className="flex items-center gap-4 mt-4 opacity-70">
+                <div className="flex -space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                    <Activity className="w-4 h-4 text-primary" />
+                  </div>
+                </div>
+                <div className="text-xs font-medium text-muted-foreground">
+                  Powered by EPA AQS & CDC WONDER data
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Right Column: HeroMapIllustration SVG / Graphic */}
+            <div className="w-full flex items-center justify-center">
+              <motion.div variants={itemVariants} className="w-full">
+                <HeroMapIllustration />
+              </motion.div>
+            </div>
+
+          </div>
 
           {/* Scroll cue */}
           <motion.div
             variants={itemVariants}
             animate={{ y: [0, 5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+            className="flex justify-center mt-6"
           >
             <a
               href="#bento-grid"
