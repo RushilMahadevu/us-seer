@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   motion,
-  AnimatePresence,
   useScroll,
   useSpring,
   useInView,
@@ -28,16 +27,14 @@ import {
   ChevronDown,
   Activity,
   Layers,
-  Search,
   ShieldCheck,
   FileSpreadsheet,
   ExternalLink,
   CheckCircle2,
-  Compass,
-  Zap,
   AlertTriangle,
   Microscope,
   TrendingUp,
+  Leaf,
 } from "lucide-react";
 import { fetchCountyData, fetchCitiesData, CityEntry } from "@/app/_lib/data-utils";
 import { CountyDataMap } from "@/app/_lib/types";
@@ -130,11 +127,11 @@ interface MetricConfig {
 const BENTO_METRICS: MetricConfig[] = [
   {
     id: "overallRisk",
-    name: "Composite Risk Index",
-    unit: "0 - 100 Index",
+    name: "Composite Risk",
+    unit: "0 - 100 Score",
     natAvg: "52.4",
-    description: "Multivariate weighted index combining air quality, toxic burden, and respiratory mortality.",
-    range: "12 (Low) → 94 (Critical)",
+    description: "A combined score reflecting air pollution, industrial toxic releases, and respiratory illness.",
+    range: "12 (Low) → 94 (High)",
     gradient: "from-emerald-500/15 via-amber-500/15 to-red-500/20",
     color: "text-amber-400",
     mapParam: "overallRisk",
@@ -142,10 +139,10 @@ const BENTO_METRICS: MetricConfig[] = [
   },
   {
     id: "pm25Avg",
-    name: "Ambient PM2.5",
+    name: "Air Pollution (PM₂.₅)",
     unit: "µg/m³",
     natAvg: "7.85 µg/m³",
-    description: "EPA NAAQS ground monitor & satellite calibrated fine particulate matter.",
+    description: "Annual average fine particle pollution levels from EPA monitors and satellite data.",
     range: "3.2 µg/m³ → 14.8 µg/m³",
     gradient: "from-sky-500/15 via-primary/15 to-rose-500/20",
     color: "text-primary",
@@ -154,10 +151,10 @@ const BENTO_METRICS: MetricConfig[] = [
   },
   {
     id: "toxicReleases",
-    name: "EPA TRI Releases",
+    name: "Toxic Releases",
     unit: "Lbs / Year",
     natAvg: "245k lbs",
-    description: "EPA Toxic Release Inventory reporting annual chemical pounds discharged to environment.",
+    description: "Total pounds of toxic chemicals released by industrial facilities into the local area.",
     range: "0 lbs → 12.5M lbs",
     gradient: "from-emerald-500/15 via-purple-500/15 to-amber-500/20",
     color: "text-amber-300",
@@ -166,10 +163,10 @@ const BENTO_METRICS: MetricConfig[] = [
   },
   {
     id: "mortalityRate",
-    name: "CDC Resp. Mortality",
+    name: "Lung Mortality",
     unit: "Deaths / 100k",
     natAvg: "68.4",
-    description: "CDC WONDER age-adjusted mortality rate per 100,000 from chronic lower respiratory diseases.",
+    description: "Annual deaths from chronic lower respiratory diseases per 100,000 residents.",
     range: "28.1 → 134.8",
     gradient: "from-teal-500/15 via-rose-500/15 to-red-600/20",
     color: "text-rose-400",
@@ -181,7 +178,7 @@ const BENTO_METRICS: MetricConfig[] = [
     name: "Adult Asthma",
     unit: "% Adults",
     natAvg: "9.8%",
-    description: "CDC PLACES crude adult prevalence diagnosed with active chronic asthma symptoms.",
+    description: "Percentage of adults diagnosed with chronic asthma in health surveys.",
     range: "7.1% → 14.2%",
     gradient: "from-blue-500/15 via-cyan-500/15 to-emerald-500/20",
     color: "text-cyan-400",
@@ -190,10 +187,10 @@ const BENTO_METRICS: MetricConfig[] = [
   },
   {
     id: "copdPrev",
-    name: "Chronic COPD",
+    name: "Adult COPD",
     unit: "% Adults",
     natAvg: "7.6%",
-    description: "CDC PLACES chronic obstructive pulmonary disease prevalence among adults 18 and older.",
+    description: "Percentage of adults diagnosed with chronic obstructive pulmonary disease.",
     range: "4.2% → 16.8%",
     gradient: "from-emerald-500/15 via-amber-500/15 to-rose-500/20",
     color: "text-amber-400",
@@ -344,95 +341,139 @@ export default function LandingPage() {
         {/* Nav */}
         <div className="relative z-40 px-3 sm:px-6 pt-3 sm:pt-4">
           <Header
-            activeView="map"
+            activeView="home"
             onViewChange={handleViewChange}
             isDarkMode={isDarkMode}
             onToggleDarkMode={handleToggleDarkMode}
             onOpenSearch={() => setIsSearchModalOpen(true)}
             onOpenDistrict={() => router.push("/map?fips=32031")}
+            onOpenCompare={() => router.push("/map?action=compare")}
+            onOpenExporter={() => router.push("/map?action=export")}
+            onStartTour={() => router.push("/map?action=tour")}
           />
         </div>
 
-        {/* Hero Content - Clean SaaS Two Column Layout */}
-        <div className="relative z-10 flex-1 flex flex-col justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-20 max-w-7xl mx-auto w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+        {/* Hero Content - Simple, High-Impact Presentation */}
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 py-10 sm:py-16 max-w-7xl mx-auto w-full text-center">
 
-            {/* Left Column: Clean, Punchy Copy & CTAs */}
-            <div className="flex flex-col items-start text-left gap-6 lg:pr-8">
+          {/* Main Hero Copy & Actions */}
+          <div className="flex flex-col items-center max-w-4xl mx-auto gap-6">
+            
+            <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/60 border border-border/60 text-xs font-semibold backdrop-blur-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-foreground">Tracking all 3,142 U.S. counties</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-xs font-semibold text-emerald-500 backdrop-blur-md">
+                <Leaf className="w-3.5 h-3.5" />
+                <span>The Earth Prize 2026 Submission</span>
+              </div>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="space-y-4 max-w-3xl">
+              <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-[1.08]">
+                See How Pollution Affects Health
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-500 to-rose-500 mt-1 sm:mt-2">
+                  Across Every U.S. County
+                </span>
+              </h1>
+              <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+                An interactive open-data platform connecting air pollution, toxic chemical releases, and respiratory illness across the nation.
+              </p>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-1">
+              <Link
+                href="/map"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+              >
+                <MapIcon className="w-4 h-4" />
+                <span>Explore the Map</span>
+              </Link>
+              <Link
+                href="/lab"
+                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-card border border-border text-foreground font-semibold text-sm hover:bg-accent hover:border-border/80 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
+              >
+                <Stethoscope className="w-4 h-4 text-rose-500" />
+                <span>Research Lab</span>
+              </Link>
+              <Link
+                href="/map?action=export"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-muted/70 border border-border/80 text-foreground font-semibold text-sm hover:bg-muted hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xs"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-500" />
+                <span>Executive Summary</span>
+              </Link>
+            </motion.div>
+            
+            <motion.div variants={itemVariants} className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mt-1 opacity-80 text-xs text-muted-foreground font-medium">
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>EPA Air Quality &amp; Toxic Releases</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Activity className="w-4 h-4 text-primary" />
+                <span>CDC Health &amp; Mortality Records</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Landmark className="w-4 h-4 text-amber-500" />
+                <span>U.S. Census Demographics</span>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* ── Centerpiece Map Showcase: Placed Under Main Hero Section ── */}
+          <motion.div
+            variants={itemVariants}
+            className="w-full max-w-5xl mx-auto mt-8 sm:mt-12 relative"
+          >
+            {/* Ambient Backlight Glow */}
+            <div className="absolute -inset-4 bg-gradient-to-b from-primary/15 via-amber-500/10 to-transparent rounded-3xl blur-3xl -z-10 pointer-events-none" />
+
+            {/* Showcase Card */}
+            <div className="relative rounded-3xl border border-border/80 bg-card/85 backdrop-blur-xl shadow-2xl p-4 sm:p-6 overflow-hidden">
               
-              <motion.div variants={itemVariants}>
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-muted/50 border border-border/50 text-xs font-semibold backdrop-blur-md">
-                  <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-foreground">Now tracking all 3,142 U.S. counties</span>
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants} className="space-y-4 max-w-xl">
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-foreground leading-[1.1]">
-                  Environmental Risk Intelligence
-                  <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-amber-500 to-rose-500 mt-1">
-                    at County Resolution
+              {/* Card Header Toolbar - Clean & Simple */}
+              <div className="flex items-center justify-between gap-3 pb-3 mb-2 border-b border-border/60">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs font-bold text-foreground">
+                    Interactive County Map
                   </span>
-                </h1>
-                <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-                  High-resolution epidemiological surveillance mapping ambient PM2.5, EPA toxic releases, and CDC respiratory mortality across the United States.
-                </p>
-              </motion.div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-muted border border-border text-muted-foreground">
+                    3,142 Counties
+                  </span>
+                </div>
 
-              <motion.div variants={itemVariants} className="flex flex-wrap items-center gap-4 mt-2">
                 <Link
                   href="/map"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-primary text-primary-foreground font-bold text-sm shadow-lg shadow-primary/20 hover:bg-primary/90 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-primary hover:text-primary/80 transition-colors"
                 >
-                  <MapIcon className="w-4 h-4" />
-                  <span>Open Interactive Map</span>
+                  <span>Open Fullscreen Map</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
-                <Link
-                  href="/lab"
-                  className="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-card border border-border text-foreground font-semibold text-sm hover:bg-accent hover:border-border/80 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm"
-                >
-                  <Stethoscope className="w-4 h-4 text-rose-500" />
-                  <span>View Research Lab</span>
-                </Link>
-              </motion.div>
-              
-              <motion.div variants={itemVariants} className="flex items-center gap-4 mt-4 opacity-70">
-                <div className="flex -space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  </div>
-                  <div className="w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                    <Activity className="w-4 h-4 text-primary" />
-                  </div>
-                </div>
-                <div className="text-xs font-medium text-muted-foreground">
-                  Powered by EPA AQS & CDC WONDER data
-                </div>
-              </motion.div>
-            </div>
+              </div>
 
-            {/* Right Column: HeroMapIllustration SVG / Graphic */}
-            <div className="w-full flex items-center justify-center">
-              <motion.div variants={itemVariants} className="w-full">
+              {/* Map Illustration Component */}
+              <div className="relative w-full flex items-center justify-center">
                 <HeroMapIllustration />
-              </motion.div>
+              </div>
             </div>
-
-          </div>
+          </motion.div>
 
           {/* Scroll cue */}
           <motion.div
             variants={itemVariants}
             animate={{ y: [0, 5, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-            className="flex justify-center mt-6"
+            className="flex justify-center mt-8"
           >
             <a
               href="#bento-grid"
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground/70 hover:text-muted-foreground transition-colors"
             >
-              <span>Explore platform</span>
-              <ChevronDown className="w-3.5 h-3.5" />
+              <span>Explore features &amp; research findings</span>
+              <ChevronDown className="w-4 h-4" />
             </a>
           </motion.div>
         </div>
@@ -465,10 +506,10 @@ export default function LandingPage() {
         >
           <div className="flex items-center gap-1.5 text-[11px] font-bold text-primary uppercase tracking-widest">
             <Layers className="w-3.5 h-3.5" />
-            <span>Platform</span>
+            <span>Platform Features</span>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <p className="text-[11px] text-muted-foreground hidden sm:block">National geospatial · OLS regression · Temporal playback</p>
+          <p className="text-[11px] text-muted-foreground hidden sm:block">Interactive maps · Statistical research · Historical trends</p>
         </motion.div>
 
         {/* Border grid — outer wrapper has the shared border */}
@@ -495,7 +536,7 @@ export default function LandingPage() {
                         Interactive Map
                       </span>
                       <h3 className="text-lg font-bold text-foreground leading-tight">
-                        Spatial Choropleth Navigator
+                        Explore Any County
                       </h3>
                     </div>
                   </div>
@@ -505,13 +546,13 @@ export default function LandingPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Continuous choropleth mapping across all 3,142 U.S. counties with dynamic color-ramps, county boundary inspection, and dual-county comparative audits.
+                  View air pollution, chemical releases, and health risks for all 3,142 U.S. counties. Click any county to inspect metrics or compare two areas side by side.
                 </p>
 
                 {/* Metric selector tabs */}
                 <div className="space-y-2">
                   <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/70">
-                    Preview metric distribution
+                    Select a metric to preview
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {BENTO_METRICS.map((m) => {
@@ -563,7 +604,7 @@ export default function LandingPage() {
               </div>
 
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
-                <span className="text-[11px] text-muted-foreground">2018–2024 temporal playback included</span>
+                <span className="text-[11px] text-muted-foreground">2018–2024 annual records included</span>
                 <Link
                   href={`/map?metric=${activeMetric.mapParam}`}
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:translate-x-0.5 transition-transform"
@@ -584,20 +625,20 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <span className="text-[10px] font-mono text-rose-400 font-bold uppercase tracking-widest block">
-                        Statistical Suite
+                        Data Analysis
                       </span>
                       <h3 className="text-lg font-bold text-foreground leading-tight">
-                        Epidemiological Lab
+                        Research &amp; Statistics Lab
                       </h3>
                     </div>
                   </div>
                   <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-muted border border-border text-muted-foreground shrink-0 mt-1">
-                    OLS Engine
+                    Regression Models
                   </span>
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Bivariate & multivariate Ordinary Least Squares regression testing air pollution impacts against respiratory mortality and social vulnerability.
+                  Analyze real data to see how air pollution directly correlates with lung disease and respiratory mortality across the nation.
                 </p>
 
                 {/* OLS viz */}
@@ -643,7 +684,7 @@ export default function LandingPage() {
               </div>
 
               <div className="flex items-center justify-between pt-4 mt-4 border-t border-border">
-                <span className="text-[11px] text-muted-foreground">Scatter plots & SVI quintiles</span>
+                <span className="text-[11px] text-muted-foreground">Scatter plots &amp; demographic quintiles</span>
                 <Link
                   href="/lab"
                   className="inline-flex items-center gap-1.5 text-xs font-bold text-rose-400 group-hover:translate-x-0.5 transition-transform"
@@ -668,13 +709,13 @@ export default function LandingPage() {
                     </div>
                     <div>
                       <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest block">2018–2024</span>
-                      <h3 className="text-sm font-bold text-foreground">Temporal Trends</h3>
+                      <h3 className="text-sm font-bold text-foreground">Year-by-Year Trends</h3>
                     </div>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Track county particulate shifts across 7 annual snapshots. Wildfire seasons, policy changes, emission events.
+                  Track county particulate shifts across 7 annual snapshots — covering wildfire seasons, policy changes, and emission events.
                 </p>
 
                 {/* Year scrubber */}
@@ -718,13 +759,13 @@ export default function LandingPage() {
                     <Landmark className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest block">Legislative</span>
-                    <h3 className="text-sm font-bold text-foreground">NV-02 Case Study</h3>
+                    <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest block">Case Study</span>
+                    <h3 className="text-sm font-bold text-foreground">Northern Nevada (NV-02)</h3>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Nevada's 2nd District — mining corridor emissions, rural healthcare access, and high-desert particulate dynamics.
+                  A closer look at Northern Nevada — exploring rural healthcare access, mining emissions, and high-desert smoke dynamics.
                 </p>
 
                 <div className="p-3.5 rounded-xl bg-muted/30 border border-border space-y-2 text-xs">
@@ -759,13 +800,13 @@ export default function LandingPage() {
                     <FileSpreadsheet className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-widest block">Pub. Ready</span>
-                    <h3 className="text-sm font-bold text-foreground">Clinical Dossier & PDF</h3>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-widest block">Reports</span>
+                    <h3 className="text-sm font-bold text-foreground">Download PDF Reports</h3>
                   </div>
                 </div>
 
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Publication-ready epidemiological reports, multi-metric radar charts, and single/dual-county policy dossiers.
+                  Generate clean summary reports for any county, comparing local metrics against EPA national health standards.
                 </p>
 
                 <div className="p-3.5 rounded-xl bg-muted/30 border border-border space-y-2">
@@ -825,7 +866,7 @@ export default function LandingPage() {
             <span>Key Research Findings</span>
           </div>
           <div className="flex-1 h-px bg-border" />
-          <p className="text-[11px] text-muted-foreground hidden sm:block">Empirical results from 2,953 U.S. counties · 2018–2022</p>
+          <p className="text-[11px] text-muted-foreground hidden sm:block">Insights from 2,953 U.S. counties · 2018–2022</p>
         </motion.div>
 
         <motion.div
@@ -835,44 +876,44 @@ export default function LandingPage() {
           viewport={{ once: true, margin: "-60px" }}
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
         >
-          {/* Finding 1 — EJ Hotspot Counties */}
+          {/* Finding 1 — Hotspots */}
           <div className="group relative p-5 rounded-2xl border border-border bg-card/50 hover:bg-rose-500/[0.03] transition-all space-y-3 overflow-hidden">
             <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-rose-500/5 blur-2xl pointer-events-none" />
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
                 <AlertTriangle className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono text-rose-400 font-bold uppercase tracking-widest">EJ Hotspots</span>
+              <span className="text-[10px] font-mono text-rose-400 font-bold uppercase tracking-widest">74 Hotspots</span>
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">74</span>
               <span className="text-sm font-bold text-muted-foreground">counties</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Simultaneously in the <span className="font-bold text-foreground">top quartile</span> for PM₂.₅ pollution, respiratory mortality, and poverty — averaging <span className="font-bold text-rose-400">+59% higher</span> respiratory death rates than the national average.
+              Counties in the <span className="font-bold text-foreground">highest tier</span> for air pollution, lung deaths, and poverty face <span className="font-bold text-rose-400">+59% higher</span> respiratory death rates than the national average.
             </p>
             <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
-              Tri-quartile intersection · N = 2,953
+              High-burden intersection · N = 2,953
             </div>
           </div>
 
-          {/* Finding 2 — Rural PM2.5 Signal */}
+          {/* Finding 2 — Rural Signal */}
           <div className="group relative p-5 rounded-2xl border border-border bg-card/50 hover:bg-amber-500/[0.03] transition-all space-y-3 overflow-hidden">
             <div className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-500/5 blur-2xl pointer-events-none" />
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
                 <TrendingUp className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest">Rural Signal</span>
+              <span className="text-[10px] font-mono text-amber-400 font-bold uppercase tracking-widest">Rural Link</span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">r = 0.172</span>
+              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">p &lt; 0.001</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              In <span className="font-bold text-foreground">rural counties</span> (RUCC 7–9), PM₂.₅ concentration is a <span className="font-bold text-amber-400">significant predictor</span> of respiratory mortality even after controlling for poverty and smoking.
+              In <span className="font-bold text-foreground">rural communities</span>, fine particle pollution (PM₂.₅) is a <span className="font-bold text-amber-400">strong predictor</span> of lung disease deaths, even after accounting for poverty and smoking.
             </p>
             <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
-              p &lt; 0.001 · N = 1,138 rural counties
+              Statistically significant · N = 1,138 rural counties
             </div>
           </div>
 
@@ -883,13 +924,14 @@ export default function LandingPage() {
               <div className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Stethoscope className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-widest">Regression</span>
+              <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-widest">Combined Link</span>
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">R² = 35.4%</span>
+              <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">35.4%</span>
+              <span className="text-sm font-bold text-muted-foreground">variance</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              A 5-variable OLS model (PM₂.₅, smoking, poverty, race, uninsured) jointly explains <span className="font-bold text-primary">35.4%</span> of county-level respiratory mortality variance nationally.
+              A model combining air pollution, smoking, poverty, and uninsured rates accounts for <span className="font-bold text-primary">35.4%</span> of all county-level lung mortality differences across America.
             </p>
             <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
               Multiple regression · N = 2,953
@@ -903,14 +945,14 @@ export default function LandingPage() {
               <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
                 <Activity className="w-4 h-4" />
               </div>
-              <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest">Key Driver</span>
+              <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-widest">Top Factor</span>
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-3xl font-extrabold font-mono text-foreground tracking-tighter">27%</span>
-              <span className="text-sm font-bold text-muted-foreground">variance</span>
+              <span className="text-sm font-bold text-muted-foreground">explained</span>
             </div>
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              <span className="font-bold text-foreground">Smoking prevalence</span> is the single strongest county-level predictor of respiratory mortality (r = 0.52), explaining <span className="font-bold text-emerald-400">27%</span> of all variation.
+              <span className="font-bold text-foreground">Smoking rates</span> and fine particle pollution are the two largest measurable drivers of county-level lung health outcomes nationwide.
             </p>
             <div className="text-[9px] font-mono text-muted-foreground/60 pt-1 border-t border-border/40">
               Pearson r = 0.521 · p &lt; 0.001
@@ -927,7 +969,7 @@ export default function LandingPage() {
           className="mt-6 p-4 rounded-xl border border-border/60 bg-card/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
         >
           <div className="text-[11px] text-muted-foreground leading-relaxed">
-            <span className="font-bold text-foreground">Study design:</span> Observational cross-sectional ecological analysis of 2,953 U.S. counties using EPA AQS, CDC WONDER, Census ACS, CDC PLACES, and USDA RUCC federal datasets (2018–2022 five-year averages). Results represent county-level associations, not individual-level causal effects.
+            <span className="font-bold text-foreground">Study overview:</span> Cross-sectional analysis of 2,953 U.S. counties using EPA, CDC, and U.S. Census federal datasets (2018–2022). Results represent county-level population associations.
           </div>
           <Link
             href="/lab"
@@ -969,24 +1011,24 @@ export default function LandingPage() {
           <div className="relative flex flex-col lg:flex-row items-center lg:items-start justify-between gap-8">
             <div className="space-y-4 text-center lg:text-left max-w-xl">
               <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight leading-tight">
-                Ready to map national
+                Ready to explore your
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-amber-300">
-                  environmental disparities?
+                  community&apos;s environmental health?
                 </span>
               </h2>
               <p className="text-sm text-muted-foreground">
-                Launch the interactive choropleth or dive into the research lab. All data is validated and sourced from federal registries.
+                Search your county, compare health risks, or view the research findings. All data is open and sourced from federal agencies.
               </p>
 
               {/* Source badges */}
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1">
                 {[
-                  { label: "EPA AQS", color: "text-primary border-primary/30 bg-primary/8" },
+                  { label: "EPA Air Quality", color: "text-primary border-primary/30 bg-primary/8" },
                   { label: "CDC WONDER", color: "text-rose-400 border-rose-400/30 bg-rose-500/8" },
-                  { label: "EPA TRI", color: "text-amber-400 border-amber-400/30 bg-amber-500/8" },
-                  { label: "CDC ATSDR SVI", color: "text-cyan-400 border-cyan-400/30 bg-cyan-500/8" },
-                  { label: "USDA RUCC", color: "text-emerald-400 border-emerald-400/30 bg-emerald-500/8" },
+                  { label: "EPA Toxic Releases", color: "text-amber-400 border-amber-400/30 bg-amber-500/8" },
+                  { label: "CDC Health Surveys", color: "text-cyan-400 border-cyan-400/30 bg-cyan-500/8" },
+                  { label: "Census Demographics", color: "text-emerald-400 border-emerald-400/30 bg-emerald-500/8" },
                 ].map((badge) => (
                   <span
                     key={badge.label}
@@ -1020,7 +1062,7 @@ export default function LandingPage() {
                 className="group w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-card border border-border text-foreground font-semibold text-sm hover:bg-accent hover:border-rose-400/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 <Stethoscope className="w-4 h-4 text-rose-400 transition-transform group-hover:scale-110" />
-                <span>Statistical Lab</span>
+                <span>Research Lab</span>
               </Link>
             </div>
           </div>

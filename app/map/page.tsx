@@ -235,6 +235,24 @@ function USSEERMapDashboard() {
         });
       }
     }
+
+    // Hydrate Executive Function action triggers from URL
+    const actionParam = searchParams.get("action");
+    const exportParam = searchParams.get("export");
+    const compareParam = searchParams.get("compare");
+    const tourParam = searchParams.get("tour");
+
+    if (actionParam === "compare" || compareParam === "true") {
+      setIsCompareOpen(true);
+    } else if (actionParam === "export" || exportParam === "true") {
+      setIsExporterOpen(true);
+    } else if (actionParam === "tour" || tourParam === "true") {
+      setIsTourOpen(true);
+    } else if (actionParam === "district") {
+      setIsDistrictOpen(true);
+    } else if (actionParam === "search") {
+      setIsSearchOpen(true);
+    }
   }, [searchParams, data, citiesData]);
 
   // Sync state back to URL search params
@@ -505,22 +523,6 @@ function USSEERMapDashboard() {
                   onYearChange={setSelectedYear}
                   allCities={citiesData}
                 />
-
-                {/* Collapsed Sidebar Restore Floating Tab (Desktop only) */}
-                {isSidebarCollapsed && (
-                  <button
-                    onClick={handleToggleSidebar}
-                    title="Expand county analytics sidebar (Cmd+\)"
-                    aria-label="Expand sidebar"
-                    className="hidden md:flex absolute top-4 right-4 z-30 items-center gap-2 px-3 py-2 rounded-xl bg-card/90 border border-border shadow-lg backdrop-blur-md text-xs font-semibold text-foreground hover:bg-card hover:border-primary/40 transition-all duration-200 active:scale-95 group cursor-pointer"
-                  >
-                    <PanelRightOpen className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
-                    <span>Show Analytics</span>
-                    {selectedFips && (
-                      <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                    )}
-                  </button>
-                )}
               </section>
 
               {/* Desktop SidePanel with Smooth Spring Collapse & Resizing */}

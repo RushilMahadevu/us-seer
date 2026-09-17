@@ -94,6 +94,10 @@ function SourcesPageContent() {
         isDarkMode={isDarkMode}
         onToggleDarkMode={handleToggleDarkMode}
         onOpenSearch={() => setIsSearchOpen(true)}
+        onOpenExporter={() => router.push("/map?action=export")}
+        onOpenCompare={() => router.push("/map?action=compare")}
+        onOpenDistrict={() => router.push("/map?fips=32031")}
+        onStartTour={() => router.push("/map?action=tour")}
         activeView="sources"
         onViewChange={handleViewChange}
       />

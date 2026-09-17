@@ -109,6 +109,9 @@ function LabPageContent() {
         onToggleDarkMode={handleToggleDarkMode}
         onOpenSearch={() => setIsSearchOpen(true)}
         onOpenExporter={() => handleOpenExporter(selectedFips || "48201", undefined, "single")}
+        onOpenCompare={() => router.push("/map?action=compare")}
+        onOpenDistrict={() => router.push("/map?fips=32031")}
+        onStartTour={() => router.push("/map?action=tour")}
         activeView="analysis"
         onViewChange={handleViewChange}
       />
